@@ -1,0 +1,35 @@
+# 应用服务 WEB 访问端口
+server:
+  port: 8081
+
+# 数据库配置
+spring:
+  application:
+    name: image-chain
+  datasource:
+    url: jdbc:postgresql://101.132.141.214:15432/postgres
+    username: shuomc
+    password: shuomc
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+  mapper-locations: classpath*:mapper/*.xml
+  type-aliases-package: com.sjy.imagechain.domain
+  global-config:
+    db-config:
+      logic-delete-field: is_delete
+      logic-delete-value: true
+      logic-not-delete-value: false
+
+# FISCO BCOS配置
+fisco-bcos:
+  config-file: src/main/resources/config-example.toml
+
+# 图床系统配置
+image-hosting:
+  api-url: http://localhost:8080

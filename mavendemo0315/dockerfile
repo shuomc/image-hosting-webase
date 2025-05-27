@@ -1,0 +1,33 @@
+# 构建阶段
+FROM maven:3.8.4-openjdk-14 AS builder
+
+WORKDIR /app
+
+# 复制POM文件
+COPY pom.xml /app/
+
+# 尝试解析依赖项
+RUN mvn dependency:go-offline
+
+# 复制源代码
+COPY src /app/src/
+
+# 执行构建
+RUN mvn package -DskipTests
+
+# 运行阶段
+FROM adoptopenjdk:14-jre-hotspot
+
+WORKDIR /app
+
+# 复制JAR包
+COPY --from=builder /app/target/*.jar app.jar
+
+# 设置时区
+ENV TZ=Asia/Shanghai
+
+# 暴露端口
+EXPOSE 8081
+
+# 设置启动命令
+ENTRYPOINT ["java", "-jar", "app.jar"]

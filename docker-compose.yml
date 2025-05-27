@@ -1,0 +1,126 @@
+services:
+  # Image Hosting应用
+  image-hosting:
+    build:
+      context: ./image-hosting
+      dockerfile: Dockerfile
+    container_name: image-hosting-backend
+    restart: always
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/image_hosting
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=yourpassword
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_ACCESSKEY=minioadmin
+      - MINIO_SECRETKEY=minioadmin
+      - MINIO_BUCKETNAME=images
+      - MINIO_PUBLICURL=http://localhost/minio
+    depends_on:
+      - postgres
+      - redis
+      - minio
+    networks:
+      - app-network
+
+  # Maven Demo应用
+  mavendemo:
+    build:
+      context: ./mavendemo0315
+      dockerfile: Dockerfile
+    container_name: maven-demo-backend
+    restart: always
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      # 添加数据库连接配置（使用单独的数据库实例或模式）
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/maven_demo
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=yourpassword
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+  
+  # Image Hosting前端服务
+  image-hosting-frontend:
+    build:
+      context: ./image-hosting/web/vue
+      dockerfile: Dockerfile
+    container_name: image-hosting-frontend
+    restart: always
+    depends_on:
+      - image-hosting
+    networks:
+      - app-network
+
+  # PostgreSQL数据库
+  postgres:
+    image: postgres:16.4
+    container_name: postgres
+    restart: always
+    environment:
+      - POSTGRES_PASSWORD=yourpassword
+      # 创建两个数据库
+      - POSTGRES_MULTIPLE_DATABASES=image_hosting,maven_demo
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d
+    ports:
+      - "15432:5432"
+    networks:
+      - app-network
+
+  # Redis缓存
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    volumes:
+      - redis-data:/data
+    networks:
+      - app-network
+
+  # MinIO对象存储
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    restart: always
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    volumes:
+      - minio-data:/data
+    ports:
+      - "19000:9000"
+      - "19090:9090"
+    command: server /data --console-address ":9090"
+    networks:
+      - app-network
+
+  # Nginx反向代理
+  nginx:
+    image: nginx:stable-alpine
+    container_name: nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    depends_on:
+      - image-hosting-frontend
+      - image-hosting
+      - mavendemo
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:
+  minio-data:

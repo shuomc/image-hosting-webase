@@ -1,0 +1,3 @@
+# 区块链系统配置
+blockchain:
+  api-url: http://localhost:8081 
