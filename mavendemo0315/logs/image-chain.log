@@ -1,0 +1,45 @@
+2025-05-21 20:09:34.394 [main] INFO  com.sjy.imagechain.ImageChainStarter - Starting ImageChainStarter using Java 14.0.2 on LAPTOP-shuomc with PID 12912 (D:\image-hosting-webase\mavendemo0315\target\classes started by 11646 in D:\image-hosting-webase\mavendemo0315)
+2025-05-21 20:09:34.396 [main] DEBUG com.sjy.imagechain.ImageChainStarter - Running with Spring Boot v2.6.13, Spring v5.3.23
+2025-05-21 20:09:34.397 [main] INFO  com.sjy.imagechain.ImageChainStarter - No active profile set, falling back to 1 default profile: "default"
+2025-05-21 20:09:37.521 [main] INFO  o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8081 (http)
+2025-05-21 20:09:37.533 [main] INFO  org.apache.catalina.core.StandardService - Starting service [Tomcat]
+2025-05-21 20:09:37.534 [main] INFO  org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/9.0.68]
+2025-05-21 20:09:37.707 [main] INFO  o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2025-05-21 20:09:37.707 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 3115 ms
+2025-05-21 20:09:38.122 [main] INFO  org.fisco.bcos.sdk.network.ConnectionManager -  all connections, size: 2, list: [ConnectionInfo{host='192.168.52.128', port=20200}, ConnectionInfo{host='192.168.52.128', port=20201}]
+2025-05-21 20:09:38.123 [main] INFO  org.fisco.bcos.sdk.network.NetworkImp - 
+* TRACE INFORMATION:
+----------------------------
+====> STEP1: try to connect nodes with ecdsa context...
+
+2025-05-21 20:09:38.124 [main] INFO  org.fisco.bcos.sdk.network.NetworkImp - ====> <==== STEP1-1: Load certificates for ecdsa context success..., start connManager with ECDSA sslContext
+2025-05-21 20:09:38.191 [main] INFO  org.fisco.bcos.sdk.network.ConnectionManager -  build ECDSA ssl context with configured certificates 
+2025-05-21 20:09:40.840 [main] INFO  org.fisco.bcos.sdk.network.ConnectionManager -  ssl handshake success 192.168.52.128:20200
+2025-05-21 20:09:40.840 [main] INFO  org.fisco.bcos.sdk.network.ConnectionManager -  ssl handshake success 192.168.52.128:20201
+2025-05-21 20:09:40.841 [nioEventLoopGroup-2-1] INFO  org.fisco.bcos.sdk.network.ChannelHandler -  handshake success, host: 192.168.52.128, port: 20200, ctx: 1049432055
+2025-05-21 20:09:40.841 [nioEventLoopGroup-2-2] INFO  org.fisco.bcos.sdk.network.ChannelHandler -  handshake success, host: 192.168.52.128, port: 20201, ctx: 2145750407
+2025-05-21 20:09:40.952 [nioEventLoopGroup-2-1] INFO  org.fisco.bcos.sdk.channel.ChannelImp -  node: ClientVersion{version='2.11.0', supportedVersion='2.11.0', chainId='1', buildTime='20240520 01:38:47', buildType='Linux/g++/Release', gitBranch='HEAD', gitCommitHash='bee4dda033297443f02774973445d954933db885'}, content: {"id":0,"jsonrpc":"2.0","result":{"Build Time":"20240520 01:38:47","Build Type":"Linux/g++/Release","Chain Id":"1","FISCO-BCOS Version":"2.11.0","Git Branch":"HEAD","Git Commit Hash":"bee4dda033297443f02774973445d954933db885","Supported Version":"2.11.0"}}
+
+2025-05-21 20:09:40.952 [nioEventLoopGroup-2-2] INFO  org.fisco.bcos.sdk.channel.ChannelImp -  node: ClientVersion{version='2.11.0', supportedVersion='2.11.0', chainId='1', buildTime='20240520 01:38:47', buildType='Linux/g++/Release', gitBranch='HEAD', gitCommitHash='bee4dda033297443f02774973445d954933db885'}, content: {"id":1,"jsonrpc":"2.0","result":{"Build Time":"20240520 01:38:47","Build Type":"Linux/g++/Release","Chain Id":"1","FISCO-BCOS Version":"2.11.0","Git Branch":"HEAD","Git Commit Hash":"bee4dda033297443f02774973445d954933db885","Supported Version":"2.11.0"}}
+
+2025-05-21 20:09:40.953 [nioEventLoopGroup-2-1] INFO  org.fisco.bcos.sdk.channel.ChannelImp -  support channel handshake node
+2025-05-21 20:09:40.953 [nioEventLoopGroup-2-2] INFO  org.fisco.bcos.sdk.channel.ChannelImp -  support channel handshake node
+2025-05-21 20:09:40.959 [nioEventLoopGroup-2-1] INFO  org.fisco.bcos.sdk.channel.ChannelImp -  channel protocol handshake success, set socket channel protocol, host: 192.168.52.128:20200, channel protocol: ChannelProtocol [protocol=3, nodeVersion=2.11.0, EnumProtocol=VERSION_3]
+2025-05-21 20:09:40.959 [nioEventLoopGroup-2-2] INFO  org.fisco.bcos.sdk.channel.ChannelImp -  channel protocol handshake success, set socket channel protocol, host: 192.168.52.128:20201, channel protocol: ChannelProtocol [protocol=3, nodeVersion=2.11.0, EnumProtocol=VERSION_3]
+2025-05-21 20:09:40.963 [main] INFO  org.fisco.bcos.sdk.channel.ChannelImp -  Connect to  nodes: 192.168.52.128:20201, 192.168.52.128:20200, 
+2025-05-21 20:09:40.964 [main] INFO  org.fisco.bcos.sdk.BcosSDK - create BcosSDK, start channel success, cryptoType: 0
+2025-05-21 20:09:40.968 [main] INFO  org.fisco.bcos.sdk.BcosSDK - create BcosSDK, start channel succ, channelProcessorThreadSize: 8, receiptProcessorThreadSize: 8
+2025-05-21 20:09:41.009 [main] INFO  org.fisco.bcos.sdk.service.GroupManagerServiceImpl - registerBlockNumberNotifyHandler
+2025-05-21 20:09:41.010 [main] INFO  org.fisco.bcos.sdk.service.GroupManagerServiceImpl - registerTransactionNotifyHandler
+2025-05-21 20:09:41.055 [main] INFO  org.fisco.bcos.sdk.BcosSDK - create BcosSDK, create groupManagerService success
+2025-05-21 20:09:41.559 [main] INFO  org.fisco.bcos.sdk.amop.AmopImp - update subscribe inform 2 peers
+2025-05-21 20:09:41.628 [main] INFO  org.fisco.bcos.sdk.amop.AmopImp - update subscribe inform 2 peers
+2025-05-21 20:09:41.628 [main] INFO  org.fisco.bcos.sdk.amop.AmopImp - amop module started
+2025-05-21 20:09:41.628 [main] INFO  org.fisco.bcos.sdk.amop.AmopImp - update subscribe inform 2 peers
+2025-05-21 20:09:41.629 [main] INFO  org.fisco.bcos.sdk.BcosSDK - create BcosSDK, create Amop success
+2025-05-21 20:09:42.873 [main] INFO  o.s.b.a.web.servlet.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+2025-05-21 20:09:43.088 [main] INFO  o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat started on port(s): 8081 (http) with context path ''
+2025-05-21 20:09:43.099 [main] INFO  com.sjy.imagechain.ImageChainStarter - Started ImageChainStarter in 9.795 seconds (JVM running for 10.819)
+2025-05-21 20:10:30.858 [http-nio-8081-exec-2] INFO  o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-05-21 20:10:30.859 [http-nio-8081-exec-2] INFO  org.springframework.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2025-05-21 20:10:30.860 [http-nio-8081-exec-2] INFO  org.springframework.web.servlet.DispatcherServlet - Completed initialization in 1 ms

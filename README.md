@@ -1,2 +1,6 @@
-# image-hosting-webase
-基于区块链的数字艺术品网站
+
+一个基于java的前后端分离图床实现
+## 技术选型:
+* 后端：Spring Boot, MyBatis-Plus, Sa-Token
+* 数据库：PostgreSQL, Redis
+* 前端：Vue, ElmentUI, Tailwind
