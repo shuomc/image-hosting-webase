@@ -21,7 +21,6 @@ contract ImageNFT {
     event NFTSold(address indexed seller, address indexed buyer, uint256 indexed tokenId, uint256 price);
     event PriceUpdated(uint256 indexed tokenId, uint256 newPrice);
     event SaleStatusChanged(uint256 indexed tokenId, bool isForSale);
-    event BalanceChanged(address indexed user, uint256 newBalance);
 
     // 铸造NFT
     function mintNFT(string memory minioUrl, string memory description, uint256 price) public returns (uint256) {
@@ -40,10 +39,9 @@ contract ImageNFT {
         return tokenId;
     }
 
-    // 充值功能
-    function deposit() public payable {
-        balances[msg.sender] += msg.value;
-        emit BalanceChanged(msg.sender, balances[msg.sender]);
+    // 充值功能 - 简化为直接修改余额
+    function deposit(uint256 amount) public {
+        balances[msg.sender] += amount;
     }
 
     // 查询余额
@@ -82,8 +80,6 @@ contract ImageNFT {
         nfts[tokenId].isForSale = false;
         
         emit NFTSold(seller, msg.sender, tokenId, nfts[tokenId].price);
-        emit BalanceChanged(seller, balances[seller]);
-        emit BalanceChanged(msg.sender, balances[msg.sender]);
     }
 
     // 获取NFT信息

@@ -117,35 +117,59 @@ const router = createRouter({
           component: () => import('@/views/nft/MyNFTView.vue'),
           meta: { title: 'MyNFTView' }
         },
+        {
+          path: '/nft/detail/:nftId',
+          name: 'NFTDetail',
+          component: () => import('@/views/nft/NFTDetail.vue'),
+          meta: { title: 'NFTDetail' }
+        },
+        {
+          path: '/nft-transactions',
+          name: 'NFTTransactions',
+          component: () => import('@/views/nft/NFTTransactions.vue'),
+          meta: { title: 'NFTTransactions' }
+        },
+        {
+          path: '/nft-balance',
+          name: 'NFTBalance',
+          component: () => import('@/views/nft/NFTBalance.vue'),
+          meta: { title: 'NFTBalance' }
+        },
       ],
     },
     {
-      path: '/nft',
-      redirect: '/nft/market',
-      name: 'NFT',
-      meta: { title: 'NFT市场', icon: 'nft' },
-      children: [
-        {
-          path: 'market',
-          name: 'NFTMarket',
-          component: () => import('@/views/nft/market/index.vue'),
-          meta: { title: 'NFT市场' }
-        },
-        {
-          path: 'my-nfts',
-          name: 'MyNFTs',
-          component: () => import('@/views/nft/my-nfts/index.vue'),
-          meta: { title: '我的NFT' }
-        },
-        {
-          path: 'mint',
-          name: 'MintNFT',
-          component: () => import('@/views/nft/mint/index.vue'),
-          meta: { title: '铸造NFT' }
-        }
-      ]
-    },
-  
+      path: '/usrhome',
+      name: 'Usrhome',
+      component: () => import('@/views/userui/Home.vue'),
+      meta: { title: 'Home' }
+    }
+    // {
+    //   path: '/nft',
+    //   redirect: '/nft/market',
+    //   name: 'NFT',
+    //   meta: { title: 'NFT市场', icon: 'nft' },
+    //   children: [
+    //     {
+    //       path: 'market',
+    //       name: 'NFTMarket',
+    //       component: () => import('@/views/nft/market/index.vue'),
+    //       meta: { title: 'NFT市场' }
+    //     },
+    //     {
+    //       path: 'my-nfts',
+    //       name: 'MyNFTs',
+    //       component: () => import('@/views/nft/my-nfts/index.vue'),
+    //       meta: { title: '我的NFT' }
+    //     },
+    //     {
+    //       path: 'mint',
+    //       name: 'MintNFT',
+    //       component: () => import('@/views/nft/mint/index.vue'),
+    //       meta: { title: '铸造NFT' }
+    //     }
+    //   ]
+    // },
+    ,
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',

@@ -78,9 +78,8 @@ public class NFTServiceImpl implements NFTService {
     }
 
     @Override
-    public AjaxResult getNFTTransactions(String nftId, Integer page, Integer pageSize) {
-        String url = blockchainApiUrl + "/nft/transactions/" + nftId +
-                    "?page=" + page + "&pageSize=" + pageSize;
+    public AjaxResult getNFTTransactions() {
+        String url = blockchainApiUrl + "/nft/transactions";
         return forwardRequest(url, HttpMethod.GET, null);
     }
 
@@ -95,6 +94,31 @@ public class NFTServiceImpl implements NFTService {
         String url = blockchainApiUrl + "/nft/deposit";
         Map<String, Object> body = Map.of("amount", amount);
         return forwardRequest(url, HttpMethod.POST, body);
+    }
+
+    @Override
+    public AjaxResult getWebaseBalance() {
+        String url = blockchainApiUrl + "/nft/webase/balance";
+        return forwardRequest(url, HttpMethod.GET, null);
+    }
+
+    @Override
+    public AjaxResult webaseDeposit(BigDecimal amount) {
+        String url = blockchainApiUrl + "/nft/webase/deposit";
+        Map<String, Object> body = Map.of("amount", amount);
+        return forwardRequest(url, HttpMethod.POST, body);
+    }
+
+    @Override
+    public AjaxResult getWebaseNFTInfo(String tokenId) {
+        String url = blockchainApiUrl + "/nft/webase/nft/" + tokenId;
+        return forwardRequest(url, HttpMethod.GET, null);
+    }
+
+    @Override
+    public AjaxResult getWebaseOwnedNFTs() {
+        String url = blockchainApiUrl + "/nft/webase/owned";
+        return forwardRequest(url, HttpMethod.GET, null);
     }
 
     private AjaxResult forwardRequest(String url, HttpMethod method, Object body) {

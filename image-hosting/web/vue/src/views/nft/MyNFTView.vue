@@ -65,13 +65,21 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="100" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" size="small" @click.stop="handleSetPrice(row)" v-if="!row.isForSale">
               设置价格
             </el-button>
             <el-button type="danger" size="small" @click.stop="handleCancelSale(row)" v-if="row.isForSale">
               取消出售
+            </el-button>
+          </template>
+        </el-table-column>
+
+        <el-table-column label="操作" width="100" fixed="right">
+          <template #default="{ row }">
+            <el-button type="" size="small" @click.stop="handleViewDetail(row)">
+              查看详情
             </el-button>
           </template>
         </el-table-column>
@@ -97,6 +105,19 @@
         </span>
       </template>
     </el-dialog>
+
+    <el-dialog
+      v-model="detailDialogVisible"
+      title="NFT详情"
+      width="50%"
+    >
+      <nft-detail
+        v-if="selectedNFT"
+        :nft-id="selectedNFT.nftId"
+        @close="detailDialogVisible = false"
+        @refresh="fetchNFTList"
+      />
+    </el-dialog>
   </div>
 </template>
 
@@ -104,6 +125,8 @@
 import { ref, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getMyNFTs, setNFTPrice, cancelNFTSale } from '@/api/nft'
+import NFTDetail from './NFTDetail.vue'
+import { useRouter } from 'vue-router'
 
 // Type definition for NFTInfo based on your provided JSON
 interface NFTInfo {
@@ -126,8 +149,10 @@ const pageSize = ref(12)
 const total = ref(0)
 const nftList = ref<NFTInfo[]>([])
 const priceDialogVisible = ref(false)
+const detailDialogVisible = ref(false)
 const selectedNFT = ref<NFTInfo | null>(null)
 const loading = ref(false)
+const router = useRouter()
 
 const priceForm = ref({
   price: 0
@@ -162,9 +187,9 @@ const fetchNFTList = async () => {
 
     // *** CRITICAL: Accessing data based on your highly nested JSON ***
     // Your JSON structure: { msg, code, data: { msg, code, data: { total, list: [...] }}}
-    if (res.data && res.data.data) {
-      nftList.value = res.data.data.list as NFTInfo[];
-      total.value = res.data.data.total;
+    if (res.data && res.data) {
+      nftList.value = res.data.list as NFTInfo[];
+      total.value = res.data.total;
     } else {
       ElMessage.error('API响应数据结构不正确或数据为空。');
       nftList.value = [];
@@ -214,11 +239,9 @@ const confirmSetPrice = async () => {
     return
   }
 
-  const priceToSend = priceForm.value.price; // Assuming backend expects ETH decimal
-
   try {
-    // Pass the object directly, the function will construct the URL
-    await setNFTPrice({ nftId: selectedNFT.value.nftId, price: priceToSend });
+    // 修改为正确的参数传递方式
+    await setNFTPrice(selectedNFT.value.nftId, priceForm.value.price);
     ElMessage.success('设置价格成功！');
     priceDialogVisible.value = false;
     fetchNFTList();
@@ -263,6 +286,11 @@ watch(viewMode, () => {
 onMounted(() => {
   fetchNFTList()
 })
+
+// 查看详情
+const handleViewDetail = (nft: NFTInfo) => {
+  router.push(`/nft/detail/${nft.tokenId}`)
+}
 </script>
 
 ---

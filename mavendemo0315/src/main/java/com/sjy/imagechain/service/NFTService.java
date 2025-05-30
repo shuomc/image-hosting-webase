@@ -18,5 +18,13 @@ public interface NFTService {
     
     Map<String, Object> getNFTDetail(String nftId);
     
-    Map<String, Object> getNFTTransactions(String nftId, Integer page, Integer pageSize);
+    Map<String, Object> getNFTTransactions();
+    
+    Map<String, Object> deposit(BigDecimal amount);
+    
+    Map<String, Object> getBalance();
+    
+    Map<String, Object> getNFTInfo(String tokenId);
+    
+    Map<String, Object> getOwnedNFTs();
 } 

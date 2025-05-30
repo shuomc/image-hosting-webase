@@ -71,6 +71,22 @@
           <span class="truncate">我的NFT</span>
         </router-link>
 
+        <router-link :to="{ name: 'NFTTransactions' }" class="flex py-2 mt-2 text-gray-700 hover:bg-indigo-50 rounded-md transition-colors items-center"
+          :class="[{ 'is-active': isActive('NFTTransactions') }, 'hover:text-gray-900 p-3 pr-10']">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+          </svg>
+          <span class="truncate">NFT交易</span>
+        </router-link>
+
+        <router-link :to="{ name: 'NFTBalance' }" class="flex py-2 mt-2 text-gray-700 hover:bg-indigo-50 rounded-md transition-colors items-center"
+          :class="[{ 'is-active': isActive('NFTBalance') }, 'hover:text-gray-900 p-3 pr-10']">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+          </svg>
+          <span class="truncate">NFT余额</span>
+        </router-link>
+        
       </div>
       <div>
         <router-link :to="{ name: 'Account' }" class="flex py-2 text-gray-700 hover:bg-indigo-50 rounded-md transition-colors items-center"

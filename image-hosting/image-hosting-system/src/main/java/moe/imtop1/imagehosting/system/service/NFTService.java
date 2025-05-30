@@ -26,13 +26,22 @@ public interface NFTService {
     AjaxResult getNFTDetail(String nftId);
     
     // 获取NFT交易历史
-    AjaxResult getNFTTransactions(String nftId, Integer page, Integer pageSize);
+    AjaxResult getNFTTransactions();
     
     // 获取余额
     AjaxResult getBalance();
     
     // 充值
     AjaxResult deposit(BigDecimal amount);
+
+    // Webase接口
+    AjaxResult getWebaseBalance();
+    
+    AjaxResult webaseDeposit(BigDecimal amount);
+    
+    AjaxResult getWebaseNFTInfo(String tokenId);
+    
+    AjaxResult getWebaseOwnedNFTs();
 
     // chu
 } 
