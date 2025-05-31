@@ -24,30 +24,27 @@ import lombok.Setter;
 public class AppUser extends BaseEntity { // 继承 BaseEntity 获取通用字段
 
     @TableId(value = "user_id", type = IdType.ASSIGN_ID)
-    private String userId; // Traditional application user ID (Primary Key)
+    private String userId; //
 
     @TableField("user_name")
     private String username; // Username
 
-    @TableField("password_hash") // Assuming password field in DB is now password_hash
+    @TableField("password_hash")
     private String passwordHash; // Hashed password
 
-    // @TableField(typeHandler = EncryptTypeHandler.class) // 如果需要对邮箱字段加密，保留此注解
+    // @TableField(typeHandler = EncryptTypeHandler.class)
     @TableField("user_email")
     private String userEmail; // User email
 
     @TableField("blockchain_address")
-    private String blockchainAddress; // !!! 新增字段: 用户对应的区块链地址 !!!
-    // Used to link user to on-chain ownership
+    private String blockchainAddress; // 新增字段: 用户对应的区块链地址
 
     @TableField("role_id")
-    private Integer roleId; // !!! 新增字段: 关联到角色表ID !!!
-    // Note: In Mybatis-Plus, you usually store FK value directly.
+    private Integer roleId; // 关联到角色表ID
 
-    @TableField("encrypted_private_key")
+    @TableField("encrypted_private_key") //  私钥加密字段
     private String encryptedPrivateKey;
 
-    // create_time, update_time, is_delete 继承自 BaseEntity，不再此处定义
 
 
     @Override
@@ -60,7 +57,6 @@ public class AppUser extends BaseEntity { // 继承 BaseEntity 获取通用字�
                 ", blockchainAddress='" + blockchainAddress + '\'' +
                 ", roleId=" + roleId +
                 ", encryptedPrivateKey='" + encryptedPrivateKey + '\'' +
-                // 注意：此处省略了 BaseEntity 的字段，如果需要可以在 BaseEntity 的 toString 中处理
                 '}';
     }
 }

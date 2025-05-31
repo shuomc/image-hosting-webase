@@ -27,7 +27,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Collections; // Added for subList safety
+import java.util.Collections;
 
 @Service
 public class NFTServiceImpl implements NFTService {
@@ -308,8 +308,10 @@ public class NFTServiceImpl implements NFTService {
 
     @Override
     public Map<String, Object> getNFTTransactions() {
-        // 使用 MyBatis-Plus 查询整张表
-        List<NFTTransaction> allTransactions = nftTransactionMapper.selectList(null);
+        // 查询并按创建时间降序排序（最新在前）
+        List<NFTTransaction> allTransactions = nftTransactionMapper.selectList(
+                new QueryWrapper<NFTTransaction>().orderByDesc("create_time")
+        );
         Long total = (long) allTransactions.size(); // 计算总条数
 
         return Map.of(

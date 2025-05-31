@@ -39,14 +39,6 @@ public class DatabaseObjectHandler implements MetaObjectHandler {
         if (hasIsDeleted && metaObject.getValue("isDeleted") == null) {
             this.strictInsertFill(metaObject, "isDeleted", Boolean.class, false);
         }
-
-        // 如果您的 ArtworkAsset 有 uploadTime 字段映射到 createTime，并且也继承 BaseEntity，
-        // 这里的 createTime 填充也会对 ArtworkAsset 生效。
-        // 如果 uploadTime 需要单独填充，且不在 BaseEntity 中，则需要检查字段名
-        // boolean hasUploadTime = metaObject.hasSetter("uploadTime");
-        // if (hasUploadTime && metaObject.getValue("uploadTime") == null) {
-        //      this.strictInsertFill(metaObject, "uploadTime", LocalDateTime.class, LocalDateTime.now());
-        // }
     }
 
     // 更新时自动填充

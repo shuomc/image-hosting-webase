@@ -65,5 +65,4 @@ public class UserController {
         }
     }
 
-    // 其他用户相关的 Controller 方法...
 }

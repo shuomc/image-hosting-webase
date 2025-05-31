@@ -43,5 +43,4 @@ public interface NFTService {
     
     AjaxResult getWebaseOwnedNFTs();
 
-    // chu
 } 
