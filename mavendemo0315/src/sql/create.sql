@@ -28,48 +28,6 @@ CREATE TABLE "public"."app_role" (
 );
 COMMENT ON TABLE "public"."app_role" IS '应用角色权限表';
 
--- 艺术品资产表 (Modified to include CID and blockchain token ID)
--- Adapting from your image_data table
-DROP TABLE IF EXISTS "public"."artwork_asset";
-CREATE TABLE "public"."artwork_asset" (
-                                          "asset_id" VARCHAR(100) NOT NULL, -- 传统应用内部的资产ID (Primary Key, mapping from original image_id)
-                                          "asset_cid" VARCHAR(255) NOT NULL UNIQUE, -- !!! 修改字段: 文件内容的哈希值 (CID) !!!
-    -- Used as immutable content identifier and MinIO key
-                                          "token_id" VARCHAR(255) UNIQUE,     -- !!! 新增字段: 链上 Token ID !!!
-    -- The unique ID assigned by the blockchain smart contract (e.g., NFT ID)
-    -- NULL initially, populated after successful minting
-                                          "creator_user_id" VARCHAR(100) NOT NULL, -- 传统应用用户ID (Foreign Key to app_user) - 记录上传者
-                                          "file_name" VARCHAR(100) NOT NULL,    -- Original file name
-                                          "content_type" VARCHAR(50) NOT NULL,  -- MIME type
-                                          "size" BIGINT NOT NULL,               -- File size in bytes
-                                          "width" INT,                          -- Image width
-                                          "height" INT,                         -- Image height
-                                          "description" TEXT,                   -- Asset description
-                                          "metadata_uri" VARCHAR(255),          -- !!! 新增字段: 链下元数据URI (如果使用) !!!
-    -- Points to off-chain metadata JSON file
-                                          "minio_storage_key" VARCHAR(255) NOT NULL UNIQUE, -- !!! 修改字段: 实际MinIO存储Key !!!
-    -- Ideally, this IS the asset_cid, but kept separate for clarity if needed.
-    -- If asset_cid is always used as key, this is redundant or can be removed.
-                                          "is_public" BOOLEAN NOT NULL DEFAULT TRUE,  -- Application-level visibility
-                                          "is_delete" BOOLEAN NOT NULL DEFAULT FALSE, -- Application-level soft delete
-                                          "upload_time" TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Time asset was uploaded and record created
-                                          "mint_time" TIMESTAMP,                -- !!! 新增字段: 成功铸造到链上的时间 !!!
-                                          PRIMARY KEY ("asset_id"),
-                                          FOREIGN KEY ("creator_user_id") REFERENCES "public"."app_user"("user_id")
-    -- Add index on asset_cid, token_id, creator_user_id for efficient lookups
-);
-COMMENT ON TABLE "public"."artwork_asset" IS '数字艺术品资产表，关联链上Token';
-COMMENT ON COLUMN "public"."artwork_asset"."asset_cid" IS '文件内容的哈希值 (CID)，作为内容标识符和MinIO存储Key';
-COMMENT ON COLUMN "public"."artwork_asset"."token_id" IS '关联的链上数字藏品 Token ID';
-COMMENT ON COLUMN "public"."artwork_asset"."creator_user_id" IS '资产的创建/上传用户ID';
-COMMENT ON COLUMN "public"."artwork_asset"."metadata_uri" IS '指向链下元数据JSON文件的URI';
-COMMENT ON COLUMN "public"."artwork_asset"."minio_storage_key" IS '文件在MinIO中的存储Key，应与asset_cid一致';
-COMMENT ON COLUMN "public"."artwork_asset"."mint_time" IS '资产成功铸造到链上的时间';
-
-
--- Note: The 'config' and 'strategies' tables from your original schema seem related to application configuration and specific processing strategies,
--- which typically remain in the traditional database and are not directly related to the core blockchain ownership logic.
--- So, 'config' and 'strategies' tables can be kept as they are or adapted based on your application's needs.
 
 INSERT INTO app_role (role_name, description) VALUES
     ('admin', 'Administrator role with full access and privileges'),
