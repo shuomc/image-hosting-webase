@@ -53,7 +53,7 @@ public class NFTServiceImpl implements NFTService {
     @Autowired
     private RestTemplate restTemplate;
 
-    private static final String CONTRACT_ADDRESS = "0x94e5983e124a1456ad59f894c7c9a80b370509d4"; // 实际部署的合约地址
+    private static final String CONTRACT_ADDRESS = "0x320e65107eef9ec10c0c3e21f53505e06c986dc9"; // 实际部署的合约地址
 
     @Override
     public Map<String, Object> getNFTList(Integer page, Integer pageSize, String query) {

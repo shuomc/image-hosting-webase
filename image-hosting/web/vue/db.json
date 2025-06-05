@@ -1,0 +1,67 @@
+{
+  "statistics": {
+    "totalViews": 1626156,
+    "currentViews": 824100,
+    "downloads": 5000,
+    "likes": 536,
+    "followers": 127,
+    "viewsOverTime": [
+      { "date": "2024-05-01", "views": 1200 },
+      { "date": "2024-05-02", "views": 1500 },
+      { "date": "2024-05-03", "views": 800 },
+      { "date": "2024-05-04", "views": 2500 },
+      { "date": "2024-05-05", "views": 3000 },
+      { "date": "2024-05-06", "views": 1800 },
+      { "date": "2024-05-07", "views": 500 },
+      { "date": "2024-05-08", "views": 4000 },
+      { "date": "2024-05-09", "views": 2200 },
+      { "date": "2024-05-10", "views": 1000 },
+      { "date": "2024-05-11", "views": 3500 },
+      { "date": "2024-05-12", "views": 2800 },
+      { "date": "2024-05-13", "views": 1700 },
+      { "date": "2024-05-14", "views": 4200 },
+      { "date": "2024-05-15", "views": 2000 },
+      { "date": "2024-05-16", "views": 1000 },
+      { "date": "2024-05-17", "views": 5000 },
+      { "date": "2024-05-18", "views": 2500 },
+      { "date": "2024-05-19", "views": 1500 },
+      { "date": "2024-05-20", "views": 3000 },
+      { "date": "2024-05-21", "views": 4000 },
+      { "date": "2024-05-22", "views": 2500 },
+      { "date": "2024-05-23", "views": 1800 },
+      { "date": "2024-05-24", "views": 3200 },
+      { "date": "2024-05-25", "views": 4500 },
+      { "date": "2024-05-26", "views": 2800 },
+      { "date": "2024-05-27", "views": 1500 },
+      { "date": "2024-05-28", "views": 2000 },
+      { "date": "2024-05-29", "views": 3500 },
+      { "date": "2024-05-30", "views": 5000 },
+      { "date": "2024-05-31", "views": 2800 },
+      { "date": "2024-06-01", "views": 3000 },
+      { "date": "2024-06-02", "views": 4800 }
+    ]
+  },
+  "uploadedImagesStats": [
+    {
+      "imageId": "img001",
+      "fileName": "sunset_beach.jpg",
+      "views": 12000,
+      "downloads": 500,
+      "likes": 80
+    },
+    {
+      "imageId": "img002",
+      "fileName": "mountain_lake.jpg",
+      "views": 8000,
+      "downloads": 300,
+      "likes": 50
+    },
+    {
+      "imageId": "img003",
+      "fileName": "city_night.jpg",
+      "views": 15000,
+      "downloads": 700,
+      "likes": 120
+    }
+  ]
+}

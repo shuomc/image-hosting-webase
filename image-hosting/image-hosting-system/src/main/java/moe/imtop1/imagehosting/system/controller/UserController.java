@@ -22,4 +22,15 @@ public class UserController {
         UserInfo userInfo = userInfoService.selectUserInfoById(userId);
         return AjaxResult.success(userInfo);
     }
+
+    @GetMapping("/getUserById")
+    public AjaxResult getUserById(String userId) {
+        UserInfo userInfo = userInfoService.selectUserInfoById(userId);
+        return AjaxResult.success(userInfo);
+    }
+
+    @GetMapping("/getUserList")
+    public AjaxResult getUserList() {
+        return AjaxResult.success(userInfoService.selectUserInfoList());
+    }
 } 

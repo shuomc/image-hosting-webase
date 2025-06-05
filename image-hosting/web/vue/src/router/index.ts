@@ -15,6 +15,7 @@ import UploadImageView from '@/views/workplace/UploadImageView.vue';
 import MyImagesView from '@/views/workplace/MyImagesView.vue';
 import MyFilesView from '@/views/workplace/MyFilesView.vue';
 import ImagesDetailView from '@/views/workplace/ImagesDetailView.vue';
+import UserProfile from '@/views/userui/UserProfile.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -138,10 +139,22 @@ const router = createRouter({
       ],
     },
     {
-      path: '/usrhome',
-      name: 'Usrhome',
-      component: () => import('@/views/userui/Home.vue'),
+      path: '/userhome',
+      name: 'Userhome',
+      component: () => import('@/views/userui/UserHome.vue'),
       meta: { title: 'Home' }
+    },
+    {
+    path: '/user/:userId',
+    name: 'UserProfile',
+    component: UserProfile,
+    props: true // This passes route.params as props to the component, though we use useRoute directly
+    },
+    {
+      path: '/licence',
+      name: 'UserLicence',
+      component: () => import('@/views/userui/UserLicence.vue'),
+      meta: { title: 'User' }
     }
     // {
     //   path: '/nft',

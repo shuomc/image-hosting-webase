@@ -98,7 +98,7 @@
   </el-footer>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import {
   Orange, // For language icon
   ArrowUp // For dropdown arrow
