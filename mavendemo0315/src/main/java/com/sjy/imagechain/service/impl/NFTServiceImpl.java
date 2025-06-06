@@ -1,22 +1,17 @@
 package com.sjy.imagechain.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page; // Keep if you still use it for other purposes, or remove if not needed
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.sjy.imagechain.domain.AppUser;
 import com.sjy.imagechain.domain.NFTInfo;
 import com.sjy.imagechain.domain.NFTTransaction;
-import com.sjy.imagechain.domain.ArtworkAsset;
 import com.sjy.imagechain.mapper.AppUserMapper;
 import com.sjy.imagechain.mapper.NFTInfoMapper;
 import com.sjy.imagechain.mapper.NFTTransactionMapper;
-import com.sjy.imagechain.mapper.ArtworkAssetMapper;
 import com.sjy.imagechain.service.AppUserService;
 import com.sjy.imagechain.service.NFTService;
 import com.sjy.imagechain.utils.UserUtils;
 import org.fisco.bcos.sdk.BcosSDK;
 import org.fisco.bcos.sdk.client.Client;
-import org.fisco.bcos.sdk.config.Config; // Unused, consider removing
-import org.fisco.bcos.sdk.config.ConfigOption; // Unused, consider removing
 import org.fisco.bcos.sdk.crypto.keypair.CryptoKeyPair;
 import org.fisco.bcos.sdk.transaction.manager.AssembleTransactionProcessor;
 import org.fisco.bcos.sdk.transaction.manager.TransactionProcessorFactory;
@@ -27,11 +22,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Collections; // Added for subList safety
+import java.util.Collections;
 
 @Service
 public class NFTServiceImpl implements NFTService {
@@ -57,16 +53,14 @@ public class NFTServiceImpl implements NFTService {
     @Autowired
     private RestTemplate restTemplate;
 
-    private static final String CONTRACT_ADDRESS = "0x5c168ce86a944c2c574c2ed802553bae473700c0"; // 替换为实际部署的合约地址
-    private static final String IMAGE_API_URL = "http://localhost:8080/api/images"; // 修改为实际的图片服务地址
+    private static final String CONTRACT_ADDRESS = "0x320e65107eef9ec10c0c3e21f53505e06c986dc9"; // 实际部署的合约地址
 
     @Override
     public Map<String, Object> getNFTList(Integer page, Integer pageSize, String query) {
-        // Fetch all matching NFTs from the mapper
+
         List<NFTInfo> allNfts = nftInfoMapper.selectNFTList(query);
         Long total = nftInfoMapper.selectNFTListCount(query);
 
-        // Manually apply pagination to the list
         int start = (page - 1) * pageSize;
         int end = Math.min(start + pageSize, allNfts.size());
 
@@ -166,6 +160,11 @@ public class NFTServiceImpl implements NFTService {
             NFTInfo nftInfo = nftInfoMapper.selectById(nftId);
             if (nftInfo == null || !nftInfo.getIsForSale()) {
                 throw new RuntimeException("NFT不存在或未在售");
+            }
+
+            AppUser appUser = appUserMapper.selectById(userUtils.getCurrentUserId());
+            if (nftInfo.getBlockchainAddress().equals(appUser.getBlockchainAddress())) {
+                throw new RuntimeException("不能购买自己的NFT");
             }
 
             // 获取客户端
@@ -308,19 +307,139 @@ public class NFTServiceImpl implements NFTService {
     }
 
     @Override
-    public Map<String, Object> getNFTTransactions(String nftId, Integer page, Integer pageSize) {
-        // This method still seems to expect pagination from the mapper.
-        // If nftTransactionMapper.selectNFTTransactions is also changed to return List<NFTTransaction>,
-        // then similar manual pagination logic will be needed here as in getNFTList.
-        int offset = (page - 1) * pageSize;
-        // Assuming selectNFTTransactions still takes offset and pageSize, or needs similar manual pagination.
-        List<NFTTransaction> transactions = nftTransactionMapper.selectNFTTransactions(nftId, offset, pageSize);
-        Long total = nftTransactionMapper.selectNFTTransactionsCount(nftId);
+    public Map<String, Object> getNFTTransactions() {
+        // 查询并按创建时间降序排序（最新在前）
+        List<NFTTransaction> allTransactions = nftTransactionMapper.selectList(
+                new QueryWrapper<NFTTransaction>().orderByDesc("create_time")
+        );
+        Long total = (long) allTransactions.size(); // 计算总条数
 
         return Map.of(
-                "list", transactions,
+                "list", allTransactions,
                 "total", total
         );
+    }
+
+
+
+    @Override
+    @Transactional
+    public Map<String, Object> deposit(BigDecimal amount) {
+        try {
+            Client client = bcosSDK.getClient(1);
+            CryptoKeyPair keyPair = appUserService.getCryptoKeyPairByUserId(userUtils.getCurrentUserId());
+            AssembleTransactionProcessor transactionProcessor = TransactionProcessorFactory.createAssembleTransactionProcessor(
+                    client, keyPair, "src/main/resources/abi/", "src/main/resources/bin/"
+            );
+
+            List<Object> params = new ArrayList<>();
+            params.add(amount.toBigInteger());
+
+            TransactionResponse response = transactionProcessor.sendTransactionAndGetResponseByContractLoader(
+                    "ImageNFT", CONTRACT_ADDRESS, "deposit", params
+            );
+
+            return Map.of(
+                    "transactionHash", response.getTransactionReceipt().getTransactionHash(),
+                    "amount", amount
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("充值失败: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public Map<String, Object> getBalance() {
+        try {
+            Client client = bcosSDK.getClient(1);
+            CryptoKeyPair keyPair = appUserService.getCryptoKeyPairByUserId(userUtils.getCurrentUserId());
+            AssembleTransactionProcessor transactionProcessor = TransactionProcessorFactory.createAssembleTransactionProcessor(
+                    client, keyPair, "src/main/resources/abi/", "src/main/resources/bin/"
+            );
+
+            List<Object> params = new ArrayList<>();
+            TransactionResponse response = transactionProcessor.sendTransactionAndGetResponseByContractLoader(
+                    "ImageNFT", CONTRACT_ADDRESS, "getBalance", params
+            );
+
+            return Map.of(
+                    "balance", new BigDecimal(response.getReturnObject().get(0).toString())
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("获取余额失败: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public Map<String, Object> getNFTInfo(String tokenId) {
+        try {
+            // 使用 MyBatis-Plus 根据 tokenId 查询 NFT 信息（非主键）
+            NFTInfo nftInfo = nftInfoMapper.selectOne(new QueryWrapper<NFTInfo>()
+                    .eq("token_id", tokenId)); // 假设数据库字段名为 token_id
+
+            if (nftInfo == null) {
+                throw new RuntimeException("NFT不存在");
+            }
+
+            Client client = bcosSDK.getClient(1);
+            CryptoKeyPair keyPair = appUserService.getCryptoKeyPairByUserId(userUtils.getCurrentUserId());
+            AssembleTransactionProcessor transactionProcessor = TransactionProcessorFactory.createAssembleTransactionProcessor(
+                    client, keyPair, "src/main/resources/abi/", "src/main/resources/bin/"
+            );
+
+            List<Object> params = new ArrayList<>();
+            // 确保tokenId是BigInteger类型
+            BigInteger tokenIdBigInt = new BigInteger(tokenId);
+            params.add(tokenIdBigInt);
+
+            TransactionResponse response = transactionProcessor.sendTransactionAndGetResponseByContractLoader(
+                    "ImageNFT", CONTRACT_ADDRESS, "getNFT", params
+            );
+
+            List<Object> returnObject = response.getReturnObject();
+            if (returnObject == null || returnObject.isEmpty()) {
+                throw new RuntimeException("从智能合约获取NFT信息失败");
+            }
+
+            return Map.of(
+                    "uri", returnObject.get(0).toString(),
+                    "description", returnObject.get(1).toString(),
+                    "price", new BigDecimal(returnObject.get(2).toString()),
+                    "isForSale", Boolean.parseBoolean(returnObject.get(3).toString()),
+                    "owner", returnObject.get(4).toString(),
+                    "nftId", nftInfo.getNftId(),
+                    "minioUrl", nftInfo.getMinioUrl(),
+                    "createTime", nftInfo.getCreateTime(),
+                    "tokenId", tokenId
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("获取NFT信息失败: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public Map<String, Object> getOwnedNFTs() {
+        try {
+            Client client = bcosSDK.getClient(1);
+            CryptoKeyPair keyPair = appUserService.getCryptoKeyPairByUserId(userUtils.getCurrentUserId());
+            AssembleTransactionProcessor transactionProcessor = TransactionProcessorFactory.createAssembleTransactionProcessor(
+                    client, keyPair, "src/main/resources/abi/", "src/main/resources/bin/"
+            );
+
+            List<Object> params = new ArrayList<>();
+            params.add(keyPair.getAddress());
+
+            TransactionResponse response = transactionProcessor.sendTransactionAndGetResponseByContractLoader(
+                    "ImageNFT", CONTRACT_ADDRESS, "getOwnedNFTs", params
+            );
+
+            List<Object> tokenIds = response.getReturnObject();
+            return Map.of(
+                    "tokenIds", tokenIds
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("获取拥有的NFT失败: " + e.getMessage(), e);
+        }
     }
 
     private String getCurrentUserId() {

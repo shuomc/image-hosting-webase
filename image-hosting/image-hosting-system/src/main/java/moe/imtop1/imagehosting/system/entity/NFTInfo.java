@@ -1,5 +1,6 @@
 package moe.imtop1.imagehosting.system.entity;
 
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -8,6 +9,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
+@TableName("nft_info")
 @Getter
 @Setter
 public class NFTInfo {

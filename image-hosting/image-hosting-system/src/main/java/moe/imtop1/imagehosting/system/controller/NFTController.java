@@ -1,6 +1,5 @@
 package moe.imtop1.imagehosting.system.controller;
 
-import cn.dev33.satoken.stp.StpUtil;
 import moe.imtop1.imagehosting.common.dto.AjaxResult;
 import moe.imtop1.imagehosting.system.service.NFTService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,12 +60,9 @@ public class NFTController {
         return nftService.getNFTDetail(nftId);
     }
 
-    @GetMapping("/transactions/{nftId}")
-    public AjaxResult getNFTTransactions(
-            @PathVariable String nftId,
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer pageSize) {
-        return nftService.getNFTTransactions(nftId, page, pageSize);
+    @GetMapping("/transactions")
+    public AjaxResult getNFTTransactions() {
+        return nftService.getNFTTransactions();
     }
 
     @GetMapping("/balance")
@@ -77,5 +73,25 @@ public class NFTController {
     @PostMapping("/deposit")
     public AjaxResult deposit(@RequestParam BigDecimal amount) {
         return nftService.deposit(amount);
+    }
+
+    @GetMapping("/webase/balance")
+    public AjaxResult getWebaseBalance() {
+        return nftService.getWebaseBalance();
+    }
+
+    @PostMapping("/webase/deposit")
+    public AjaxResult webaseDeposit(@RequestParam BigDecimal amount) {
+        return nftService.webaseDeposit(amount);
+    }
+
+    @GetMapping("/webase/nft/{tokenId}")
+    public AjaxResult getWebaseNFTInfo(@PathVariable String tokenId) {
+        return nftService.getWebaseNFTInfo(tokenId);
+    }
+
+    @GetMapping("/webase/owned")
+    public AjaxResult getWebaseOwnedNFTs() {
+        return nftService.getWebaseOwnedNFTs();
     }
 } 

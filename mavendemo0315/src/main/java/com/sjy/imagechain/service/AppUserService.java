@@ -15,5 +15,4 @@ public interface AppUserService {
 
     CryptoKeyPair getCryptoKeyPairByUserId(String userId);
 
-    // 其他用户服务方法...
 }

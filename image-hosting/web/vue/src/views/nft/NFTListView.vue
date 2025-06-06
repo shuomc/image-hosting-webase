@@ -147,6 +147,7 @@ import type { NFTInfo } from '@/api/nft';
 import { getNFTList, buyNFT } from '@/api/nft';
 import NFTDetail from './components/NFTDetail.vue';
 import NFTMint from './components/NFTMint.vue';
+import { useRouter } from 'vue-router'
 
 // State
 const nftList = ref<NFTInfo[]>([]);
@@ -192,9 +193,9 @@ const loadNFTList = async () => {
 
     // IMPORTANT: Adjust data access based on your actual backend response structure.
     // Based on previous conversations, it might be res.data.data.data.list
-    if (res.data && res.data.data) { // Deeply nested data
-      nftList.value = res.data.data.list as NFTInfo[];
-      total.value = res.data.data.total;
+    if (res.data) { // Deeply nested data
+      nftList.value = res.data.list as NFTInfo[];
+      total.value = res.data.total;
     } else if (res.data && res.data.list) { // Standard top-level list
       nftList.value = res.data.list as NFTInfo[];
       total.value = res.data.total;

@@ -17,4 +17,6 @@ public interface NFTTransactionMapper extends BaseMapper<NFTTransaction> {
     
     @Select("SELECT COUNT(*) FROM nft_transaction WHERE is_delete = false AND nft_id = #{nftId}")
     Long selectNFTTransactionsCount(@Param("nftId") String nftId);
+
+    List<NFTTransaction> selectNFTTransactions(@Param("nftId") String nftId);
 } 

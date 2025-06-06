@@ -1,5 +1,6 @@
 package moe.imtop1.imagehosting.system.service.impl;
 
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +9,8 @@ import moe.imtop1.imagehosting.system.mapper.UserInfoMapper;
 import moe.imtop1.imagehosting.system.service.IUserInfoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 /**
  * 修改信息
@@ -34,6 +37,12 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
     @Override
     public UserInfo selectUserInfoById(String userId) {
         return userInfoMapper.selectById(userId);
+    }
+
+    @Override
+    public List<UserInfo> selectUserInfoList() {
+        return userInfoMapper.selectList(Wrappers.<UserInfo>lambdaQuery()
+                .select(UserInfo::getUserId, UserInfo::getUserName));
     }
 
 }
