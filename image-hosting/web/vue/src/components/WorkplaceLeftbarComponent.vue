@@ -1,149 +1,146 @@
 <template>
-    <div class="bg-gray-50 h-full flex flex-col justify-between p-4 pr-0 rounded-md shadow-md w-full">
-      <div>
-        <router-link :to="{ name: 'Recommended' }"
-          class="flex py-2 text-gray-700 hover:bg-indigo-50 rounded-md transition-colors items-center"
-          :class="[
-            // 调用 isActive 方法，传入菜单项对应的路由 name
-            { 'is-active': isActive('Recommended') },
-            'hover:text-gray-900 p-3 pr-10'
-          ]">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8">
-            </path>
-          </svg>
-          <span class="truncate">推荐</span>
-        </router-link>
-
-        <router-link :to="{ name: 'MyImages' }"
-          class="flex py-2 mt-2 text-gray-700 hover:bg-indigo-50 rounded-md transition-colors items-center"
-          :class="[
-            // 调用 isActive 方法，传入菜单项对应的路由 name
-            { 'is-active': isActive('MyImages') },
-            'hover:text-gray-900 p-3 pr-10'
-          ]">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
-            </path>
-          </svg>
-          <span class="truncate">我的图片</span>
-        </router-link>
-        <router-link :to="{ name: 'UploadImage' }" class="flex py-2 mt-2 text-gray-700 hover:bg-indigo-50 rounded-md transition-colors items-center"
-          :class="[{ 'is-active': isActive('UploadImage') }, 'hover:text-gray-900 p-3 pr-10']">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-          </svg>
-          <span class="truncate">图片上传</span>
-        </router-link>
-
-        <router-link :to="{ name: 'MyFiles' }" class="flex py-2 mt-2 text-gray-700 hover:bg-indigo-50 rounded-md transition-colors items-center"
-          :class="[{ 'is-active': isActive('MyFiles') }, 'hover:text-gray-900 p-3 pr-10']">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
-          </svg>
-          <span class="truncate">我的文件</span>
-        </router-link>
-
-        <router-link :to="{ name: 'UploadFile' }" class="flex py-2 mt-2 text-gray-700 hover:bg-indigo-50 rounded-md transition-colors items-center"
-          :class="[{ 'is-active': isActive('UploadFile') }, 'hover:text-gray-900 p-3 pr-10']">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-          </svg>
-          <span class="truncate">文件上传</span>
-        </router-link>
-
-        <router-link :to="{ name: 'NFTListView' }" class="flex py-2 mt-2 text-gray-700 hover:bg-indigo-50 rounded-md transition-colors items-center"
-          :class="[{ 'is-active': isActive('NFTListView') }, 'hover:text-gray-900 p-3 pr-10']">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-          </svg>
-          <span class="truncate">NFT市场</span>
-        </router-link>
-
-        <router-link :to="{ name: 'MyNFT' }" class="flex py-2 mt-2 text-gray-700 hover:bg-indigo-50 rounded-md transition-colors items-center"
-          :class="[{ 'is-active': isActive('MyNFT') }, 'hover:text-gray-900 p-3 pr-10']">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-          </svg>
-          <span class="truncate">我的NFT</span>
-        </router-link>
-
-        <router-link :to="{ name: 'NFTTransactions' }" class="flex py-2 mt-2 text-gray-700 hover:bg-indigo-50 rounded-md transition-colors items-center"
-          :class="[{ 'is-active': isActive('NFTTransactions') }, 'hover:text-gray-900 p-3 pr-10']">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-          </svg>
-          <span class="truncate">NFT交易</span>
-        </router-link>
-
-        <router-link :to="{ name: 'NFTBalance' }" class="flex py-2 mt-2 text-gray-700 hover:bg-indigo-50 rounded-md transition-colors items-center"
-          :class="[{ 'is-active': isActive('NFTBalance') }, 'hover:text-gray-900 p-3 pr-10']">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-          </svg>
-          <span class="truncate">NFT余额</span>
-        </router-link>
-        
-      </div>
-      <div>
-        <router-link :to="{ name: 'Account' }" class="flex py-2 text-gray-700 hover:bg-indigo-50 rounded-md transition-colors items-center"
-          :class="[{ 'is-active': isActive('Account') }, 'hover:text-gray-900 p-3 pr-10']">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-          </svg>
-          <span class="truncate">账号管理</span>
-        </router-link>
-
-        <router-link :to="{ name: 'Settings' }" class="flex py-2 mt-2 text-gray-700 hover:bg-indigo-50 rounded-md transition-colors items-center"
-          :class="[{ 'is-active': isActive('Settings') }, 'hover:text-gray-900 p-3 pr-10']">
-          <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-          </svg>
-          <span class="truncate">设置</span>
-        </router-link>
-
-        <router-link :to="{ name: 'About' }" class="flex py-2 mt-2 text-gray-700 hover:bg-indigo-50 rounded-md transition-colors items-center"
-          :class="[{ 'is-active': isActive('About') }, 'hover:text-gray-900 p-3 pr-10']">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-          <span class="truncate">关于</span>
-        </router-link>
-      </div>
+  <div :class="[ 'h-full flex flex-col bg-white/50 dark:bg-slate-900/50 backdrop-blur-lg border-r border-slate-200/60 dark:border-slate-800/60 transition-colors duration-300', collapsed ? 'items-center' : '' ]">
+    
+    <div class="flex items-center justify-between px-3 py-3">
+      <button @click="toggleCollapse" class="p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800/50 transition" :title="collapsed ? '展开' : '收起'">
+        <svg v-if="!collapsed" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+        <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-500" viewBox="0 0 20 20" fill="currentColor"><path d="M7 4a1 1 0 00-1 1v10a1 1 0 001 1h6a1 1 0 001-1V5a1 1 0 00-1-1H7z"/></svg>
+      </button>
     </div>
-  </template>
 
-  <script setup lang="ts">
-  import { useRoute } from 'vue-router';
+    <div class="flex-1 overflow-y-auto py-3 px-1 space-y-1 custom-scrollbar">
+      
+      <div class="px-3 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+        Main Menu
+      </div>
 
-  const route = useRoute();
+      <router-link 
+        v-for="item in menuItems" 
+        :key="item.name"
+        :to="{ name: item.name }"
+        class="group flex items-center px-3 py-2.5 mb-1 rounded-xl transition-all duration-200 ease-in-out relative overflow-hidden"
+        :class="itemClass(item)">
+        <span v-if="isActive(item.name)" :class="['absolute top-1/2 -translate-y-1/2 rounded-r-full', collapsed ? 'left-0 w-1 h-8' : 'left-0 w-1 h-8', isActive(item.name) ? 'bg-indigo-500' : '']"></span>
 
-  // --- Modified isActive method ---
-  const isActive = (menuItemName: string) => {
-    // Check if the current route's meta.activeMenu matches the menu item name
-    // OR if the current route's name matches the menu item name (fallback)
-    return route.meta.activeMenu === menuItemName || route.name === menuItemName;
-  };
-  // ------------------------------
-  </script>
+        <component :is="item.icon" 
+          class="w-5 h-5 mr-3 transition-colors duration-200"
+          :class="iconClass(item)" 
+        />
+        
+        <span v-show="!collapsed" class="truncate text-sm">{{ item.label }}</span>
+      </router-link>
 
-  <style scoped>
-  /* 可以根据需要添加其他组件特定的样式 */
-  .truncate {
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-  }
+      <div class="my-4 border-t border-slate-200/60 dark:border-slate-700/60 mx-3"></div>
+      
+      <div class="px-3 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+        System
+      </div>
 
-  /* Add active class styles here */
-  .is-active {
-    background-color: #eef2ff; /* bg-indigo-50 equivalent */
-    color: #4f46e5; /* text-indigo-600 equivalent */
-    border-left: 4px solid #4f46e5; /* border-indigo-600 equivalent */
-    font-weight: 600; /* font-semibold equivalent */
-  }
-  </style>
+      <router-link 
+        v-for="item in systemItems" 
+        :key="item.name"
+        :to="{ name: item.name }"
+        class="group flex items-center px-3 py-2.5 mb-1 rounded-xl transition-all duration-200 ease-in-out relative"
+        :class="itemClass(item)">
+        <span v-if="isActive(item.name)" :class="['absolute top-1/2 -translate-y-1/2 rounded-r-full', collapsed ? 'left-0 w-1 h-8' : 'left-0 w-1 h-8', isActive(item.name) ? 'bg-indigo-500' : '']"></span>
+        <component :is="item.icon" class="w-5 h-5 mr-3" :class="iconClass(item)" />
+        <span v-show="!collapsed" class="truncate text-sm">{{ item.label }}</span>
+      </router-link>
+
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { useRoute } from 'vue-router';
+import { computed, ref, onMounted } from 'vue';
+import {
+  HomeIcon,
+  PhotoIcon,
+  ArrowUpTrayIcon,
+  FolderIcon,
+  CubeIcon, // 用于 NFT
+  UserCircleIcon,
+  Cog6ToothIcon,
+  InformationCircleIcon,
+  CreditCardIcon, // 用于余额/交易等
+} from '@heroicons/vue/24/outline'; // 导入 outline 风格的图标
+
+const route = useRoute();
+
+const isActive = (menuItemName: string) => {
+  return route.meta.activeMenu === menuItemName || route.name === menuItemName;
+};
+// 菜单数据
+const menuItems = [
+  { name: 'Recommended', label: '推荐', icon: HomeIcon },
+  { name: 'MyImages', label: '我的图片', icon: PhotoIcon },
+  { name: 'UploadImage', label: '图片上传', icon: ArrowUpTrayIcon },
+  { name: 'MyFiles', label: '我的文件', icon: FolderIcon },
+  { name: 'UploadFile', label: '文件上传', icon: ArrowUpTrayIcon },
+  { name: 'NFTListView', label: 'NFT市场', icon: CubeIcon },
+  { name: 'MyNFT', label: '我的NFT', icon: CubeIcon },
+  { name: 'NFTTransactions', label: 'NFT交易', icon: CreditCardIcon },
+  { name: 'NFTBalance', label: 'NFT余额', icon: CreditCardIcon },
+];
+
+const systemItems = [
+  { name: 'Profile', label: '个人中心', icon: UserCircleIcon },
+  { name: 'Settings', label: '设置', icon: Cog6ToothIcon },
+  { name: 'About', label: '关于', icon: InformationCircleIcon },
+];
+
+// 左侧折叠状态：在组件内管理并通知父组件
+const emit = defineEmits<{
+  (e: 'toggle-collapse', collapsed: boolean): void
+}>();
+
+const collapsed = ref(false);
+
+const toggleCollapse = () => {
+  collapsed.value = !collapsed.value;
+  try {
+    localStorage.setItem('leftCollapsed', collapsed.value ? '1' : '0');
+  } catch {}
+  emit('toggle-collapse', collapsed.value);
+};
+
+onMounted(() => {
+  try {
+    const v = localStorage.getItem('leftCollapsed');
+    if (v === '1') collapsed.value = true;
+  } catch {}
+});
+
+const itemClass = (item: any) => {
+  const active = isActive(item.name);
+  return [
+    collapsed.value ? 'justify-center' : 'justify-start',
+    'group flex items-center px-3 py-2.5 mb-1 rounded-xl transition-all duration-200 ease-in-out relative overflow-hidden',
+    active
+      ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400 font-semibold'
+      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200'
+  ];
+};
+
+const iconClass = (item: any) => {
+  return isActive(item.name) ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300';
+};
+</script>
+
+<style scoped>
+/* 自定义滚动条 (可选) */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.3);
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.5);
+}
+</style>

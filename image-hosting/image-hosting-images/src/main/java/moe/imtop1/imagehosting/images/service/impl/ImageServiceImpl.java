@@ -67,6 +67,9 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
     @Value("${minio.bucketName}")
     private String bucketName;
 
+    @Value("${minio.external-url}")
+    private String minioExternalUrl;
+
     // 可能需要的其他 Mapper 或 Service
     // private final StrategiesMapper strategiesMapper;
     // private final GlobalSettingsMapper globalSettingsMapper;
@@ -203,7 +206,12 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
             return null; // 如果已删除，视为找不到
         }
         assert imageData != null;
-        imageData.setMinioUrl("localhost:9000" + imageData.getMinioUrl());
+        // imageData.setMinioUrl("localhost:19000" + imageData.getMinioUrl()); //测试用
+
+        // 确保 minioExternalUrl 不以斜杠结尾，MinioUrl 以斜杠开头
+        String url = minioExternalUrl.endsWith("/") ? minioExternalUrl.substring(0, minioExternalUrl.length() - 1) : minioExternalUrl;
+        imageData.setMinioUrl(url + imageData.getMinioUrl());
+
         return imageData;
     }
 
@@ -216,37 +224,29 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
      */
     @Override
     public ImageStreamData getImageStreamData(String imageId) throws IOException {
-        // 1. 首先尝试从 Redis 缓存中获取完整的图片数据
-        String cacheKey = "img:stream:" + imageId;
-        ImageStreamData cachedStreamData = redisCache.getCacheObject(cacheKey);
-        if (cachedStreamData != null) {
-            log.info("从 Redis 缓存中获取完整的图片流数据，imageId={}", imageId);
-            return cachedStreamData;
-        }
-
-        // 2. 如果缓存中没有完整数据，尝试获取图片元数据
+        // 1. 尝试获取图片元数据
         String metadataKey = "img:metadata:" + imageId;
         ImageData imageData = redisCache.getCacheObject(metadataKey);
 
         if (imageData == null) {
-            // 3. 从数据库获取元数据
+            // 2. 从数据库获取元数据
             imageData = this.getById(imageId);
             if (imageData == null || imageData.getIsDelete()) {
                 log.warn("找不到图片数据或图片已被标记为删除，imageId: {}", imageId);
                 throw new ServiceException(ResultCodeEnum.NOT_FOUND);
             }
 
-            // 4. 将元数据存入缓存
+            // 3. 将元数据存入缓存
             redisCache.setCacheObject(metadataKey, imageData, CACHE_EXPIRATION_SECONDS, TimeUnit.SECONDS);
         }
 
-        // 5. 检查必要的元数据
+        // 4. 检查必要的元数据
         if (StringUtil.isNull(imageData.getMinioKey()) || StringUtil.isNull(imageData.getContentType())) {
             log.error("图片元数据不完整 (缺少 minioKey 或 contentType)，imageId: {}", imageId);
             throw new ServiceException("图片数据不完整，无法提供文件流，imageId: " + imageId);
         }
 
-        // 6. 从 MinIO 获取对象输入流
+        // 5. 从 MinIO 获取对象输入流
         InputStream minioInputStream;
         try {
             minioInputStream = minioClient.getObject(
@@ -266,16 +266,14 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
             throw new ServiceException("获取图片时发生未预期错误: " + e.getMessage(), e);
         }
 
-        // 7. 创建 ImageStreamData 对象
+        // 6. 创建 ImageStreamData 对象
         ImageStreamData streamData = new ImageStreamData();
         streamData.setInputStream(minioInputStream);
         streamData.setContentType(imageData.getContentType());
         streamData.setSize(imageData.getSize());
         streamData.setFileName(imageData.getFileName());
 
-        // 8. 将流数据存入缓存
-        redisCache.setCacheObject(cacheKey, streamData, CACHE_EXPIRATION_SECONDS, TimeUnit.SECONDS);
-        log.info("成功将图片流数据缓存到Redis，imageId={}", imageId);
+        // 7. 移除完整的 ImageStreamData 缓存逻辑
 
         return streamData;
     }
@@ -413,20 +411,26 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
             return Collections.emptyList(); // 返回空列表
         }
 
+        // 预处理 Minio 外部 URL，确保没有尾部斜杠
+        String baseUrl = minioExternalUrl.endsWith("/") ? minioExternalUrl.substring(0, minioExternalUrl.length() - 1) : minioExternalUrl;
+
         List<ImageUrlData> urlDataList = new ArrayList<>();
         for (ImageData imageData : imageDataList) {
             if (StringUtil.isNull(imageData.getMinioKey()) || StringUtil.isNull(imageData.getContentType())) {
                 log.error("图片元数据不完整 (缺少 minioKey 或 contentType)，imageId: {}", imageData.getImageId());
-                // 跳过当前图片或抛出异常，这里选择跳过并记录
                 continue;
             }
-            // 设置Minio服务的url
-            // 还没有添加Nginx代理，先使用Minio服务端口
-            String url = "localhost:9000" + imageData.getMinioUrl();
-            imageData.setMinioUrl(url);
+
+            // 拼接完整的 URL
+            String fullUrl = baseUrl + imageData.getMinioUrl();
+
+            // 更新当前 ImageData 对象的 MinioUrl，以便返回给前端
+            // 注意：这只修改了内存中的对象，没有修改数据库
+            imageData.setMinioUrl(fullUrl);
+
             urlDataList.add(new ImageUrlData(
                     imageData.getImageId(),
-                    imageData.getMinioUrl(),
+                    imageData.getMinioUrl(), // 使用拼接好的完整 URL
                     imageData.getFileName(),
                     imageData.getUserId(),
                     imageData.getContentType(),

@@ -42,7 +42,7 @@ public class AppUserServiceImpl implements AppUserService {
             CryptoKeyPair keyPair = client.getCryptoSuite().createKeyPair();
 
             String address = keyPair.getAddress();
-            String privateKeyHex = keyPair.getHexPrivateKey(); // 注意：不要明文存储！
+            String privateKeyHex = keyPair.getHexPrivateKey();
 
             return new String[]{address, privateKeyHex};
         } catch (Exception e) {

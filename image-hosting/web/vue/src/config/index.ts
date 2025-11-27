@@ -1,6 +1,9 @@
 // API基础URL
 export const API_BASE_URL = 'http://localhost:8080/api';
 
+// Minio服务器PORT
+export const MINIO_SERVER_PORT = 'http://localhost:19000';
+
 // 上传文件大小限制（单位：MB）
 export const UPLOAD_FILE_SIZE_LIMIT = 10;
 

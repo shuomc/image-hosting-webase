@@ -34,11 +34,7 @@ service.interceptors.request.use(
 // 响应拦截器
 service.interceptors.response.use(
   (response: AxiosResponse) => {
-    // --- 响应拦截器成功回调 ---
-    // HTTP 状态码是 2xx
-    // response.data 是 Axios 解析后的响应体
-
-    // 检查 response.data 是否存在且有 code 属性 (假设后端返回的数据总是有 code 字段)
+    // 检查 response.data 是否存在且有 code 属性
     if (response.data === undefined || response.data === null || response.data.code === undefined) {
         // 如果后端在 HTTP 2xx 状态码时返回空 body 或缺少 code 字段，我们在这里判断并抛出错误
         const err = new Error('后端返回数据格式不正确或缺少业务码');

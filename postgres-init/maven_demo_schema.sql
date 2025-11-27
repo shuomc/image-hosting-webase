@@ -1,3 +1,5 @@
+\connect maven_demo;
+
 -- 传统用户表 (Modified to include blockchain address and role linkage)
 -- Adapting from your user_info table
 DROP TABLE IF EXISTS "public"."app_user";

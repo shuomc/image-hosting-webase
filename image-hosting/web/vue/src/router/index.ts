@@ -1,28 +1,30 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
-import HomeView from '../views/HomeView.vue'
-import RegisterView from '../views/register/RegisterView.vue';
-import LoginView from '../views/auth/LoginView.vue';
-import FindPasswordView from '../views/auth/FindPasswordView.vue';
-import WorkplaceView from '@/views/workplace/WorkplaceView.vue';
-import RecommendedView from '@/views/workplace/RecommendedView.vue';
-import AboutView from '../views/workplace/AboutView.vue';
-import SettingsView from '@/views/workplace/SettingsView.vue';
-import AccountSettingsView from '@/views/workplace/AccountSettingsView.vue';
-import UploadFileView from '@/views/workplace/UploadFileView.vue';
-import UploadImageView from '@/views/workplace/UploadImageView.vue';
-import MyImagesView from '@/views/workplace/MyImagesView.vue';
-import MyFilesView from '@/views/workplace/MyFilesView.vue';
-import ImagesDetailView from '@/views/workplace/ImagesDetailView.vue';
-import UserProfile from '@/views/userui/UserProfile.vue';
+import HomeView from '../views/SjyHomeView.vue'
+import RegisterView from '../views/register/SjyRegisterView.vue';
+import LoginView from '../views/auth/SjyLoginView.vue';
+import FindPasswordView from '../views/auth/SjyFindPasswordView.vue';
+import WorkplaceView from '@/views/workplace/SjyWorkplaceView.vue';
+import RecommendedView from '@/views/workplace/SjyRecommendedView.vue';
+import AboutView from '../views/workplace/SjyAboutView.vue';
+import SettingsView from '@/views/workplace/SjySettingsView.vue';
+import AccountSettingsView from '@/views/workplace/SjyAccountSettingsView.vue';
+import UploadFileView from '@/views/workplace/SjyUploadFileView.vue';
+import UploadImageView from '@/views/workplace/SjyUploadImageView.vue';
+import MyImagesView from '@/views/workplace/SjyMyImagesView.vue';
+import MyFilesView from '@/views/workplace/SjyMyFilesView.vue';
+import ImagesDetailView from '@/views/workplace/SjyImagesDetailView.vue';
+import UserProfile from '@/views/userui/SjyUserProfile.vue';
+import NotFound from '@/views/SjyNotFoundView.vue'
+import SjyProfile from '@/views/workplace/SjyProfile.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
-      redirect: '/workplace'
+      redirect: '/userhome'
     },
     {
       path: '/auth',
@@ -136,12 +138,18 @@ const router = createRouter({
           component: () => import('@/views/nft/NFTBalance.vue'),
           meta: { title: 'NFTBalance' }
         },
+        {
+          path: 'profile',
+          name: 'Profile',
+          component: SjyProfile,
+          meta: { requiresAuth: true }
+        },
       ],
     },
     {
       path: '/userhome',
       name: 'Userhome',
-      component: () => import('@/views/userui/UserHome.vue'),
+      component: () => import('@/views/userui/SjyUserHome.vue'),
       meta: { title: 'Home' }
     },
     {
@@ -153,51 +161,15 @@ const router = createRouter({
     {
       path: '/licence',
       name: 'UserLicence',
-      component: () => import('@/views/userui/UserLicence.vue'),
+      component: () => import('@/views/userui/SjyUserLicence.vue'),
       meta: { title: 'User' }
     }
-    // {
-    //   path: '/nft',
-    //   redirect: '/nft/market',
-    //   name: 'NFT',
-    //   meta: { title: 'NFT市场', icon: 'nft' },
-    //   children: [
-    //     {
-    //       path: 'market',
-    //       name: 'NFTMarket',
-    //       component: () => import('@/views/nft/market/index.vue'),
-    //       meta: { title: 'NFT市场' }
-    //     },
-    //     {
-    //       path: 'my-nfts',
-    //       name: 'MyNFTs',
-    //       component: () => import('@/views/nft/my-nfts/index.vue'),
-    //       meta: { title: '我的NFT' }
-    //     },
-    //     {
-    //       path: 'mint',
-    //       name: 'MintNFT',
-    //       component: () => import('@/views/nft/mint/index.vue'),
-    //       meta: { title: '铸造NFT' }
-    //     }
-    //   ]
-    // },
     ,
-    {
-      path: '/:pathMatch(.*)*',
-      name: 'not-found',
-      component: {
-        template: `
-          <div class="flex flex-col items-center justify-center min-h-screen">
-            <h1 class="text-6xl font-bold text-indigo-500 mb-4">404</h1>
-            <p class="text-xl text-gray-600 mb-8">页面不存在</p>
-            <router-link to="/" class="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors">
-              返回首页
-            </router-link>
-          </div>
-        `
-      }
-    }
+     {
+    path: '/:pathMatch(.*)*', // 匹配所有未匹配到的路径
+    name: 'NotFound',
+    component: NotFound
+  }
   ]
 })
 

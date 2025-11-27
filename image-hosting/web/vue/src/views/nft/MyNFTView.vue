@@ -125,7 +125,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getMyNFTs, setNFTPrice, cancelNFTSale } from '@/api/nft'
-import NFTDetail from './NFTDetail.vue'
+import NFTDetail from './SjyNFTDetail.vue'
 import { useRouter } from 'vue-router'
 
 // Type definition for NFTInfo based on your provided JSON

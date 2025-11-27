@@ -1,54 +1,91 @@
 <template>
-  <div class="flex items-center justify-center w-96 backdrop:blur-sm">
-    <div class="w-full max-w-md p-6 bg-white bg-opacity-20 rounded-xl shadow-xl">
-      <!-- <el-form> -->
-      <!-- <el-form-item class="mb-6">
-          <el-input v-model="loginData.userName" placeholder="请输入用户名" class="w-full" size="large"></el-input>
-        </el-form-item> -->
-
-      <div class="mb-4 w-full">
-        <label for="userName" class="block text-sm font-medium text-gray-700 mb-1">用户名</label>
-        <input type="text" v-model="loginData.userName"
-          class="rounded-xl w-full h-10 p-4 border border-gray-300 text-gray-500/90 text-sm
-            transition-all ease-in-out outline-none focus:ring-indigo-500/70 focus:ring-2 duration-300"
-          placeholder="请输入用户名或邮箱" />
-      </div>
-      <div class="mb-4 w-full">
-        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">密码</label>
-        <input type="password" v-model="loginData.password"
-          class="rounded-xl w-full h-10 p-4 border border-gray-300 text-gray-500/90 text-sm
-            transition-all ease-in-out outline-none focus:ring-indigo-500/70 focus:ring-2 duration-300"
-          placeholder="请输入密码" />
+  <div class="w-full max-w-[420px] relative z-10">
+    <div class="w-full p-8 bg-white/70 backdrop-blur-xl rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white/50">
+      
+      <div class="mb-8 text-center">
+        <h3 class="text-xl font-bold text-gray-800">欢迎回来</h3>
+        <p class="text-sm text-gray-500 mt-2">请输入您的账号信息进行登录</p>
       </div>
 
-      <!-- <el-form-item class="mb-6">
-          <el-input v-model="loginData.password" placeholder="请输入密码" class="w-full" show-password
-            size="large"></el-input>
-        </el-form-item> -->
-      <div class="mb-4">
-        <label for="captcha" class="block text-sm font-medium text-gray-700 mb-1 w-full">验证码</label>
-        <input type="text" v-model="loginData.captcha"
-          class="rounded-xl w-full h-10 p-4 border border-gray-300 text-gray-500/90 text-sm
-            transition-all ease-in-out outline-none focus:ring-indigo-500/70 focus:ring-2 duration-300"
-          placeholder="请输入验证码" />
-
+      <div class="mb-5 w-full group">
+        <label for="userName" class="block text-sm font-semibold text-gray-700 mb-2 ml-1">用户名</label>
+        <input 
+          id="userName"
+          type="text" 
+          v-model="loginData.userName"
+          class="w-full h-11 px-4 rounded-xl border border-gray-200 bg-white/50 text-gray-700 text-sm
+                 transition-all duration-300 ease-in-out outline-none 
+                 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10
+                 hover:border-indigo-300 placeholder-gray-400"
+          placeholder="请输入用户名或邮箱" 
+        />
       </div>
-      <!-- <el-form-item class="mb-6">
-          <el-input v-model="loginData.captcha" placeholder="请输入验证码" class="w-full" size="large"></el-input>
-        </el-form-item> -->
 
-      <div class="mb-6 flex justify-between ">
-        <img :src="loginData.captchaImage" @click="getGraghCaptcha()" alt="验证码"
-          class="cursor-pointer h-10 w-24 shadow-md shadow-indigo-500/40 border border-gray-300/40 rounded-md ml-2 transition-all ease-in-out hover:-translate-y-1 duration-300" />
-          <router-link to="/auth/find-password" class="min-w-24">
-          <button class="flex-initial mr-1 h-10 w-24 text-indigo-700 hover:bg-indigo-400/90 hover:text-white duration-300
-        rounded-lg hover:shadow-indigo-500/50 hover:shadow-md border border-indigo-400/80 transition-all ease-in-out hover:-translate-y-1">忘记密码</button>
-        </router-link>
+      <div class="mb-5 w-full">
+        <div class="flex justify-between items-center mb-2 ml-1">
+          <label for="password" class="block text-sm font-semibold text-gray-700">密码</label>
+        </div>
+        <input 
+          id="password"
+          type="password" 
+          v-model="loginData.password"
+          class="w-full h-11 px-4 rounded-xl border border-gray-200 bg-white/50 text-gray-700 text-sm
+                 transition-all duration-300 ease-in-out outline-none 
+                 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10
+                 hover:border-indigo-300 placeholder-gray-400"
+          placeholder="请输入密码" 
+        />
       </div>
-      <button class="rounded-xl w-full mb-6 mt-3 bg-indigo-500 shadow-md shadow-indigo-400/70 text-cyan-50 h-10 hover:bg-indigo-600
-        transition-all ease-in-out hover:-translate-y-1 duration-300 font-semibold" @click="handleLogin()">登录
-      </button>
-      <!-- </el-form> -->
+
+      <div class="mb-6">
+        <label for="captcha" class="block text-sm font-semibold text-gray-700 mb-2 ml-1">验证码</label>
+        <div class="flex items-stretch gap-3">
+          <input 
+            id="captcha"
+            type="text" 
+            v-model="loginData.captcha"
+            class="flex-1 h-11 px-4 rounded-xl border border-gray-200 bg-white/50 text-gray-700 text-sm
+                   transition-all duration-300 ease-in-out outline-none 
+                   focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10
+                   hover:border-indigo-300 placeholder-gray-400"
+            placeholder="验证码" 
+            @keyup.enter="handleLogin()"
+          />
+          
+          <div 
+            class="h-11 w-52 cursor-pointer overflow-hidden rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 bg-white flex items-center justify-center"
+            @click="getGraghCaptcha()"
+            title="点击刷新验证码"
+          >
+            <img 
+              v-if="loginData.captchaImage" 
+              :src="loginData.captchaImage" 
+              alt="验证码" 
+              class="w-full h-full object-cover" 
+            />
+            <span v-else class="text-xs text-gray-400">加载中...</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <button 
+          class="w-full h-11 rounded-xl bg-indigo-600 text-white font-semibold shadow-lg shadow-indigo-500/30 
+                 hover:bg-indigo-700 hover:shadow-indigo-500/50 hover:-translate-y-0.5
+                 active:translate-y-0 active:shadow-none
+                 transition-all duration-300 ease-in-out tracking-wide" 
+          @click="handleLogin()"
+        >
+          登 录
+        </button>
+        
+        <div class="flex justify-center">
+           <router-link to="/auth/find-password" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors duration-300">
+             忘记密码？
+           </router-link>
+        </div>
+      </div>
+
     </div>
   </div>
 </template>
@@ -56,17 +93,13 @@
 <script lang="ts" setup>
 import { useRouter } from 'vue-router';
 import { onMounted, reactive } from 'vue';
-import { useUserStore } from '@/stores/user' // 引入用户状态 store
+import { useUserStore } from '@/stores/user';
 import { API_BASE_URL } from '@/config';
 import { ElMessage } from 'element-plus';
 import { login } from '@/api/auth/login';
 import axios from 'axios';
-// import 'element-plus/dist/index.css';
 
-// 路由
 const router = useRouter();
-
-// 登录数据
 const loginData = reactive({
   userName: "",
   password: "",
@@ -75,10 +108,8 @@ const loginData = reactive({
   captchaImage: ""
 });
 
-// 获取用户 store 实例
 const userStore = useUserStore();
 
-// 获取验证码
 async function getGraghCaptcha() {
   const apiUrl = `${API_BASE_URL}/auth/getValidateCode`;
   try {
@@ -86,7 +117,6 @@ async function getGraghCaptcha() {
     if (response.data.code === 200) {
       loginData.codeKey = response.data.data.codeKey;
       loginData.captchaImage = response.data.data.codeValue;
-      console.log(response);
     }
   } catch (error) {
     console.error("获取验证码失败:", error);
@@ -94,41 +124,24 @@ async function getGraghCaptcha() {
   }
 }
 
-// 处理登录
 async function handleLogin() {
   if (!loginData.userName || !loginData.password || !loginData.captcha) {
     ElMessage.warning('请填写完整的登录信息');
     return;
   }
-
   try {
-    // 调用登录API
     const loginResponse = await login(loginData);
-
-    // 保存登录信息到store
-    userStore.setLoginInfo({
-      token: loginResponse.token
-    });
-
-    // 加载用户信息
+    userStore.setLoginInfo({ token: loginResponse.token });
     await userStore.loadUserInfo();
-
-    // 跳转到工作区
     router.push('/workplace');
   } catch (error: any) {
-    // 错误已在API中处理
     console.error('登录失败:', error);
-
-    // 刷新验证码
-    getGraghCaptcha();
+    getGraghCaptcha(); // 失败后刷新验证码
   }
 }
 
 onMounted(() => {
-  // 获取验证码
   getGraghCaptcha();
-
-  // 如果已登录，直接跳转到工作区
   if (userStore.isLoggedIn) {
     router.push('/workplace');
   }
@@ -136,7 +149,5 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-input {
-  outline: none; // 去除聚焦时的默认边框
-}
+/* 保持基本重置，其他都用 Tailwind 处理 */
 </style>
