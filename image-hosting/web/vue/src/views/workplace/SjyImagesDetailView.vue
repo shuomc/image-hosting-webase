@@ -1,12 +1,12 @@
 <template>
-  <div class="min-h-screen w-full bg-[#f8fafc] dark:bg-slate-900 relative">
+  <div class="min-h-screen w-full h-full relative transition-colors">
 
-    <div class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+    <!-- <div class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
       <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-400/20 blur-[100px]"></div>
       <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-400/20 blur-[100px]"></div>
-    </div>
+    </div> -->
 
-    <div class="relative z-10 container mx-auto px-4 py-8 max-w-6xl">
+    <div class="relative z-10 container mx-auto px-4 py-1 max-w-6xl">
       <div class="flex items-center justify-between mb-8 gap-4">
         <div class="flex items-center gap-4">
           <button @click="$router.back()" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-all duration-200 -translate-y-0 hover:-translate-y-1 hover:shadow-md">

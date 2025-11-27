@@ -1,8 +1,8 @@
 <template>
   <header class="h-16 w-full px-6 flex justify-between items-center 
-                 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl 
+                 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl 
                  border-b border-slate-200/60 dark:border-slate-800/60
-                 transition-colors duration-300 relative z-30">
+                 transition-colors duration-300 relative z-50">
     
     <div class="flex items-center gap-3">
       <div class="flex flex-col">
@@ -41,7 +41,7 @@
 
         <transition name="dropdown">
           <div v-if="isDropdownOpen"
-            class="absolute right-0 mt-3 w-70 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden origin-top-right z-50">
+            class="absolute right-0 mt-3 w-70 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden origin-top-right" style="z-index: 9999;">
             
             <div class="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
               <p class="text-sm font-bold text-slate-800 dark:text-slate-100">当前账号</p>
