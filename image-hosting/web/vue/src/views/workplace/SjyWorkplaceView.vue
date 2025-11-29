@@ -10,7 +10,7 @@
       <WorkplaceLeftbarComponent @toggle-collapse="onLeftToggle" />
     </aside>
 
-    <div class="flex-1 flex flex-col min-w-0 relative z-10">
+    <div class="flex-1 flex flex-col min-w-0 relative z-50">
       
       <WorkplaceTopbarComponent />
 

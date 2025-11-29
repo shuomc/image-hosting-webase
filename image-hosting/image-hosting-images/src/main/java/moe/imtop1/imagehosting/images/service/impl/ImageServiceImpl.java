@@ -4,6 +4,13 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.drew.imaging.ImageMetadataReader;
+import com.drew.lang.GeoLocation;
+import com.drew.metadata.Metadata;
+import com.drew.metadata.exif.ExifIFD0Directory;
+import com.drew.metadata.exif.ExifSubIFDDirectory;
+import com.drew.metadata.exif.GpsDirectory;
+import com.drew.metadata.jpeg.JpegDirectory;
 import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
@@ -31,12 +38,11 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import java.time.ZoneId;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static moe.imtop1.imagehosting.common.enums.ResultCodeEnum.DATABASE_ERROR;
@@ -64,77 +70,87 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
     private static final Integer CACHE_EXPIRATION_SECONDS = 600; // 10 分钟
 
     // 从 application.properties 或 application.yml 读取配置值
-    @Value("${minio.bucketName}")
-    private String bucketName;
+    @Value("${minio.publicBucketName}")
+    private String publicBucketName;    // 水印图
+
+    @Value("${minio.privateBucketName}")
+    private String privateBucketName;   // 原图
 
     @Value("${minio.external-url}")
     private String minioExternalUrl;
+
 
     // 可能需要的其他 Mapper 或 Service
     // private final StrategiesMapper strategiesMapper;
     // private final GlobalSettingsMapper globalSettingsMapper;
 
-
+    /**
+     * 上传图片，包括原图和水印图的生成，并填充所有元数据字段。
+     *
+     * @param file 上传的文件
+     * @param imageDataDTO 包含用户和配置信息的DTO
+     * @return 完整的 ImageData 实体
+     * @throws Exception 存储或处理失败
+     */
     @Override
     public ImageData uploadImage(MultipartFile file, ImageData imageDataDTO) throws IOException {
         // 创建要存储到数据库的 ImageData 对象
         ImageData imageData = new ImageData();
+        byte[] fileBytes = file.getBytes();
 
         // 1. 生成唯一的图片 ID
-        if (StringUtil.isNull(imageDataDTO.getImageId())) { // 使用 StringUtil 检查空值
-            imageData.setImageId(UUID.randomUUID().toString());
-        } else {
-            imageData.setImageId(imageDataDTO.getImageId());
-        }
+        imageData.setImageId(UUID.randomUUID().toString());
 
         // 2. 设置其他元数据
         imageData.setUserId(imageDataDTO.getUserId());
-        imageData.setFileName(file.getOriginalFilename()); // 存储原始文件名
-        imageData.setSize((int) file.getSize()); // 文件大小
-        imageData.setHeight(imageDataDTO.getHeight()); // 图片高度
-        imageData.setWidth(imageDataDTO.getWidth());   // 图片宽度
-        imageData.setContentType(file.getContentType()); // MIME 类型
-        imageData.setIsPublic(imageDataDTO.getIsPublic()); // 是否公开
-        imageData.setDescription(imageDataDTO.getDescription()); // 描述
+        imageData.setFileName(file.getOriginalFilename());
+        imageData.setSize(file.getSize());
+        imageData.setContentType(file.getContentType());
+        imageData.setIsPublic(imageDataDTO.getIsPublic() != null ? imageDataDTO.getIsPublic() : false); // 默认私有
+        // TODO： 前端添加分类
+        imageData.setCategory("Uncategorized");
+        imageData.setDescription(imageDataDTO.getDescription());
+        imageData.setAuditStatus(0); // 默认待审核
 
-        // 3. 设置 MinIO 的对象 Key (存储路径)
-        // 根据用户或其他信息进行分组，避免所有文件都在根目录
-        String userIdForPath = (imageDataDTO.getUserId() != null && !imageDataDTO.getUserId().isEmpty()) ? imageDataDTO.getUserId() : "public"; // 使用userId进行分组
-        String sanitizedFileName = FileUtil.sanitizeFileName(file.getOriginalFilename()); // 清理文件名，防止路径遍历等问题
-        String objectKey = userIdForPath + "/" + imageData.getImageId() + "-" + sanitizedFileName;
-//        String objectKey = imageData.getImageId();
+        // 2. 设置 MinIO 的对象 Key 和 URL
+        String userIdForPath = (imageDataDTO.getUserId() != null && !imageDataDTO.getUserId().isEmpty()) ? imageDataDTO.getUserId() : "public";
+        String objectKey = userIdForPath + "/" + imageData.getImageId() + "-" + file.getOriginalFilename();
         imageData.setMinioKey(objectKey);
-        imageData.setMinioUrl("/image/" + objectKey); // 设置指向Minio的URL
+        // 设置原图Url,不设置水印图Url
+        imageData.setOriginMinioUrl("/" + privateBucketName + "/" + objectKey);
+        imageData.setWatermarkMinioUrl(null);
 
-        // 4. 将元数据插入数据库
-        // 使用 Mybatis Plus ServiceImpl 提供的 save 方法
+        // 3. 上传文件到 MinIO 原图桶，并提取元数据
+        try (InputStream originalStream = new ByteArrayInputStream(fileBytes)) {
+
+            // 上传原图
+            minioClient.putObject(PutObjectArgs.builder()
+                    .bucket(privateBucketName)
+                    .object(objectKey)
+                    .stream(originalStream, file.getSize(), -1)
+                    .contentType(file.getContentType())
+                    .build());
+            log.info("成功上传原图到 MinIO，Key: {}", objectKey);
+
+        } catch (MinioException | InvalidKeyException | NoSuchAlgorithmException e) {
+             log.error("MinIO 操作失败: {}", e.getMessage(), e);
+            log.info("MinIO_Bucket:{}", privateBucketName);
+             throw new ServiceException(ResultCodeEnum.IMAGE_STORAGE_ERROR);
+        }
+
+        // 4. 提取并设置所有其他元数据（EXIF、地理、色彩等）
+        // 使用新的流进行元数据分析
+        try (InputStream metadataStream = new ByteArrayInputStream(fileBytes)) {
+            extractAndSetMetadata(metadataStream, imageData);
+        }
+
+        // 5. 将完整的元数据插入数据库
         boolean saved = this.save(imageData);
         if (!saved) {
             log.error("无法将图片元数据存储到数据库，imageId: {}", imageData.getImageId());
             throw new ServiceException(ResultCodeEnum.IMAGE_STORAGE_ERROR);
         }
         log.info("成功存储图片元数据，imageId: {}", imageData.getImageId());
-
-        // 5. 上传文件到 MinIO
-        try (InputStream inputStream = file.getInputStream()) { // 使用 try-with-resources 确保流被关闭
-            minioClient.putObject(PutObjectArgs.builder()
-                    .bucket(bucketName)         // 目标 Bucket
-                    .object(objectKey)          // 对象 Key (路径)
-                    .stream(inputStream, file.getSize(), -1) // 输入流、大小、分块大小 (-1 自动)
-                    .contentType(file.getContentType()) // 设置 Content-Type
-                    .build());
-            log.info("成功上传文件 {} 到 MinIO，Key 为 {}", file.getOriginalFilename(), objectKey);
-        } catch (MinioException e) {
-            log.error("上传到 MinIO 时发生 MinioException: {}", e.getMessage(), e);
-            throw new IOException("上传图片到存储体时出错: " + e.getMessage(), e);
-        } catch (InvalidKeyException | NoSuchAlgorithmException e) {
-            log.error("上传到 MinIO 时发生安全相关异常: {}", e.getMessage(), e);
-            throw new IOException("存储体安全配置错误: " + e.getMessage(), e);
-        } catch (Exception e) { // 捕获其他可能的异常
-            log.error("上传到 MinIO 时发生未预期的错误: {}", e.getMessage(), e);
-            throw new IOException("上传图片时发生未预期错误: " + e.getMessage(), e);
-        }
-        log.info("成功上传文件 {} 到 MinIO，Key 为 {}", file.getOriginalFilename(), objectKey);
 
         return imageData;
     }
@@ -197,6 +213,126 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
         return new BatchUploadResult(successfulUploads, failedFiles);
     }
 
+    /**
+     * 【新增方法】生成水印图并上传到 MinIO 水印桶。
+     *
+     * @param originalStream 原图的输入流
+     * @param originalKey 原图的对象 Key
+     * @param contentType 原图的 MIME 类型
+     * @return 水印图的公开访问 URL
+     * @throws Exception 图片处理或 MinIO 上传失败
+     */
+//    private String generateAndUploadWatermark(InputStream originalStream, String originalKey, String contentType) throws Exception {
+//        // TODO：实现此功能
+//        // 1. 假设调用图片处理工具生成水印后的图片字节数组
+//        // byte[] watermarkedBytes = ImageProcessor.generateWatermark(originalStream);
+//
+//        // 仅作示例：此处跳过实际的图片处理，直接使用一个空字节数组
+//        byte[] watermarkedBytes = originalStream.readAllBytes();
+//
+//        String watermarkKey = "watermark-" + originalKey;
+//
+//        // 2. 将水印图片上传到 Watermark 桶
+//        try (InputStream watermarkedStream = new ByteArrayInputStream(watermarkedBytes)) {
+//            minioClient.putObject(PutObjectArgs.builder()
+//                    .bucket(BUCKET_WATERMARK)
+//                    .object(watermarkKey)
+//                    .stream(watermarkedStream, watermarkedBytes.length, -1)
+//                    .contentType(contentType) // 保持原图的 Content-Type
+//                    .build());
+//            // log.info("成功上传水印图到 MinIO，Key: {}", watermarkKey);
+//        }
+//
+//        // 3. 返回水印图的公开访问 URL
+//        return minioExternalUrl + BUCKET_WATERMARK + "/" + watermarkKey;
+//    }
+
+    /**
+     * 【专业库实现】从图片流中提取 EXIF、地理位置和色彩信息。
+     * * @param stream 图片输入流，将被消耗。
+     * @param imageData 待填充的实体
+     */
+    private void extractAndSetMetadata(InputStream stream, ImageData imageData) {
+
+        try {
+            // 1. 使用 metadata-extractor 读取所有元数据
+            Metadata metadata = ImageMetadataReader.readMetadata(stream);
+
+            // 2. EXIF 摄影参数提取
+            ExifIFD0Directory exifIFD0 = metadata.getFirstDirectoryOfType(ExifIFD0Directory.class);
+            ExifSubIFDDirectory exifSub = metadata.getFirstDirectoryOfType(ExifSubIFDDirectory.class);
+
+            if (exifIFD0 != null) {
+                // 相机厂商和型号
+                imageData.setCameraMake(exifIFD0.getString(ExifIFD0Directory.TAG_MAKE));
+                imageData.setCameraModel(exifIFD0.getString(ExifIFD0Directory.TAG_MODEL));
+            }
+
+            if (exifSub != null) {
+                // 镜头型号
+                imageData.setLensModel(exifSub.getString(ExifSubIFDDirectory.TAG_LENS_MODEL));
+                // 焦距
+                if (exifSub.containsTag(ExifSubIFDDirectory.TAG_FOCAL_LENGTH)) {
+                    imageData.setFocalLength(exifSub.getRational(ExifSubIFDDirectory.TAG_FOCAL_LENGTH).toString());
+                }
+                // 光圈 (FNumber)
+                if (exifSub.containsTag(ExifSubIFDDirectory.TAG_FNUMBER)) {
+                    imageData.setAperture("f/" + exifSub.getRational(ExifSubIFDDirectory.TAG_FNUMBER).toString());
+                }
+                // 快门速度
+                if (exifSub.containsTag(ExifSubIFDDirectory.TAG_SHUTTER_SPEED)) {
+                    imageData.setShutterSpeed(exifSub.getRational(ExifSubIFDDirectory.TAG_EXPOSURE_TIME).toString());
+                }
+                // ISO
+                if (exifSub.containsTag(ExifSubIFDDirectory.TAG_ISO_EQUIVALENT)) {
+                    imageData.setIso(exifSub.getInteger(ExifSubIFDDirectory.TAG_ISO_EQUIVALENT));
+                }
+                // 拍摄时间
+                Date shootDate = exifSub.getDate(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL);
+                if (shootDate != null) {
+                    imageData.setShootTime(shootDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime());
+                }
+            }
+
+            // 3. 地理位置 (GPS) 提取
+            GpsDirectory gpsDir = metadata.getFirstDirectoryOfType(GpsDirectory.class);
+            if (gpsDir != null) {
+                GeoLocation location = gpsDir.getGeoLocation();
+                if (location != null && !location.isZero()) {
+                    imageData.setLatitude(BigDecimal.valueOf(location.getLatitude()));
+                    imageData.setLongitude(BigDecimal.valueOf(location.getLongitude()));
+                    // Location Name 需要调用逆地理编码 API (如 Google Maps, Baidu Maps)，此处无法实现，保持模拟或空
+                    imageData.setLocationName(null);
+                }
+            }
+
+            // 4. 其他元数据 (宽度/高度)
+            JpegDirectory jpegDir = metadata.getFirstDirectoryOfType(JpegDirectory.class);
+            if (jpegDir != null) {
+                imageData.setWidth(jpegDir.getImageWidth());
+                imageData.setHeight(jpegDir.getImageHeight());
+            }
+
+        } catch (Exception e) {
+            log.warn("提取 EXIF/GPS 元数据失败: {}", e.getMessage());
+            // 忽略元数据提取失败，继续下一步
+        }
+
+        // 5. 分类、标签、色彩 (模拟或默认)
+        if (imageData.getDominantColor() == null) {
+            // 真实的色彩分析逻辑非常复杂，此处仅用默认值填充
+            // imageData.setDominantColor(calculateDominantColor(new ByteArrayInputStream(imageBytes)));
+            imageData.setDominantColor("#FFFFFF");
+        }
+
+
+        // 统计字段（数据库已有默认值，此处可选择不设或设为 0L）
+        imageData.setViewCount(0L);
+        imageData.setDownloadCount(0L);
+        imageData.setLikeCount(0L);
+    }
+
+
     @Override
     public ImageData getImageData(String imageId) {
         // 使用 Mybatis Plus ServiceImpl 提供的 getById 方法
@@ -210,7 +346,7 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
 
         // 确保 minioExternalUrl 不以斜杠结尾，MinioUrl 以斜杠开头
         String url = minioExternalUrl.endsWith("/") ? minioExternalUrl.substring(0, minioExternalUrl.length() - 1) : minioExternalUrl;
-        imageData.setMinioUrl(url + imageData.getMinioUrl());
+        imageData.setOriginMinioUrl(url + imageData.getOriginMinioUrl());
 
         return imageData;
     }
@@ -251,7 +387,7 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
         try {
             minioInputStream = minioClient.getObject(
                     GetObjectArgs.builder()
-                            .bucket(bucketName)
+                            .bucket(privateBucketName)
                             .object(imageData.getMinioKey())
                             .build());
             log.info("成功从 MinIO 取得对象流，Key: {}", imageData.getMinioKey());
@@ -321,7 +457,7 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
         try {
             InputStream inputStream = minioClient.getObject(
                     GetObjectArgs.builder()
-                            .bucket(bucketName)
+                            .bucket(privateBucketName)
                             .object(imageData.getMinioKey())
                             .build());
             log.info("成功从 MinIO 取得对象流，Key: {}", imageData.getMinioKey());
@@ -374,7 +510,7 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
             try {
                 InputStream inputStream = minioClient.getObject(
                         GetObjectArgs.builder()
-                                .bucket(bucketName)
+                                .bucket(privateBucketName)
                                 .object(imageData.getMinioKey())
                                 .build());
                 log.info("成功从 MinIO 取得用户 {} 的对象流，Key: {}", userId, imageData.getMinioKey());
@@ -422,15 +558,15 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
             }
 
             // 拼接完整的 URL
-            String fullUrl = baseUrl + imageData.getMinioUrl();
+            String fullUrl = baseUrl + imageData.getOriginMinioUrl();
 
             // 更新当前 ImageData 对象的 MinioUrl，以便返回给前端
             // 注意：这只修改了内存中的对象，没有修改数据库
-            imageData.setMinioUrl(fullUrl);
+            imageData.setOriginMinioUrl(fullUrl);
 
             urlDataList.add(new ImageUrlData(
                     imageData.getImageId(),
-                    imageData.getMinioUrl(), // 使用拼接好的完整 URL
+                    imageData.getOriginMinioUrl(), // 使用拼接好的完整 URL
                     imageData.getFileName(),
                     imageData.getUserId(),
                     imageData.getContentType(),

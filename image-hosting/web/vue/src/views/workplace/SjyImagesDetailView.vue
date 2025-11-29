@@ -1,11 +1,5 @@
 <template>
   <div class="min-h-screen w-full h-full relative transition-colors">
-
-    <!-- <div class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-      <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-400/20 blur-[100px]"></div>
-      <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-400/20 blur-[100px]"></div>
-    </div> -->
-
     <div class="relative z-10 container mx-auto px-4 py-1 max-w-6xl">
       <div class="flex items-center justify-between mb-8 gap-4">
         <div class="flex items-center gap-4">
@@ -23,13 +17,13 @@
       <div v-else-if="error" class="w-full text-center text-red-500">加载图片详情失败: {{ error.message }}</div>
 
       <div v-else-if="imageDetail" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="md:col-span-2 bg-slate-100 rounded-2xl shadow-sm border border-slate-100 overflow-hidden dark:bg-slate-800 dark:border-slate-700">
+        <div class="md:col-span-2 bg-slate-100 rounded-2xl shadow-xl border border-slate-100 overflow-hidden dark:bg-slate-800 dark:border-slate-700">
           <div class="relative w-full aspect-[4/3] bg-white overflow-hidden dark:bg-slate-900 dark:border-slate-700">
-            <img :src="imageDetail.minioUrl" :alt="imageDetail.fileName" class="w-full h-full object-contain dark:bg-white/5" />
+            <img :src="imageDetail.originMinioUrl" :alt="imageDetail.fileName" class="w-full h-full object-contain dark:bg-white/5" />
           </div>
         </div>
 
-        <div class="md:col-span-1 bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col justify-between dark:bg-slate-800 dark:border-slate-700">
+        <div class="md:col-span-1 bg-white rounded-2xl shadow-xl border border-slate-100 p-6 flex flex-col justify-between dark:bg-slate-800 dark:border-slate-700">
           <div>
             <div class="flex items-start justify-between gap-2 mb-2">
               <div class="flex-grow min-w-0">
@@ -43,7 +37,6 @@
                   {{ imageDetail.fileName }}
                 </h2>
               </div>
-
               <button @click="toggleEditMode" 
                       :disabled="isUpdating"
                       class="flex-shrink-0 p-2 ml-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
@@ -70,34 +63,35 @@
             </div>
 
             <div class="space-y-2 text-sm text-slate-500 dark:text-slate-300 border-t border-slate-100 dark:border-slate-700 pt-4">
-              <div><span class="font-medium text-slate-700 dark:text-slate-200">图片ID:</span> {{ imageDetail.imageId }}</div>
-              <div><span class="font-medium text-slate-700 dark:text-slate-200">类型:</span> {{ imageDetail.contentType }}</div>
-              <div><span class="font-medium text-slate-700 dark:text-slate-200">大小:</span> {{ formatBytes(imageDetail.size) }}</div>
-              <div><span class="font-medium text-slate-700 dark:text-slate-200">上传用户:</span> {{ imageDetail.userId }}</div>
-              
-              <div class="flex items-center h-6">
-                <span class="font-medium text-slate-700 dark:text-slate-200 mr-2">公开:</span>
+              <div class="grid grid-cols-1 gap-y-4">
+                <div><span class="font-medium text-slate-700 dark:text-slate-200">图片ID:</span> {{ imageDetail.imageId}}</div>
+                <div><span class="font-medium text-slate-700 dark:text-slate-200">上传用户:</span> {{ imageDetail.userId}}</div>
+                <div><span class="font-medium text-slate-700 dark:text-slate-200">类型:</span> {{ imageDetail.contentType }}</div>
+                <div><span class="font-medium text-slate-700 dark:text-slate-200">大小:</span> {{ formatBytes(imageDetail.size) }}</div>
+                <div><span class="font-medium text-slate-700 dark:text-slate-200">尺寸:</span> {{ imageDetail.width }}x{{ imageDetail.height }}</div>
                 
-                <div v-if="isEditing" @click.stop>
-                   <el-switch 
-                      v-model="editForm.isPublic" 
-                      size="small"
-                      style="--el-switch-on-color: #6366f1; --el-switch-off-color: #94a3b8"
-                   />
-                   <span class="ml-2 text-xs text-slate-400">{{ editForm.isPublic ? '公开可见' : '私有' }}</span>
+                <div class="flex items-center">
+                  <span class="font-medium text-slate-700 dark:text-slate-200 mr-2">公开:</span>
+                  <div v-if="isEditing" @click.stop>
+                     <el-switch 
+                        v-model="editForm.isPublic" 
+                        size="small"
+                        style="--el-switch-on-color: #6366f1; --el-switch-off-color: #94a3b8"
+                     />
+                     <span class="ml-2 text-xs text-slate-400">{{ editForm.isPublic ? '公开可见' : '私有' }}</span>
+                  </div>
+                  <span v-else class="ml-1">{{ imageDetail.isPublic ? '是' : '否' }}</span>
                 </div>
-                
-                <span v-else class="ml-1">{{ imageDetail.isPublic ? '是' : '否' }}</span>
               </div>
               
               <div v-if="imageDetail.uploadTime"><span class="font-medium text-slate-700 dark:text-slate-200">上传时间:</span> {{ formatTimestamp(imageDetail.uploadTime) }}</div>
             </div>
-            </div>
+          </div>
 
           <div class="mt-6 flex flex-col gap-3">
             <button @click="downloadImage(imageDetail)" class="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-500/20 font-medium transition-all duration-200 -translate-y-0 hover:shadow-md dark:hover:shadow-green-500/20">
               <ArrowDownTrayIcon class="w-5 h-5" />
-              下载图片
+              下载原图
             </button>
 
             <button @click="showMintDialog" class="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 font-medium transition-all duration-200 -translate-y-0 hover:shadow-md dark:hover:shadow-indigo-500/20">
@@ -113,50 +107,179 @@
         </div>
       </div>
 
-      <div v-if="imageDetail" class="mt-8 bg-white rounded-2xl shadow-sm border border-slate-100 p-6 dark:bg-slate-800 dark:border-slate-700">
-        <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-4">使用链接</h3>
+      <div v-if="imageDetail" class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div v-for="(label, idx) in ['直链','Markdown','HTML','BBCode','CSS 背景图']" :key="idx">
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{{ label }}:</label>
-            <div class="flex items-center gap-2">
-              <input type="text" :value="getLinkByLabel(label)" readonly class="flex-grow rounded-lg px-3 py-2 text-sm bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-200 truncate border border-slate-200 dark:border-slate-700" />
-              <button @click="copyToClipboard(getLinkByLabel(label))" class="px-3 py-2 rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 text-sm">复制</button>
+        <div class="md:col-span-2 bg-white rounded-2xl shadow-xl border border-slate-100 p-6 dark:bg-slate-800 dark:border-slate-700">
+          <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-4">扩展元数据</h3>
+          
+          <div class="flex border-b border-slate-200 dark:border-slate-700 mb-4">
+            <button v-for="tab in ['EXIF/相机', 'GPS/位置', '统计/分析']" 
+                    :key="tab"
+                    @click="activeTab = tab"
+                    class="py-2 px-4 text-sm font-medium transition-colors"
+                    :class="activeTab === tab 
+                        ? 'text-indigo-600 border-b-2 border-indigo-600 dark:text-indigo-400 dark:border-indigo-400'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'">
+              {{ tab }}
+            </button>
+          </div>
+
+          <div class="space-y-4 text-sm text-slate-600 dark:text-slate-300">
+            <div v-if="activeTab === 'EXIF/相机'" class="grid grid-cols-2 gap-4">
+              <div class="flex flex-col">
+                <span class="font-medium text-slate-700 dark:text-slate-200">相机厂商 (Make):</span>
+                <span class="text-xs">{{ imageDetail.cameraMake || 'N/A' }}</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="font-medium text-slate-700 dark:text-slate-200">相机型号 (Model):</span>
+                <span class="text-xs">{{ imageDetail.cameraModel || 'N/A' }}</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="font-medium text-slate-700 dark:text-slate-200">镜头型号 (Lens):</span>
+                <span class="text-xs">{{ imageDetail.lensModel || 'N/A' }}</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="font-medium text-slate-700 dark:text-slate-200">拍摄时间 (Time):</span>
+                <span class="text-xs">{{ formatTimestamp(imageDetail.shootTime) }}</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="font-medium text-slate-700 dark:text-slate-200">焦距 (Focal Length):</span>
+                <span class="text-xs">{{ formatFocalLength(imageDetail.focalLength) }}</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="font-medium text-slate-700 dark:text-slate-200">光圈 (Aperture):</span>
+                <span class="text-xs">{{ formatAperture(imageDetail.aperture) }}</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="font-medium text-slate-700 dark:text-slate-200">快门速度 (Shutter Speed):</span>
+                <span class="text-xs">{{ formatShutterSpeed(imageDetail.shutterSpeed) }}</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="font-medium text-slate-700 dark:text-slate-200">感光度 (ISO):</span>
+                <span class="text-xs">{{ imageDetail.iso || 'N/A' }}</span>
+              </div>
+            </div>
+
+            <div v-else-if="activeTab === 'GPS/位置'" class="grid grid-cols-2 gap-4">
+              <div class="flex flex-col col-span-2">
+                <span class="font-medium text-slate-700 dark:text-slate-200">位置名称 (Name):</span>
+                <span class="text-xs">{{ imageDetail.locationName || '未标记位置信息' }}</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="font-medium text-slate-700 dark:text-slate-200">纬度 (Latitude):</span>
+                <span class="text-xs">{{ imageDetail.latitude || 'N/A' }}</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="font-medium text-slate-700 dark:text-slate-200">经度 (Longitude):</span>
+                <span class="text-xs">{{ imageDetail.longitude || 'N/A' }}</span>
+              </div>
+              <div class="col-span-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+                 <a v-if="imageDetail.latitude && imageDetail.longitude" 
+                    :href="getMapLink(imageDetail.latitude, imageDetail.longitude)" 
+                    target="_blank" 
+                    class="text-indigo-500 hover:text-indigo-400 font-medium text-xs flex items-center gap-1">
+                    在地图上查看位置
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10.828 10l-4.95-4.95a.75.75 0 011.06-1.06l5.5 5.5a.75.75 0 010 1.06l-5.5 5.5a.75.75 0 11-1.06-1.06L10.828 10z" clip-rule="evenodd" /></svg>
+                 </a>
+              </div>
+            </div>
+
+            <div v-else-if="activeTab === '统计/分析'" class="grid grid-cols-2 gap-4">
+              <div class="flex flex-col">
+                <span class="font-medium text-slate-700 dark:text-slate-200">浏览次数 (Views):</span>
+                <span class="text-xs">{{ imageDetail.viewCount !== undefined ? imageDetail.viewCount.toLocaleString() : '0' }}</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="font-medium text-slate-700 dark:text-slate-200">下载次数 (Downloads):</span>
+                <span class="text-xs">{{ imageDetail.downloadCount !== undefined ? imageDetail.downloadCount.toLocaleString() : '0' }}</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="font-medium text-slate-700 dark:text-slate-200">点赞次数 (Likes):</span>
+                <span class="text-xs">{{ imageDetail.likeCount !== undefined ? imageDetail.likeCount.toLocaleString() : '0' }}</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="font-medium text-slate-700 dark:text-slate-200">图片分类 (Category):</span>
+                <span class="text-xs">{{ imageDetail.category || '未分类' }}</span>
+              </div>
+              
+              <div class="flex flex-col col-span-2">
+                <span class="font-medium text-slate-700 dark:text-slate-200">主色调 (Dominant Color):</span>
+                <div class="flex items-center gap-2 mt-1">
+                  <div class="w-8 h-4 rounded-sm border border-slate-300 dark:border-slate-600" :style="{ backgroundColor: imageDetail.dominantColor || '#ffffff' }"></div>
+                  <span class="text-xs font-mono">{{ imageDetail.dominantColor || 'N/A' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="md:col-span-1 bg-white rounded-2xl shadow-xl border border-slate-100 p-6 dark:bg-slate-800 dark:border-slate-700">
+          <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-4">使用链接</h3>
+          <div class="space-y-4">
+            <div v-for="(label, idx) in ['直链','Markdown','HTML','BBCode','CSS 背景图']" :key="idx">
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{{ label }}:</label>
+              <div class="flex items-center gap-2">
+                <input type="text" :value="getLinkByLabel(label)" readonly class="flex-grow rounded-lg px-3 py-2 text-sm bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-200 truncate border border-slate-200 dark:border-slate-700" />
+                <button @click="copyToClipboard(getLinkByLabel(label))" class="px-3 py-2 rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 text-sm duration-200">复制</button>
+              </div>
             </div>
           </div>
         </div>
       </div>
-
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, reactive } from 'vue'; // 引入 reactive
-import { useRoute } from 'vue-router';
-import { useRouter } from 'vue-router';
+import { ref, watch, reactive } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import service from '@/utils/request';
 import { API_BASE_URL } from '@/config';
-import { ElMessage } from 'element-plus';
-import { ElMessageBox } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import { useUserStore } from '@/stores/user';
-import { mintNFT } from '@/api/nft';
-// === 引入 Heroicons 的 PencilSquareIcon 和 CheckIcon ===
 import { ArrowDownTrayIcon, SparklesIcon, TrashIcon, PencilSquareIcon, CheckIcon } from '@heroicons/vue/24/outline';
 
-// 接口定义
+// === 1. 扩展接口定义 (新增所有 EXIF/GPS/Analysis 字段) ===
 interface Image {
+  // 基础信息
   imageId: string;
-  minioUrl: string;
+  originMinioUrl: string;
   fileName: string;
   userId: string;
   contentType: string;
   size: number;
   isPublic: boolean;
   description: string | null;
-  uploadTime?: string;
+  uploadTime?: string; // 基础时间
+
+  // 尺寸
+  width: number | null;
+  height: number | null;
+
+  // EXIF 元数据
+  cameraMake: string | null;
+  cameraModel: string | null;
+  lensModel: string | null;
+  focalLength: string | null; // e.g. "50.0 mm"
+  aperture: string | null; // e.g. "f/2.8"
+  shutterSpeed: string | null; // e.g. "1/100s"
+  iso: number | null;
+  shootTime: string | null; // 专业的拍摄时间，后端可能是 LocalDateTime/String
+
+  // 地理位置
+  locationName: string | null;
+  latitude: number | null;
+  longitude: number | null;
+
+  // 统计与分类
+  viewCount: number | null;
+  downloadCount: number | null;
+  likeCount: number | null;
+  category: string | null;
+  dominantColor: string | null; // e.g. "#001B4B"
 }
 
+// === 2. 状态定义 ===
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
@@ -165,24 +288,24 @@ const loading = ref(true);
 const error = ref<Error | null>(null);
 const isDeleting = ref(false);
 
-// === ✨ 新增状态：编辑相关 ===
+// 编辑状态
 const isEditing = ref(false);
-const isUpdating = ref(false); // 保存操作的 loading 状态
-// 编辑表单数据
+const isUpdating = ref(false); 
 const editForm = reactive({
     fileName: '',
     description: '',
     isPublic: false
 });
 
-// === ✨ 业务逻辑：切换编辑模式/保存 ===
+// 新增：元数据 Tab 状态
+const activeTab = ref('EXIF/相机');
+
+// === 3. 核心业务逻辑 (保持不变或微调) ===
+
 const toggleEditMode = async () => {
-    // 1. 如果当前是编辑模式，点击则意味着“保存”
     if (isEditing.value) {
         await handleUpdateImage();
     } else {
-        // 2. 如果当前是查看模式，点击则进入“编辑”
-        // 初始化表单数据
         if (imageDetail.value) {
             editForm.fileName = imageDetail.value.fileName;
             editForm.description = imageDetail.value.description || '';
@@ -192,11 +315,9 @@ const toggleEditMode = async () => {
     }
 };
 
-// === ✨ 业务逻辑：提交更新到 API ===
 const handleUpdateImage = async () => {
     if (!imageDetail.value) return;
     
-    // 简单校验
     if (!editForm.fileName.trim()) {
         ElMessage.warning('文件名不能为空');
         return;
@@ -205,17 +326,14 @@ const handleUpdateImage = async () => {
     isUpdating.value = true;
 
     try {
-        // 构建 FormData，适配后端的 @ModelAttribute
         const formData = new FormData();
         formData.append('imageId', imageDetail.value.imageId);
         formData.append('fileName', editForm.fileName);
         formData.append('description', editForm.description);
         formData.append('isPublic', editForm.isPublic.toString());
-        // 如果需要其他字段，继续 append
 
         const updateUrl = `${API_BASE_URL}/api/images/update`;
         
-        // 发送 POST 请求
         const responseData = await service.post(updateUrl, formData);
 
         if (responseData.code === 200) {
@@ -226,21 +344,18 @@ const handleUpdateImage = async () => {
             imageDetail.value.description = editForm.description;
             imageDetail.value.isPublic = editForm.isPublic;
             
-            // 退出编辑模式
             isEditing.value = false;
         } else {
             ElMessage.error(responseData.msg || '修改失败');
         }
     } catch (err: any) {
         console.error('更新图片信息失败:', err);
-        // service 拦截器通常会处理错误弹窗，这里可省略
     } finally {
         isUpdating.value = false;
     }
 };
 
-// ... 原有的下载、删除、复制、Mint 逻辑保持不变 ...
-
+// ... 原有的下载、删除、Mint 逻辑保持不变 ...
 const downloadImage = (image: Image) => {
   if (!image || !image.imageId || !image.fileName) {
     ElMessage.warning('图片信息不完整，无法下载。');
@@ -282,14 +397,15 @@ const deleteImage = async (image: Image) => {
 
   } catch (error: any) {
     if (error !== 'cancel') {
-       console.error('图片删除请求或确认框错误:', error);
+        console.error('图片删除请求或确认框错误:', error);
     } 
   } finally {
     isDeleting.value = false;
   }
 };
 
-// ... Helper functions ...
+
+// === 4. 辅助函数 (新增 GPS 链接) ===
 const formatBytes = (bytes: number | undefined, decimals = 2): string => {
   if (bytes === undefined || bytes === null || bytes === 0) return '0 Bytes';
   const k = 1024;
@@ -302,6 +418,7 @@ const formatBytes = (bytes: number | undefined, decimals = 2): string => {
 const formatTimestamp = (timestamp: string | undefined): string => {
   if (!timestamp) return '未知时间';
   try {
+    // 尝试解析 ISO 格式的字符串 (LocalDateTime)
     const date = new Date(timestamp);
     if (isNaN(date.getTime())) return '无效时间';
     const year = date.getFullYear();
@@ -313,6 +430,91 @@ const formatTimestamp = (timestamp: string | undefined): string => {
   } catch (error) {
     return '格式错误';
   }
+};
+
+// === 5. EXIF 格式化辅助函数 (新增) ===
+
+/**
+ * 通用 EXIF 分数格式化函数
+ * 接收 "Numerator/Denominator" 字符串，返回精确的小数值。
+ */
+const formatExifValue = (value: string | null): number | null => {
+    if (!value || typeof value !== 'string') return null;
+
+    // 检查是否包含分数形式
+    if (value.includes('/')) {
+        const parts = value.split('/').map(p => parseFloat(p.trim()));
+        const numerator = parts[0];
+        const denominator = parts[1];
+        
+        // 确保分子和分母都是有效的数字且分母不为零
+        if (isFinite(numerator) && isFinite(denominator) && denominator !== 0) {
+            return numerator / denominator;
+        }
+    }
+    
+    // 如果不是分数形式，尝试直接解析为浮点数
+    const num = parseFloat(value.trim());
+    return isFinite(num) ? num : null;
+};
+
+/**
+ * 格式化焦距 (Focal Length)
+ * @param value "560/10"
+ * @returns "56mm" 或 "N/A"
+ */
+const formatFocalLength = (value: string | null): string => {
+    const num = formatExifValue(value);
+    if (num === null) return 'N/A';
+    
+    // 焦距通常保留整数或一位小数
+    return `${num.toFixed(0)}mm`; 
+};
+
+/**
+ * 格式化光圈 (Aperture)
+ * @param value "f/18/10" 或 "1.8" (虽然您的数据是 "18/10"，但需处理前缀)
+ * @returns "f/1.8" 或 "N/A"
+ */
+const formatAperture = (value: string | null): string => {
+    let rawValue = value;
+    // 移除可能存在的 "f/" 前缀
+    if (rawValue && rawValue.toLowerCase().startsWith('f/')) {
+        rawValue = rawValue.substring(2);
+    }
+    
+    const num = formatExifValue(rawValue);
+    if (num === null) return 'N/A';
+    
+    // 光圈值通常保留一位小数
+    return `f/${num.toFixed(1)}`;
+};
+
+/**
+ * 格式化快门速度 (Shutter Speed)
+ * @param value "9321928/1000000"
+ * @returns "1/640s" 或 "N/A"
+ */
+const formatShutterSpeed = (value: string | null): string => {
+    const num = formatExifValue(value);
+    if (num === null) return 'N/A';
+    
+    // 快门速度：
+    // 如果值小于 1 秒，表示为分数形式 1/N
+    if (num < 1) {
+        // 计算分母的倒数，并四舍五入到最近的整百/整十以便美观，例如 0.0015625 -> 1/640
+        // 这里采用简单的倒数取整
+        const denominator = Math.round(1 / num);
+        // 如果倒数结果为 1，则表示 1/1s
+        if (denominator === 1) return `1s`;
+        
+        return `1/${denominator}s`;
+    } 
+    // 如果值大于等于 1 秒
+    else {
+        // 保留一位小数并加上 's'
+        return `${num.toFixed(1)}s`;
+    }
 };
 
 const copyToClipboard = async (text: string) => {
@@ -327,7 +529,7 @@ const copyToClipboard = async (text: string) => {
 
 const getLinkByLabel = (label: string) => {
   if (!imageDetail.value) return '';
-  const url = imageDetail.value.minioUrl || '';
+  const url = imageDetail.value.originMinioUrl || '';
   const fileName = imageDetail.value.fileName || 'image';
   switch (label) {
     case '直链': return url;
@@ -339,6 +541,14 @@ const getLinkByLabel = (label: string) => {
   }
 };
 
+/**
+ * 生成 Google Maps 链接，方便用户跳转查看 GPS 位置
+ */
+const getMapLink = (lat: number, lon: number): string => {
+    // 使用 Google Maps 链接作为通用链接
+    return `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
+};
+
 const fetchImageDetail = async (imageId: string) => {
   loading.value = true;
   error.value = null;
@@ -346,13 +556,15 @@ const fetchImageDetail = async (imageId: string) => {
 
   const storedImage = userStore.findImageById(imageId);
   if (storedImage) {
-    imageDetail.value = storedImage;
+    // 需要确保storedImage包含所有扩展字段
+    imageDetail.value = storedImage as Image; 
     loading.value = false;
   } else {
     const apiUrl = `${API_BASE_URL}/api/images/${imageId}`;
     try {
       const responseData = await service.get(apiUrl);
       if (responseData.code === 200 && responseData.data) {
+        // 确保从后端获取的数据类型正确
         imageDetail.value = responseData.data as Image;
       } else {
         error.value = new Error(responseData.msg || '获取图片详情失败');
@@ -377,7 +589,7 @@ watch(() => route.params.imageId, (newImageId) => {
   }
 }, { immediate: true });
 
-// NFT Minting logic
+// NFT Minting logic (保持不变)
 const mintDialogVisible = ref(false);
 const minting = ref(false);
 const mintFormRef = ref();
@@ -391,7 +603,6 @@ const showMintDialog = () => {
   mintDialogVisible.value = true;
 };
 
-// ... NFT minting logic omitted for brevity as it was not changed ...
 </script>
 
 <style scoped>

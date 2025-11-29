@@ -11,8 +11,8 @@ spring:
     active: shuomc
   servlet:
     multipart:
-      max-file-size: 10MB
-      max-request-size: 20MB
+      max-file-size: 50MB
+      max-request-size: 100MB
   mail:
     host: smtp.qq.com
     port: 587
@@ -56,7 +56,8 @@ minio:
   endpoint: http://localhost:19000  # Your MinIO server endpoint
   accessKey: minioadmin      # Your MinIO access key
   secretKey: minioadmin      # Your MinIO secret key
-  bucketName: image    # The bucket where you'll store images
+  publicBucketName: image-watermark
+  privateBucketName: image-origin
   external-url: http://localhost:19000 # 外部访问连接，用于拼接返回前端，取决于minio服务部署地址
 
 # 区块链系统配置

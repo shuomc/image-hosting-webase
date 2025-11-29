@@ -71,7 +71,7 @@
                @click="goToImageDetail(image)">
 
                <div class="relative w-full aspect-[4/3] bg-slate-100 dark:bg-slate-900 overflow-hidden">
-                 <img :src="image.minioUrl" :alt="image.fileName"
+                 <img :src="image.originalMinioUrl" :alt="image.fileName"
                    class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                  
                  <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -128,7 +128,7 @@
                      
                      <td class="px-6 py-3">
                        <div class="w-12 h-12 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-                         <img :src="image.minioUrl" class="w-full h-full object-cover" loading="lazy">
+                         <img :src="image.originalMinioUrl" class="w-full h-full object-cover" loading="lazy">
                        </div>
                      </td>
                      
@@ -197,7 +197,7 @@ import 'element-plus/dist/index.css';
 // 定义接口
 interface Image {
   imageId: string;
-  minioUrl: string;
+  originalMinioUrl: string;
   fileName: string;
   userId: string;
   contentType: string;
@@ -217,10 +217,7 @@ const loading = ref(false);
 const userStore = useUserStore();
 const router = useRouter();
 
-// 列表视图不使用 Element Plus 的 Switch，提供简单切换函数
-// 注意：我们在 Template 中使用了 Element Switch 来保持风格一致，
-// 但在 Table 模式下，Element Switch 可能会因为父容器颜色问题显示不明显，
-// 所以我们在 Table 模式下使用了 Tailwind 颜色类来适配。
+// ... 其他函数和状态保持不变 ...
 
 // 生命周期：挂载
 onMounted(async () => {
@@ -234,7 +231,7 @@ onMounted(async () => {
       if (responseData.code === 200 && Array.isArray(responseData.data)) {
         imageList.value = responseData.data.map((item: any) => ({
           imageId: item.imageId,
-          minioUrl: item.minioUrl,
+          originalMinioUrl: item.originalMinioUrl,
           fileName: item.fileName,
           userId: item.userId,
           contentType: item.contentType,
@@ -258,10 +255,11 @@ onMounted(async () => {
   }
 });
 
+// ⭐ 主要修改点：只进行路由跳转，不再依赖本地缓存。
 // 跳转详情
 const goToImageDetail = (image: Image) => {
   if (image && image.imageId) {
-    userStore.setSelectedImage(image);
+    // 移除 useUserStore().setSelectedImage(image) 依赖
     router.push({ name: 'ImageDetail', params: { imageId: image.imageId } });
   } else {
     ElMessage.warning('图片信息不完整');
@@ -270,16 +268,19 @@ const goToImageDetail = (image: Image) => {
 
 // 切换布局
 const setLayout = (layout: 'grid' | 'list') => {
+// ... 保持不变 ...
   currentLayout.value = layout;
 };
 
 // 前往上传页
 const goUpload = () => {
+// ... 保持不变 ...
   router.push({ name: 'UploadImage' });
 };
 
 // 工具函数：格式化字节
 const formatBytes = (bytes: number | undefined, decimals = 2): string => {
+// ... 保持不变 ...
   if (bytes === undefined || bytes === null || bytes === 0) return '0 B';
   const k = 1024;
   const dm = decimals < 0 ? 0 : decimals;
@@ -290,6 +291,7 @@ const formatBytes = (bytes: number | undefined, decimals = 2): string => {
 
 // 工具函数：格式化时间
 const formatTimestamp = (timestamp: string | undefined): string => {
+// ... 保持不变 ...
   if (!timestamp) return '未知时间';
   try {
     const date = new Date(timestamp);
@@ -307,6 +309,7 @@ const formatTimestamp = (timestamp: string | undefined): string => {
 
 // 业务逻辑：切换公开状态
 const handleTogglePublicStatus = async (image: Image, newStatus: boolean) => {
+// ... 保持不变 ...
   const originalStatus = !newStatus;
   // 乐观更新
   image.isPublic = newStatus; 
@@ -335,6 +338,7 @@ const handleTogglePublicStatus = async (image: Image, newStatus: boolean) => {
 
 // 业务逻辑：下载
 const downloadImage = (image: Image) => {
+// ... 保持不变 ...
   if (!image || !image.imageId || !image.fileName) {
     ElMessage.warning('无法下载：信息不完整');
     return;
@@ -350,6 +354,7 @@ const downloadImage = (image: Image) => {
 
 // 业务逻辑：删除
 const deleteImage = async (image: Image) => {
+// ... 保持不变 ...
   if (!image || !image.imageId) return;
 
   try {

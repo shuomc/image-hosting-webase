@@ -22,16 +22,21 @@ public class UserInfo extends BaseEntity {
     @TableField(typeHandler = EncryptTypeHandler.class)
     private String userEmail;
     private String userRole;
+    /**
+     * 区块链钱包地址，对应字段 blockchain_address
+     */
+    private String blockchainAddress;
 
     public UserInfo() {
     }
 
-    public UserInfo(String userId, String userName, String password, String userEmail, String userRole) {
+    public UserInfo(String userId, String userName, String password, String userEmail, String userRole, String blockchainAddress) {
         this.userId = userId;
         this.userName = userName;
         this.password = password;
         this.userEmail = userEmail;
         this.userRole = userRole;
+        this.blockchainAddress = blockchainAddress;
     }
 
     public String getUserId() {
@@ -74,6 +79,14 @@ public class UserInfo extends BaseEntity {
         this.userRole = userRole;
     }
 
+    public String getBlockchainAddress() {
+        return blockchainAddress;
+    }
+
+    public void setBlockchainAddress(String blockchainAddress) {
+        this.blockchainAddress = blockchainAddress;
+    }
+
     @Override
     public String toString() {
         return "UserInfo{" +
@@ -82,6 +95,7 @@ public class UserInfo extends BaseEntity {
                 ", password='" + password + '\'' +
                 ", userEmail='" + userEmail + '\'' +
                 ", userRole='" + userRole + '\'' +
+                ", blockchainAddress='" + blockchainAddress + '\'' +
                 '}';
     }
 }

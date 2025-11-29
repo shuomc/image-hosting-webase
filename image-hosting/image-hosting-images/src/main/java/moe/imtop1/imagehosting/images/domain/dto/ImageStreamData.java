@@ -22,7 +22,7 @@ public class ImageStreamData {
 
     private String contentType;
 
-    private Integer size;
+    private Long size;
 
     private String fileName;
 }

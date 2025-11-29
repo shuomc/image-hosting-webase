@@ -33,8 +33,8 @@ public class ImageCacheServiceImpl implements ImageCacheService{
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
 
-    @Value("${minio.bucketName}")
-    private String bucketName;
+    @Value("${minio.privateBucketName}")
+    private String privateBucketName;
 
     private static final String REDIS_KEY_PREFIX = "minio:object:";
     private static final long REDIS_EXPIRATION_TIME_SECONDS = 3600;
@@ -55,7 +55,7 @@ public class ImageCacheServiceImpl implements ImageCacheService{
 
             // 从 Minio 获取对象信息
             GetObjectArgs getObjectArgs = GetObjectArgs.builder()
-                    .bucket(bucketName)
+                    .bucket(privateBucketName)
                     .object(objectName)
                     .build();
 

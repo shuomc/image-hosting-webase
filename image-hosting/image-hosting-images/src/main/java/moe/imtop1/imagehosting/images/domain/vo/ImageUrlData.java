@@ -14,11 +14,12 @@ import lombok.*;
 @NoArgsConstructor
 public class ImageUrlData {
     private String imageId;
-    private String minioUrl;
+    // TODO：water
+    private String originalMinioUrl;
     private String fileName;
     private String userId;
     private String contentType;
-    private Integer size;
+    private Long size;
     private Boolean isPublic;
     private String description;
 }
