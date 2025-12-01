@@ -19,7 +19,7 @@
       <div v-else-if="imageDetail" class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div class="md:col-span-2 bg-slate-100 rounded-2xl shadow-xl border border-slate-100 overflow-hidden dark:bg-slate-800 dark:border-slate-700">
           <div class="relative w-full aspect-[4/3] bg-white overflow-hidden dark:bg-slate-900 dark:border-slate-700">
-            <img :src="imageDetail.originMinioUrl" :alt="imageDetail.fileName" class="w-full h-full object-contain dark:bg-white/5" />
+            <img :src="imageDetail.thumbnailMinioUrl" :alt="imageDetail.fileName" class="w-full h-full object-contain dark:bg-white/5" />
           </div>
         </div>
 
@@ -243,6 +243,8 @@ import { ArrowDownTrayIcon, SparklesIcon, TrashIcon, PencilSquareIcon, CheckIcon
 interface Image {
   // 基础信息
   imageId: string;
+  thumbnailMinioUrl: string;
+  watermarkMinioUrl: string;
   originMinioUrl: string;
   fileName: string;
   userId: string;
@@ -529,7 +531,7 @@ const copyToClipboard = async (text: string) => {
 
 const getLinkByLabel = (label: string) => {
   if (!imageDetail.value) return '';
-  const url = imageDetail.value.originMinioUrl || '';
+  const url = imageDetail.value.watermarkMinioUrl || '';
   const fileName = imageDetail.value.fileName || 'image';
   switch (label) {
     case '直链': return url;

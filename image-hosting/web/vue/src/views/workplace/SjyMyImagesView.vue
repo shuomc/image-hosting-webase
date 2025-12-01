@@ -71,7 +71,7 @@
                @click="goToImageDetail(image)">
 
                <div class="relative w-full aspect-[4/3] bg-slate-100 dark:bg-slate-900 overflow-hidden">
-                 <img :src="image.originalMinioUrl" :alt="image.fileName"
+                 <img :src="image.thumbnailMinioUrl" :alt="image.fileName"
                    class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                  
                  <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -128,7 +128,7 @@
                      
                      <td class="px-6 py-3">
                        <div class="w-12 h-12 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-                         <img :src="image.originalMinioUrl" class="w-full h-full object-cover" loading="lazy">
+                         <img :src="image.thumbnailMinioUrl" class="w-full h-full object-cover" loading="lazy">
                        </div>
                      </td>
                      
@@ -197,7 +197,8 @@ import 'element-plus/dist/index.css';
 // 定义接口
 interface Image {
   imageId: string;
-  originalMinioUrl: string;
+  thumbnailMinioUrl: string;
+  watermarkMinioUrl: string;
   fileName: string;
   userId: string;
   contentType: string;
@@ -231,7 +232,8 @@ onMounted(async () => {
       if (responseData.code === 200 && Array.isArray(responseData.data)) {
         imageList.value = responseData.data.map((item: any) => ({
           imageId: item.imageId,
-          originalMinioUrl: item.originalMinioUrl,
+          thumbnailMinioUrl: item.thumbnailMinioUrl,
+          watermarkMinioUrl: item.watermarkMinioUrl,
           fileName: item.fileName,
           userId: item.userId,
           contentType: item.contentType,

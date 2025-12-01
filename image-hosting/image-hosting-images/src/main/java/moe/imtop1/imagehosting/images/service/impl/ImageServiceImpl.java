@@ -30,6 +30,7 @@ import moe.imtop1.imagehosting.images.mapper.ImageDataMapper;
 //import moe.imtop1.imagehosting.images.mapper.ImageMapper;
 import moe.imtop1.imagehosting.images.mapper.ImageMapper;
 import moe.imtop1.imagehosting.images.service.ImageService;
+import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -42,6 +43,7 @@ import java.math.BigDecimal;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -66,15 +68,23 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
 
     private final MinioClient minioClient; // Minio 客户端
 
+    // 缩略图配置
+    private static final int THUMBNAIL_MAX_SIZE = 800;
+    private static final float THUMBNAIL_QUALITY = 0.8f;
+    private static final String THUMBNAIL_OUTPUT_FORMAT = "jpg";  // 缩略图格式强制jpg
+
     private final RedisCache redisCache; // 注入 RedisCache
     private static final Integer CACHE_EXPIRATION_SECONDS = 600; // 10 分钟
 
     // 从 application.properties 或 application.yml 读取配置值
-    @Value("${minio.publicBucketName}")
-    private String publicBucketName;    // 水印图
+    @Value("${minio.originBucket}")
+    private String originBucket;    // 原图
 
-    @Value("${minio.privateBucketName}")
-    private String privateBucketName;   // 原图
+    @Value("${minio.thumbnailBucket}")
+    private String thumbnailBucket;   // 缩略图
+
+    @Value("${minio.watermarkBucket}")
+    private String watermarkBucket;   // 水印图
 
     @Value("${minio.external-url}")
     private String minioExternalUrl;
@@ -94,57 +104,60 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
      */
     @Override
     public ImageData uploadImage(MultipartFile file, ImageData imageDataDTO) throws IOException {
-        // 创建要存储到数据库的 ImageData 对象
+        // 1. 数据准备
         ImageData imageData = new ImageData();
         byte[] fileBytes = file.getBytes();
 
-        // 1. 生成唯一的图片 ID
+        // 安全提取扩展名
+        String fileExtension = FileUtil.getExtensionWithDotFromFilename(file.getOriginalFilename());
+
+        // 2. 生成唯一的图片 ID
         imageData.setImageId(UUID.randomUUID().toString());
 
-        // 2. 设置其他元数据
+        // 3. 设置核心元数据
         imageData.setUserId(imageDataDTO.getUserId());
-        imageData.setFileName(file.getOriginalFilename());
+        imageData.setFileName(file.getOriginalFilename()); // 原始文件名仍需存储在数据库
         imageData.setSize(file.getSize());
         imageData.setContentType(file.getContentType());
-        imageData.setIsPublic(imageDataDTO.getIsPublic() != null ? imageDataDTO.getIsPublic() : false); // 默认私有
-        // TODO： 前端添加分类
-        imageData.setCategory("Uncategorized");
+        imageData.setIsPublic(imageDataDTO.getIsPublic() != null ? imageDataDTO.getIsPublic() : false);
+        imageData.setCategory(imageDataDTO.getCategory() != null ? imageDataDTO.getCategory() : "Uncategorized");
         imageData.setDescription(imageDataDTO.getDescription());
-        imageData.setAuditStatus(0); // 默认待审核
+        imageData.setAuditStatus(0);
 
-        // 2. 设置 MinIO 的对象 Key 和 URL
+        // 4. 生成 MinIO Keys 和 URLs (Key 格式: {userId}/{imageId}.{ext})
         String userIdForPath = (imageDataDTO.getUserId() != null && !imageDataDTO.getUserId().isEmpty()) ? imageDataDTO.getUserId() : "public";
-        String objectKey = userIdForPath + "/" + imageData.getImageId() + "-" + file.getOriginalFilename();
-        imageData.setMinioKey(objectKey);
-        // 设置原图Url,不设置水印图Url
-        imageData.setOriginMinioUrl("/" + privateBucketName + "/" + objectKey);
-        imageData.setWatermarkMinioUrl(null);
 
-        // 3. 上传文件到 MinIO 原图桶，并提取元数据
+        // 原始图 Key (ORIGIN_KEY)
+        String originObjectKey = userIdForPath + "/" + imageData.getImageId() + fileExtension;
+
+        imageData.setOriginMinioKey(originObjectKey);
+        imageData.setOriginMinioUrl("/" + originBucket + "/" + originObjectKey); // 私有桶 URL
+
+        // 5. 上传原图到 MinIO 私有桶
         try (InputStream originalStream = new ByteArrayInputStream(fileBytes)) {
-
-            // 上传原图
             minioClient.putObject(PutObjectArgs.builder()
-                    .bucket(privateBucketName)
-                    .object(objectKey)
+                    .bucket(originBucket)
+                    .object(originObjectKey)
                     .stream(originalStream, file.getSize(), -1)
                     .contentType(file.getContentType())
                     .build());
-            log.info("成功上传原图到 MinIO，Key: {}", objectKey);
+            log.info("成功上传原图到 MinIO，Key: {}", originObjectKey);
 
         } catch (MinioException | InvalidKeyException | NoSuchAlgorithmException e) {
-             log.error("MinIO 操作失败: {}", e.getMessage(), e);
-            log.info("MinIO_Bucket:{}", privateBucketName);
-             throw new ServiceException(ResultCodeEnum.IMAGE_STORAGE_ERROR);
+            log.error("MinIO 操作失败: {}", e.getMessage(), e);
+            throw new ServiceException(ResultCodeEnum.IMAGE_STORAGE_ERROR);
         }
 
-        // 4. 提取并设置所有其他元数据（EXIF、地理、色彩等）
+        // 6. 处理并上传缩略图到 MinIO 公有缩略图桶
+        createAndUploadThumbnail(fileBytes, imageData, userIdForPath, fileExtension);
+
+        // 7. 提取并设置所有其他元数据（EXIF、地理、色彩等）
         // 使用新的流进行元数据分析
         try (InputStream metadataStream = new ByteArrayInputStream(fileBytes)) {
             extractAndSetMetadata(metadataStream, imageData);
         }
 
-        // 5. 将完整的元数据插入数据库
+        // 8. 将完整的元数据插入数据库
         boolean saved = this.save(imageData);
         if (!saved) {
             log.error("无法将图片元数据存储到数据库，imageId: {}", imageData.getImageId());
@@ -214,6 +227,64 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
     }
 
     /**
+     * 处理原图字节数组，生成缩略图并上传到 MinIO 公有桶。
+     *
+     * @param fileBytes 原图的字节数组
+     * @param imageData 待更新的图片数据实体
+     * @param userIdForPath 用于 MinIO 路径的用户 ID
+     * @param fileExtension 原图的扩展名（包含点）
+     */
+    private void createAndUploadThumbnail(byte[] fileBytes, ImageData imageData, String userIdForPath, String fileExtension) {
+        // 缩略图 Key 格式: {userId}/thumb_{imageId}.jpg (强制使用 JPG 格式)
+        String thumbnailKey = userIdForPath + "/thumb_" + imageData.getImageId() + "." + THUMBNAIL_OUTPUT_FORMAT;
+        String publicUrl = "/" + thumbnailBucket + "/" + thumbnailKey;
+
+        try (InputStream originalStream = new ByteArrayInputStream(fileBytes);
+             // 1. 创建 ByteArrayOutputStream 作为缓冲区
+             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+
+            // 2. 使用 Thumbnailator 处理并写入到 ByteArrayOutputStream
+            Thumbnails.of(originalStream)
+                    .size(THUMBNAIL_MAX_SIZE, THUMBNAIL_MAX_SIZE)
+                    .outputFormat(THUMBNAIL_OUTPUT_FORMAT)
+                    .outputQuality(THUMBNAIL_QUALITY)
+                    //写入到缓冲区
+                    .toOutputStream(baos);
+
+            // 3. 将缓冲区内容转换为字节数组和 InputStream
+            byte[] thumbnailBytes = baos.toByteArray();
+            long thumbnailSize = thumbnailBytes.length;
+
+            try (InputStream thumbnailStream = new ByteArrayInputStream(thumbnailBytes)) {
+
+                // 5. 上传缩略图到 MinIO 公有桶
+                minioClient.putObject(PutObjectArgs.builder()
+                        .bucket(thumbnailBucket) // 存储到公共缩略图桶
+                        .object(thumbnailKey)
+                        .stream(thumbnailStream, thumbnailSize, -1)
+                        .contentType("image/" + THUMBNAIL_OUTPUT_FORMAT)
+                        .build());
+            } // 内部流在此关闭
+
+            log.info("成功上传缩略图到 MinIO，Key: {}", thumbnailKey);
+
+            // 6. 更新 ImageData 字段
+            imageData.setThumbnailMinioKey(thumbnailKey);
+            imageData.setThumbnailMinioUrl(publicUrl);
+
+        } catch (IOException e) {
+            log.warn("图片处理失败，ID: {}，可能原因: 文件损坏或I/O错误。", imageData.getImageId(), e);
+        } catch (MinioException | InvalidKeyException | NoSuchAlgorithmException e) {
+            log.error("MinIO 缩略图上传失败，Key: {}", thumbnailKey, e);
+        } catch (Exception e) {
+            // 捕获所有其他 Thumbnailator 可能抛出的异常，例如格式不支持
+            log.error("缩略图处理发生未知错误，Key: {}，原因：{}", thumbnailKey, e.getMessage());
+        }
+
+        // 如果处理失败，相关的 MinIO Key/URL 字段将保持为 null，不影响原图上传。
+    }
+
+    /**
      * 【新增方法】生成水印图并上传到 MinIO 水印桶。
      *
      * @param originalStream 原图的输入流
@@ -280,7 +351,7 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
                     imageData.setAperture("f/" + exifSub.getRational(ExifSubIFDDirectory.TAG_FNUMBER).toString());
                 }
                 // 快门速度
-                if (exifSub.containsTag(ExifSubIFDDirectory.TAG_SHUTTER_SPEED)) {
+                if (exifSub.containsTag(ExifSubIFDDirectory.TAG_EXPOSURE_TIME)) {
                     imageData.setShutterSpeed(exifSub.getRational(ExifSubIFDDirectory.TAG_EXPOSURE_TIME).toString());
                 }
                 // ISO
@@ -290,7 +361,8 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
                 // 拍摄时间
                 Date shootDate = exifSub.getDate(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL);
                 if (shootDate != null) {
-                    imageData.setShootTime(shootDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime());
+                    // 消除系统时区（UTC+8）带来的额外偏移。
+                    imageData.setShootTime(shootDate.toInstant().atZone(ZoneOffset.UTC).toLocalDateTime());
                 }
             }
 
@@ -347,7 +419,10 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
         // 确保 minioExternalUrl 不以斜杠结尾，MinioUrl 以斜杠开头
         String url = minioExternalUrl.endsWith("/") ? minioExternalUrl.substring(0, minioExternalUrl.length() - 1) : minioExternalUrl;
         imageData.setOriginMinioUrl(url + imageData.getOriginMinioUrl());
-
+        imageData.setThumbnailMinioUrl(url + imageData.getThumbnailMinioUrl());
+        if(imageData.getWatermarkMinioUrl() != null){
+            imageData.setWatermarkMinioUrl(imageData.getWatermarkMinioUrl());
+        }
         return imageData;
     }
 
@@ -377,37 +452,37 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
         }
 
         // 4. 检查必要的元数据
-        if (StringUtil.isNull(imageData.getMinioKey()) || StringUtil.isNull(imageData.getContentType())) {
-            log.error("图片元数据不完整 (缺少 minioKey 或 contentType)，imageId: {}", imageId);
-            throw new ServiceException("图片数据不完整，无法提供文件流，imageId: " + imageId);
-        }
-
-        // 5. 从 MinIO 获取对象输入流
-        InputStream minioInputStream;
-        try {
-            minioInputStream = minioClient.getObject(
-                    GetObjectArgs.builder()
-                            .bucket(privateBucketName)
-                            .object(imageData.getMinioKey())
-                            .build());
-            log.info("成功从 MinIO 取得对象流，Key: {}", imageData.getMinioKey());
-        } catch (MinioException e) {
-            log.error("从 MinIO 获取对象流时发生 MinioException，Key {}: {}", imageData.getMinioKey(), e.getMessage(), e);
-            throw new ServiceException("无法从存储体获取图片: " + e.getMessage(), e);
-        } catch (InvalidKeyException | NoSuchAlgorithmException | IOException e) {
-            log.error("从 MinIO 获取对象流时发生错误，Key {}: {}", imageData.getMinioKey(), e.getMessage(), e);
-            throw new ServiceException("获取图片流时发生错误: " + e.getMessage(), e);
-        } catch (Exception e) {
-            log.error("从 MinIO 获取对象流时发生未预期错误，Key {}: {}", imageData.getMinioKey(), e.getMessage(), e);
-            throw new ServiceException("获取图片时发生未预期错误: " + e.getMessage(), e);
-        }
+//        if (StringUtil.isNull(imageData.getMinioKey()) || StringUtil.isNull(imageData.getContentType())) {
+//            log.error("图片元数据不完整 (缺少 minioKey 或 contentType)，imageId: {}", imageId);
+//            throw new ServiceException("图片数据不完整，无法提供文件流，imageId: " + imageId);
+//        }
+//
+//        // 5. 从 MinIO 获取对象输入流
+//        InputStream minioInputStream;
+//        try {
+//            minioInputStream = minioClient.getObject(
+//                    GetObjectArgs.builder()
+//                            .bucket(thumbnailBucket)
+//                            .object(imageData.getMinioKey())
+//                            .build());
+//            log.info("成功从 MinIO 取得对象流，Key: {}", imageData.getMinioKey());
+//        } catch (MinioException e) {
+//            log.error("从 MinIO 获取对象流时发生 MinioException，Key {}: {}", imageData.getMinioKey(), e.getMessage(), e);
+//            throw new ServiceException("无法从存储体获取图片: " + e.getMessage(), e);
+//        } catch (InvalidKeyException | NoSuchAlgorithmException | IOException e) {
+//            log.error("从 MinIO 获取对象流时发生错误，Key {}: {}", imageData.getMinioKey(), e.getMessage(), e);
+//            throw new ServiceException("获取图片流时发生错误: " + e.getMessage(), e);
+//        } catch (Exception e) {
+//            log.error("从 MinIO 获取对象流时发生未预期错误，Key {}: {}", imageData.getMinioKey(), e.getMessage(), e);
+//            throw new ServiceException("获取图片时发生未预期错误: " + e.getMessage(), e);
+//        }
 
         // 6. 创建 ImageStreamData 对象
         ImageStreamData streamData = new ImageStreamData();
-        streamData.setInputStream(minioInputStream);
-        streamData.setContentType(imageData.getContentType());
-        streamData.setSize(imageData.getSize());
-        streamData.setFileName(imageData.getFileName());
+//        streamData.setInputStream(minioInputStream);
+//        streamData.setContentType(imageData.getContentType());
+//        streamData.setSize(imageData.getSize());
+//        streamData.setFileName(imageData.getFileName());
 
         // 7. 移除完整的 ImageStreamData 缓存逻辑
 
@@ -434,7 +509,7 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
         return this.list(queryWrapper);
     }
 
-    //使用此方法获取图像
+    //使用此方法获取原图
     @Override
     public ImageStreamData getMinioImageById(String imageId) {
         // 1. 从数据库获取元数据
@@ -447,7 +522,7 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
         }
 
         // 3. 检查必要的元数据是否存在
-        if (StringUtil.isNull(imageData.getMinioKey()) || StringUtil.isNull(imageData.getContentType())) {
+        if (StringUtil.isNull(imageData.getOriginMinioKey()) || StringUtil.isNull(imageData.getContentType())) {
             log.error("图片元数据不完整 (缺少 minioKey 或 contentType)，imageId: {}", imageId);
             // 数据不一致，应该抛出异常
             throw new ServiceException("图片数据不完整，无法提供文件流，imageId: " + imageId);
@@ -457,10 +532,10 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
         try {
             InputStream inputStream = minioClient.getObject(
                     GetObjectArgs.builder()
-                            .bucket(privateBucketName)
-                            .object(imageData.getMinioKey())
+                            .bucket(originBucket)
+                            .object(imageData.getOriginMinioKey())
                             .build());
-            log.info("成功从 MinIO 取得对象流，Key: {}", imageData.getMinioKey());
+            log.info("成功从 MinIO 取得对象流，Key: {}", imageData.getOriginMinioKey());
 
             // 5. 创建并返回 ImageStreamData DTO
             return new ImageStreamData(
@@ -470,14 +545,14 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
                     imageData.getFileName()     // 从数据库读取的原始文件名
             );
         } catch (MinioException e) {
-            log.error("从 MinIO 获取对象流时发生 MinioException，Key {}: {}", imageData.getMinioKey(), e.getMessage(), e);
+            log.error("从 MinIO 获取对象流时发生 MinioException，Key {}: {}", imageData.getOriginMinioKey(), e.getMessage(), e);
             // 将 MinIO 异常包装成服务层异常
             throw new ServiceException("无法从存储体获取图片: " + e.getMessage(), e);
         } catch (InvalidKeyException | NoSuchAlgorithmException | IOException e) {
-            log.error("从 MinIO 获取对象流时发生错误，Key {}: {}", imageData.getMinioKey(), e.getMessage(), e);
+            log.error("从 MinIO 获取对象流时发生错误，Key {}: {}", imageData.getOriginMinioKey(), e.getMessage(), e);
             throw new ServiceException("获取图片流时发生错误: " + e.getMessage(), e);
         } catch (Exception e) { // 捕捉其他未预期的异常
-            log.error("从 MinIO 获取对象流时发生未预期错误，Key {}: {}", imageData.getMinioKey(), e.getMessage(), e);
+            log.error("从 MinIO 获取对象流时发生未预期错误，Key {}: {}", imageData.getOriginMinioKey(), e.getMessage(), e);
             throw new ServiceException("获取图片时发生未预期错误: " + e.getMessage(), e);
         }
         // 注意：这里获取的 InputStream 不需要手动关闭，
@@ -485,6 +560,7 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
         // Spring 会在响应完成后自动关闭它。
     }
 
+    // 获取缩略图列表
     @Override
     public List<ImageStreamData> getMinioImagesByUserId(String userId) {
         // 1. 从数据库查询 userId 对应的图片数据列表
@@ -501,7 +577,7 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
 
         // 2. 遍历图片数据列表，从 MinIO 获取每个图片的流
         for (ImageData imageData : imageDataList) {
-            if (StringUtil.isNull(imageData.getMinioKey()) || StringUtil.isNull(imageData.getContentType())) {
+            if (StringUtil.isNull(imageData.getThumbnailMinioKey()) || StringUtil.isNull(imageData.getContentType())) {
                 log.error("图片元数据不完整 (缺少 minioKey 或 contentType)，imageId: {}", imageData.getImageId());
                 // 可以选择跳过当前图片或抛出异常，这里选择跳过并记录
                 continue;
@@ -510,10 +586,10 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
             try {
                 InputStream inputStream = minioClient.getObject(
                         GetObjectArgs.builder()
-                                .bucket(privateBucketName)
-                                .object(imageData.getMinioKey())
+                                .bucket(thumbnailBucket)
+                                .object(imageData.getThumbnailMinioKey())
                                 .build());
-                log.info("成功从 MinIO 取得用户 {} 的对象流，Key: {}", userId, imageData.getMinioKey());
+                log.info("成功从 MinIO 取得用户 {} 的对象流，Key: {}", userId, imageData.getThumbnailMinioKey());
 
                 streamDataList.add(new ImageStreamData(
                         inputStream,
@@ -523,19 +599,20 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
                 ));
 
             } catch (MinioException e) {
-                log.error("从 MinIO 获取用户 {} 的对象流时发生 MinioException，Key {}: {}", userId, imageData.getMinioKey(), e.getMessage(), e);
+                log.error("从 MinIO 获取用户 {} 的对象流时发生 MinioException，Key {}: {}", userId, imageData.getThumbnailMinioKey(), e.getMessage(), e);
                 // 可以选择继续处理其他图片或抛出异常，这里选择继续
             } catch (InvalidKeyException | NoSuchAlgorithmException | IOException e) {
-                log.error("从 MinIO 获取用户 {} 的对象流时发生错误，Key {}: {}", userId, imageData.getMinioKey(), e.getMessage(), e);
+                log.error("从 MinIO 获取用户 {} 的对象流时发生错误，Key {}: {}", userId, imageData.getThumbnailMinioKey(), e.getMessage(), e);
                 // 可以选择继续处理其他图片或抛出异常，这里选择继续
             } catch (Exception e) {
-                log.error("从 MinIO 获取用户 {} 的对象流时发生未预期错误，Key {}: {}", userId, imageData.getMinioKey(), e.getMessage(), e);
+                log.error("从 MinIO 获取用户 {} 的对象流时发生未预期错误，Key {}: {}", userId, imageData.getThumbnailMinioKey(), e.getMessage(), e);
                 // 可以选择继续处理其他图片或抛出异常，这里选择继续
             }
         }
         return streamDataList;
     }
 
+    // 根据用户Id返回urlList
     @Override
     public List<ImageUrlData> getMinioImageUrlListByUserId(String userId) {
         List<ImageData> imageDataList = this.list(new QueryWrapper<ImageData>()
@@ -552,21 +629,22 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
 
         List<ImageUrlData> urlDataList = new ArrayList<>();
         for (ImageData imageData : imageDataList) {
-            if (StringUtil.isNull(imageData.getMinioKey()) || StringUtil.isNull(imageData.getContentType())) {
+            if (StringUtil.isNull(imageData.getThumbnailMinioKey()) || StringUtil.isNull(imageData.getContentType())) {
                 log.error("图片元数据不完整 (缺少 minioKey 或 contentType)，imageId: {}", imageData.getImageId());
                 continue;
             }
 
             // 拼接完整的 URL
-            String fullUrl = baseUrl + imageData.getOriginMinioUrl();
+            String fullUrl = baseUrl + imageData.getThumbnailMinioUrl();
 
             // 更新当前 ImageData 对象的 MinioUrl，以便返回给前端
             // 注意：这只修改了内存中的对象，没有修改数据库
-            imageData.setOriginMinioUrl(fullUrl);
+            imageData.setThumbnailMinioUrl(fullUrl);
 
             urlDataList.add(new ImageUrlData(
                     imageData.getImageId(),
-                    imageData.getOriginMinioUrl(), // 使用拼接好的完整 URL
+                    imageData.getThumbnailMinioUrl(), // 使用拼接好的完整 URL
+                    imageData.getWatermarkMinioUrl(),
                     imageData.getFileName(),
                     imageData.getUserId(),
                     imageData.getContentType(),
@@ -574,7 +652,7 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
                     imageData.getIsPublic(),
                     imageData.getDescription()
             ));
-            log.info("成功从 MinIO 取得用户 {} 的对象Url_json，Key: {}", userId, imageData.getMinioKey());
+            log.info("成功从 MinIO 取得用户 {} 的对象Url_json，Key: {}", userId, imageData.getThumbnailMinioKey());
         }
         return urlDataList;
     }

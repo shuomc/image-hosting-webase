@@ -14,8 +14,8 @@ import lombok.*;
 @NoArgsConstructor
 public class ImageUrlData {
     private String imageId;
-    // TODO：water
-    private String originalMinioUrl;
+    private String thumbnailMinioUrl;
+    private String watermarkMinioUrl;
     private String fileName;
     private String userId;
     private String contentType;

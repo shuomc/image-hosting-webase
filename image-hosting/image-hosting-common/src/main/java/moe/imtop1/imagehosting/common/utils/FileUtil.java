@@ -42,6 +42,25 @@ public class FileUtil {
     }
 
     /**
+     * 从给定的文件名中提取文件扩展名（包含开头的点）。
+     *
+     * @param filename 要提取扩展名的文件名。
+     * @return 文件的扩展名（包含点），如果文件名为 null 或者不包含扩展名，则返回空字符串。
+     */
+    public static String getExtensionWithDotFromFilename(String filename) {
+        if (filename == null || filename.isEmpty()) {
+            return "";
+        }
+        int lastDotIndex = filename.lastIndexOf('.');
+
+        // 确保有点，且点不在开头或末尾（避免返回 "." 或 ".gitignore" 这种Key）
+        if (lastDotIndex > 0 && lastDotIndex < filename.length() - 1) {
+            return filename.substring(lastDotIndex); // 包含点
+        }
+        return "";
+    }
+
+    /**
      * 获取文件名（不带扩展名）
      * @param fileName 文件名
      * @return 文件名（不带扩展名）

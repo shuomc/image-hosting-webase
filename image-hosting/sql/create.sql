@@ -66,10 +66,15 @@ CREATE TABLE "public"."image_data" (
                                        "size" int8 NOT NULL,                   -- 文件大小 (Bytes)
                                        "content_type" varchar(50) NOT NULL,    -- MIME类型 (image/jpeg)
 
-    -- [存储路径区分]
-                                       "minio_key" varchar(255) NOT NULL,          -- MinIO中的存储对象Key
+-- [存储路径区分]
+                                       "origin_minio_key" varchar(255) NOT NULL,   -- 原图MinIO中的存储对象Key (由 minio_key 重命名)
                                        "origin_minio_url" varchar(255),            -- 原图内部路径 (私有桶，需授权访问)
+
+                                       "watermark_minio_key" varchar(255),         -- 水印图/预览图MinIO Key (新增)
                                        "watermark_minio_url" varchar(255),         -- 水印图/预览图路径 (公共桶，公开访问)
+
+                                       "thumbnail_minio_key" varchar(255),         -- 缩略图MinIO Key (新增)
+                                       "thumbnail_minio_url" varchar(255),         -- 缩略图公共访问URL (新增)
 
     -- [基本信息]
                                        "description" text,                         -- 图片描述
@@ -117,9 +122,13 @@ COMMENT ON COLUMN "public"."image_data"."user_id" IS '上传者用户ID';
 COMMENT ON COLUMN "public"."image_data"."file_name" IS '原始文件名';
 COMMENT ON COLUMN "public"."image_data"."size" IS '文件大小 (Bytes)';
 COMMENT ON COLUMN "public"."image_data"."content_type" IS 'MIME类型 (e.g., image/jpeg)';
-COMMENT ON COLUMN "public"."image_data"."minio_key" IS 'MinIO存储对象Key';
+-- MinIO Key/URL 注释更新
+COMMENT ON COLUMN "public"."image_data"."origin_minio_key" IS '原图的MinIO存储对象Key (高清)';
 COMMENT ON COLUMN "public"."image_data"."origin_minio_url" IS '高清原图的MinIO内部路径，需授权访问';
+COMMENT ON COLUMN "public"."image_data"."watermark_minio_key" IS '带水印预览图的MinIO存储对象Key';
 COMMENT ON COLUMN "public"."image_data"."watermark_minio_url" IS '带水印预览图的公共访问URL';
+COMMENT ON COLUMN "public"."image_data"."thumbnail_minio_key" IS '缩略图的MinIO存储对象Key';
+COMMENT ON COLUMN "public"."image_data"."thumbnail_minio_url" IS '缩略图的公共访问URL';
 COMMENT ON COLUMN "public"."image_data"."description" IS '图片描述';
 COMMENT ON COLUMN "public"."image_data"."is_public" IS '是否公开展示';
 COMMENT ON COLUMN "public"."image_data"."audit_status" IS '审核状态 (0-待审, 1-通过, 2-拒绝)';
@@ -155,6 +164,14 @@ CREATE INDEX "image_data_view_count_index" ON "public"."image_data"("view_count"
 CREATE INDEX "image_data_shoot_time_index" ON "public"."image_data"("shoot_time" DESC);
 CREATE INDEX "image_data_is_delete_index" ON "public"."image_data"("is_delete");
 
+CREATE UNIQUE INDEX "image_data_origin_minio_key_uindex" ON "public"."image_data"("origin_minio_key");
+CREATE INDEX "image_data_origin_minio_url_index" ON "public"."image_data"("origin_minio_url");
+
+CREATE UNIQUE INDEX "image_data_watermark_minio_key_uindex" ON "public"."image_data"("watermark_minio_key");
+CREATE INDEX "image_data_watermark_minio_url_index" ON "public"."image_data"("watermark_minio_url");
+
+CREATE UNIQUE INDEX "image_data_thumbnail_minio_key_uindex" ON "public"."image_data"("thumbnail_minio_key");
+CREATE INDEX "image_data_thumbnail_minio_url_index" ON "public"."image_data"("thumbnail_minio_url");
 
 -- --------------------------------------------------------
 -- 3. 存储策略表 (Strategies)
