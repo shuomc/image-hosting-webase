@@ -17,21 +17,21 @@
       <div v-else-if="error" class="w-full text-center text-red-500">加载图片详情失败: {{ error.message }}</div>
 
       <div v-else-if="imageDetail" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
         <div class="md:col-span-2 bg-slate-100 rounded-2xl shadow-xl border border-slate-100 overflow-hidden dark:bg-slate-800 dark:border-slate-700">
           <div class="relative w-full aspect-[4/3] bg-white overflow-hidden dark:bg-slate-900 dark:border-slate-700">
             <img :src="imageDetail.thumbnailMinioUrl" :alt="imageDetail.fileName" class="w-full h-full object-contain dark:bg-white/5" />
           </div>
         </div>
-
         <div class="md:col-span-1 bg-white rounded-2xl shadow-xl border border-slate-100 p-6 flex flex-col justify-between dark:bg-slate-800 dark:border-slate-700">
           <div>
             <div class="flex items-start justify-between gap-2 mb-2">
               <div class="flex-grow min-w-0">
                 <input v-if="isEditing" 
-                       v-model="editForm.fileName"
-                       type="text"
-                       class="w-full px-2 py-1 text-lg font-bold border rounded-lg outline-none bg-slate-50 border-slate-300 focus:ring-2 focus:ring-indigo-500 dark:bg-slate-900 dark:border-slate-600 dark:text-white"
-                       placeholder="请输入文件名"
+                        v-model="editForm.fileName"
+                        type="text"
+                        class="w-full px-2 py-1 text-lg font-bold border rounded-lg outline-none bg-slate-50 border-slate-300 focus:ring-2 focus:ring-indigo-500 dark:bg-slate-900 dark:border-slate-600 dark:text-white"
+                        placeholder="请输入文件名"
                 />
                 <h2 v-else class="font-bold text-lg text-slate-800 dark:text-white truncate" :title="imageDetail.fileName">
                   {{ imageDetail.fileName }}
@@ -52,10 +52,10 @@
 
             <div class="mb-4">
               <textarea v-if="isEditing"
-                        v-model="editForm.description"
-                        rows="3"
-                        class="w-full px-2 py-2 text-sm border rounded-lg outline-none resize-none bg-slate-50 border-slate-300 focus:ring-2 focus:ring-indigo-500 dark:bg-slate-900 dark:border-slate-600 dark:text-slate-300"
-                        placeholder="请输入图片描述..."
+                         v-model="editForm.description"
+                         rows="3"
+                         class="w-full px-2 py-2 text-sm border rounded-lg outline-none resize-none bg-slate-50 border-slate-300 focus:ring-2 focus:ring-indigo-500 dark:bg-slate-900 dark:border-slate-600 dark:text-slate-300"
+                         placeholder="请输入图片描述..."
               ></textarea>
               <p v-else class="text-sm text-slate-500 dark:text-slate-300 h-auto min-h-[3rem] break-words">
                 {{ imageDetail.description || '暂无描述信息' }}
@@ -73,12 +73,12 @@
                 <div class="flex items-center">
                   <span class="font-medium text-slate-700 dark:text-slate-200 mr-2">公开:</span>
                   <div v-if="isEditing" @click.stop>
-                     <el-switch 
-                        v-model="editForm.isPublic" 
-                        size="small"
-                        style="--el-switch-on-color: #6366f1; --el-switch-off-color: #94a3b8"
-                     />
-                     <span class="ml-2 text-xs text-slate-400">{{ editForm.isPublic ? '公开可见' : '私有' }}</span>
+                       <el-switch 
+                          v-model="editForm.isPublic" 
+                          size="small"
+                          style="--el-switch-on-color: #6366f1; --el-switch-off-color: #94a3b8"
+                      />
+                       <span class="ml-2 text-xs text-slate-400">{{ editForm.isPublic ? '公开可见' : '私有' }}</span>
                   </div>
                   <span v-else class="ml-1">{{ imageDetail.isPublic ? '是' : '否' }}</span>
                 </div>
@@ -89,6 +89,11 @@
           </div>
 
           <div class="mt-6 flex flex-col gap-3">
+            
+            <button @click="showOriginal" class="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-green-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/20 font-medium transition-all duration-200 -translate-y-0 hover:shadow-md dark:hover:shadow-green-500/20">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5C5.636 5 2 12 2 12s3.636 7 10 7 10-7 10-7S18.364 5 12 5z"/><circle cx="12" cy="12" r="3"/></svg>
+              查看原图
+            </button>
             <button @click="downloadImage(imageDetail)" class="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-500/20 font-medium transition-all duration-200 -translate-y-0 hover:shadow-md dark:hover:shadow-green-500/20">
               <ArrowDownTrayIcon class="w-5 h-5" />
               下载原图
@@ -108,7 +113,6 @@
       </div>
 
       <div v-if="imageDetail" class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-
         <div class="md:col-span-2 bg-white rounded-2xl shadow-xl border border-slate-100 p-6 dark:bg-slate-800 dark:border-slate-700">
           <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-4">扩展元数据</h3>
           
@@ -174,13 +178,13 @@
                 <span class="text-xs">{{ imageDetail.longitude || 'N/A' }}</span>
               </div>
               <div class="col-span-2 pt-2 border-t border-slate-100 dark:border-slate-700">
-                 <a v-if="imageDetail.latitude && imageDetail.longitude" 
+                  <a v-if="imageDetail.latitude && imageDetail.longitude" 
                     :href="getMapLink(imageDetail.latitude, imageDetail.longitude)" 
                     target="_blank" 
                     class="text-indigo-500 hover:text-indigo-400 font-medium text-xs flex items-center gap-1">
-                    在地图上查看位置
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10.828 10l-4.95-4.95a.75.75 0 011.06-1.06l5.5 5.5a.75.75 0 010 1.06l-5.5 5.5a.75.75 0 11-1.06-1.06L10.828 10z" clip-rule="evenodd" /></svg>
-                 </a>
+                      在地图上查看位置
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10.828 10l-4.95-4.95a.75.75 0 011.06-1.06l5.5 5.5a.75.75 0 010 1.06l-5.5 5.5a.75.75 0 11-1.06-1.06L10.828 10z" clip-rule="evenodd" /></svg>
+                  </a>
               </div>
             </div>
 
@@ -227,6 +231,78 @@
         </div>
       </div>
     </div>
+
+    <Teleport to="body">
+      <Transition
+        enter-active-class="transition ease-out duration-300"
+        enter-from-class="opacity-0"
+        enter-to-class="opacity-100"
+        leave-active-class="transition ease-in duration-200"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0"
+      >
+        <div v-if="modalVisible" 
+             class="fixed inset-0 z-[1000] flex items-center justify-center p-4 sm:p-8"
+             @click.self="closeModal">
+          
+          <!-- 模糊背景 -->
+          <div class="absolute inset-0 bg-slate-900/95 backdrop-blur-md transition-opacity" @click="closeModal"></div>
+
+          <!-- 关闭按钮 -->
+          <button class="absolute top-4 right-4 sm:top-6 sm:right-6 z-[1010] p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white border border-white/5 backdrop-blur-sm transition-all duration-200 group" 
+                  @click="closeModal"
+                  title="关闭预览">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 transition-transform duration-300 group-hover:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          <!-- 图片容器 -->
+          <div class="relative w-full h-full flex flex-col items-center justify-center pointer-events-none z-10">
+
+            <!-- 加载状态 -->
+            <div v-if="originalImageLoading" class="absolute inset-0 flex items-center justify-center z-20">
+              <div class="flex flex-col items-center gap-3 p-6 rounded-2xl bg-slate-800/50 backdrop-blur-md border border-white/10 shadow-2xl">
+                <svg class="animate-spin h-10 w-10 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span class="text-sm font-medium text-slate-300 tracking-wide">正在加载原图...</span>
+              </div>
+            </div>
+            
+            <!-- 图片本体 -->
+            <img 
+              v-if="presignedUrl"
+              :src="presignedUrl" 
+              :alt="imageDetail?.fileName || 'Original Image'" 
+              class="pointer-events-auto max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl ring-1 ring-white/10 transition-all duration-500 select-none"
+              :class="originalImageLoading ? 'opacity-0 scale-95' : 'opacity-100 scale-100'"
+            />
+
+            <!-- 底部悬浮栏 (文件名 & 下载) -->
+            <div v-if="!originalImageLoading && presignedUrl && imageDetail" 
+                 class="pointer-events-auto mt-6 px-6 py-3 bg-slate-900/80 backdrop-blur-xl rounded-full border border-white/10 flex items-center gap-4 shadow-2xl transition-all hover:bg-slate-900">
+              
+              <span class="text-sm font-medium text-slate-200 max-w-[150px] sm:max-w-[300px] truncate" :title="imageDetail.fileName">
+                {{ imageDetail.fileName }}
+              </span>
+              
+              <div class="w-px h-4 bg-white/20"></div>
+              
+              <a :href="presignedUrl" 
+                 :download="imageDetail.fileName" 
+                 target="_blank"
+                 class="flex items-center gap-1.5 text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors group">
+                 <LinkIcon class="w-4 h-4 transition-transform group-hover:-translate-y-0.5" />
+                 访问图片地址
+              </a>
+            </div>
+
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -237,7 +313,7 @@ import service from '@/utils/request';
 import { API_BASE_URL } from '@/config';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useUserStore } from '@/stores/user';
-import { ArrowDownTrayIcon, SparklesIcon, TrashIcon, PencilSquareIcon, CheckIcon } from '@heroicons/vue/24/outline';
+import { ArrowDownTrayIcon, SparklesIcon, TrashIcon, PencilSquareIcon, CheckIcon, LinkIcon } from '@heroicons/vue/24/outline';
 
 // === 1. 扩展接口定义 (新增所有 EXIF/GPS/Analysis 字段) ===
 interface Image {
@@ -289,6 +365,10 @@ const imageDetail = ref<Image | null>(null);
 const loading = ref(true);
 const error = ref<Error | null>(null);
 const isDeleting = ref(false);
+// **新增：原图模态框状态**
+const modalVisible = ref(false);
+const presignedUrl = ref('');
+const originalImageLoading = ref(false);
 
 // 编辑状态
 const isEditing = ref(false);
@@ -605,8 +685,57 @@ const showMintDialog = () => {
   mintDialogVisible.value = true;
 };
 
+// **新增：获取签名 URL 的核心方法**
+const fetchPresignedUrl = async (imageId: string): Promise<string> => {
+    // 假设您的后端接口是 /api/images/minio/getPresignedUrl
+    const apiUrl = `${API_BASE_URL}/api/images/minio/getPresignedUrl/${imageId}`;
+    try {
+        const responseData = await service.get(apiUrl);
+        if (responseData.code === 200 && responseData.data?.presignedUrl) {
+            return responseData.data.presignedUrl;
+        } else {
+            throw new Error(responseData.msg || '无法获取签名链接');
+        }
+    } catch (err) {
+        console.error('获取签名 URL 失败:', err);
+        ElMessage.error('获取原图链接失败');
+        throw err;
+    }
+};
+
+// **新增：显示原图模态框**
+const showOriginal = async () => {
+    if (!imageDetail.value) return;
+
+    // 由图片id查询key
+    const imageId = imageDetail.value.imageId;
+    if (!imageId) {
+        ElMessage.warning('原图 id 获取失败');
+        return;
+    }
+
+    modalVisible.value = true;
+    originalImageLoading.value = true;
+    presignedUrl.value = '';
+
+    try {
+        const url = await fetchPresignedUrl(imageId);
+        presignedUrl.value = url;
+    } catch (e) {
+        presignedUrl.value = '';
+    } finally {
+        originalImageLoading.value = false;
+    }
+};
+
+// **新增：关闭模态框**
+const closeModal = () => {
+    modalVisible.value = false;
+    presignedUrl.value = ''; // 释放链接
+};
+
 </script>
 
 <style scoped>
-/* 保持原有样式 */
+
 </style>

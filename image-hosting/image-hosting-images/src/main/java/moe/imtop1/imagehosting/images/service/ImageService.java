@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import moe.imtop1.imagehosting.images.domain.ImageData;
 import moe.imtop1.imagehosting.images.domain.dto.BatchUploadResult;
 import moe.imtop1.imagehosting.images.domain.dto.ImageStreamData;
+import moe.imtop1.imagehosting.images.domain.vo.ImagePresignedUrlData;
 import moe.imtop1.imagehosting.images.domain.vo.ImageUrlData;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -28,6 +29,8 @@ public interface ImageService extends IService<ImageData> {
     List<ImageStreamData> getMinioImagesByUserId(String userId);
 
     List<ImageUrlData> getMinioImageUrlListByUserId(String userId);
+
+    ImagePresignedUrlData getPresignedUrl(String imageId);
 
     ImageData updateImageMetadata(ImageData imageData);
 

@@ -12,9 +12,11 @@ import com.drew.metadata.exif.ExifSubIFDDirectory;
 import com.drew.metadata.exif.GpsDirectory;
 import com.drew.metadata.jpeg.JpegDirectory;
 import io.minio.GetObjectArgs;
+import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.errors.MinioException;
+import io.minio.http.Method;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import moe.imtop1.imagehosting.common.enums.ResultCodeEnum;
@@ -25,6 +27,7 @@ import moe.imtop1.imagehosting.framework.utils.RedisCache;
 import moe.imtop1.imagehosting.images.domain.ImageData;
 import moe.imtop1.imagehosting.images.domain.dto.BatchUploadResult;
 import moe.imtop1.imagehosting.images.domain.dto.ImageStreamData;
+import moe.imtop1.imagehosting.images.domain.vo.ImagePresignedUrlData;
 import moe.imtop1.imagehosting.images.domain.vo.ImageUrlData;
 import moe.imtop1.imagehosting.images.mapper.ImageDataMapper;
 //import moe.imtop1.imagehosting.images.mapper.ImageMapper;
@@ -424,6 +427,59 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
             imageData.setWatermarkMinioUrl(imageData.getWatermarkMinioUrl());
         }
         return imageData;
+    }
+
+    @Override
+    public ImagePresignedUrlData getPresignedUrl(String imageId) throws ServiceException {
+        // 设置 URL 的有效期，10分钟
+        final int EXPIRATION_TIME = 10;
+
+        // 假设 ImageData 类和相关的 MinIO 客户端 (minioClient, originBucket) 都是在类中定义的成员变量
+
+        // 查询Key
+        ImageData imageData = null;
+        ImagePresignedUrlData  imagePresignedUrlData = new  ImagePresignedUrlData();
+        try {
+            // 使用 try-catch 捕获可能的数据库查询异常（尽管 one() 更多是返回 null 或依赖其他异常处理）
+            imageData = this.lambdaQuery()
+                    .eq(ImageData::getImageId, imageId) // 根据 imageId 匹配记录
+                    .select(ImageData::getOriginMinioKey) // 仅查询需要的 Key 字段
+                    .one(); // 获取单个结果
+        } catch (Exception e) {
+            // 捕获数据库查询或其他潜在异常
+            // 可以选择记录日志，然后抛出自定义异常或重新抛出
+            log.error("Database query failed for imageId: " + imageId + ". Error: " + e.getMessage());
+            throw new ServiceException("图片信息查询失败", e);
+        }
+
+
+        if (imageData == null) {
+            // 如果查不到记录，说明图片不存在，或者当前用户没有权限访问。
+            throw new ServiceException("图片不存在");
+        }
+
+        try {
+            // 尝试生成预签名 URL
+            String url = minioClient.getPresignedObjectUrl(
+                    GetPresignedObjectUrlArgs.builder()
+                            .method(Method.GET) // 訪問方式為 GET (下載/查看)
+                            .bucket(originBucket)
+                            .object(imageData.getOriginMinioKey())
+                            .expiry(EXPIRATION_TIME, TimeUnit.MINUTES) // 設置有效期
+                            .build()
+            );
+
+            imagePresignedUrlData.setPresignedUrl(url);
+            imagePresignedUrlData.setImageId(imageId);
+
+            return imagePresignedUrlData;
+
+        } catch (Exception e) {
+            // 捕获 MinIO 客户端可能抛出的所有异常（例如网络、权限、配置等）
+            log.error("Failed to get presigned URL for key: " + imageData.getOriginMinioKey() + ". Error: " + e.getMessage());
+            // 将 MinIO 异常包装为更友好的异常并抛出
+            throw new ServiceException("生成预签名 URL 失败", e);
+        }
     }
 
     /**

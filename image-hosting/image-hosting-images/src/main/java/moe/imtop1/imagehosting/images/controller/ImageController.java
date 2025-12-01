@@ -1,6 +1,7 @@
 package moe.imtop1.imagehosting.images.controller;
 
 import moe.imtop1.imagehosting.images.domain.dto.BatchUploadResult;
+import moe.imtop1.imagehosting.images.domain.vo.ImagePresignedUrlData;
 import moe.imtop1.imagehosting.images.domain.vo.ImageUrlData;
 import moe.imtop1.imagehosting.images.service.IMinioService;
 import moe.imtop1.imagehosting.images.service.ImageCacheService;
@@ -16,6 +17,7 @@ import moe.imtop1.imagehosting.common.dto.AjaxResult;
 import moe.imtop1.imagehosting.images.domain.ImageData;
 import moe.imtop1.imagehosting.images.domain.dto.ImageStreamData;
 import moe.imtop1.imagehosting.images.service.ImageService;
+import moe.imtop1.imagehosting.images.domain.vo.ImagePresignedUrlData;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -314,6 +316,29 @@ public class ImageController {
         }
         catch (Exception e) {
             return AjaxResult.error("获取用户图片列表时发生错误，userId=" + userId + ": " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/minio/getPresignedUrl/{imageId}")
+    public AjaxResult getPresignedUrl(@PathVariable String imageId) {
+        // TODO: 先检查redis是否有预签名Url
+
+        try {
+            // 1. 调用 Service 层方法获取预签名 URL
+            ImagePresignedUrlData imagePresignedUrlData = imageService.getPresignedUrl(imageId);
+
+            // TODO: 存入redis
+
+            // 2. 成功，返回包含 Map 数据的 AjaxResult
+            return AjaxResult.success("获取预签名 URL 成功", imagePresignedUrlData);
+
+        } catch (Exception e) {
+
+            // 3. 失败，捕获 Service 层抛出的异常
+            log.error("获取预签名url失败: " + imageId + ". Error: " + e.getMessage());
+
+            // 4. 返回失败信息，使用异常的 message 作为提示
+            return AjaxResult.error(e.getMessage());
         }
     }
 
