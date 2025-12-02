@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -16,13 +17,18 @@ import lombok.Setter;
 @Setter
 @Getter
 @TableName(value = "app_role")
+@Schema(description = "应用角色表")
 public class AppRole {
+    private static final long serialVersionUID = 1L;
+
+    @Schema(description = "角色ID")
     @TableId(value = "role_id", type = IdType.AUTO)
     private Integer roleId;
 
-    @TableField("role_name")
-    private String roleName; // Role name (e.g., 'admin', 'user')
+    @Schema(description = "角色名称 (admin, user)")
+    private String roleName;
 
+    @Schema(description = "角色描述")
     private String description;
 
     public AppRole() {
