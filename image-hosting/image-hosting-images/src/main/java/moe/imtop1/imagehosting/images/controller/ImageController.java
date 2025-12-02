@@ -321,23 +321,44 @@ public class ImageController {
 
     @GetMapping("/minio/getPresignedUrl/{imageId}")
     public AjaxResult getPresignedUrl(@PathVariable String imageId) {
-        // TODO: 先检查redis是否有预签名Url
+        // ----------------------------------------------------
+        // 1. 检查 Redis 缓存
+        // ----------------------------------------------------
+        try {
+            ImagePresignedUrlData cachedData = imageCacheService.getPresignUrlFromRedis(imageId);
+            if (cachedData != null) {
+                log.info("Hit Redis cache for imageId: {}", imageId);
+                return AjaxResult.success("获取预签名 URL 成功 (来自缓存)", cachedData);
+            }
+        } catch (Exception e) {
+            // 缓存读取失败是非致命错误，记录日志后继续执行主业务逻辑（从 MinIO 获取）
+            log.error("Failed to read presigned URL from Redis for imageId: {}", imageId, e);
+        }
+
+        ImagePresignedUrlData imagePresignedUrlData;
 
         try {
-            // 1. 调用 Service 层方法获取预签名 URL
-            ImagePresignedUrlData imagePresignedUrlData = imageService.getPresignedUrl(imageId);
+            // 2. 缓存未命中，调用 Service 层方法获取预签名 URL (e.g., 从 MinIO)
+            imagePresignedUrlData = imageService.getPresignedUrl(imageId);
 
-            // TODO: 存入redis
+            // 3. 成功获取后，存入 Redis
+            if (imagePresignedUrlData != null) {
+                try {
+                    imageCacheService.setPresignUrlFromRedis(imagePresignedUrlData);
+                } catch (Exception e) {
+                    // 非致命错误，只记录日志，不影响主业务的成功返回
+                    log.error("Failed to set presigned URL to Redis for imageId: {}", imageId, e);
+                }
+            }
 
-            // 2. 成功，返回包含 Map 数据的 AjaxResult
+            // 4. 返回主业务成功结果
             return AjaxResult.success("获取预签名 URL 成功", imagePresignedUrlData);
 
         } catch (Exception e) {
+            // 5. 捕获 Service 层抛出的主业务异常 (e.g., MinIO 异常, Image Not Found)
+            log.error("获取预签名url失败: {}. Error: {}", imageId, e.getMessage());
 
-            // 3. 失败，捕获 Service 层抛出的异常
-            log.error("获取预签名url失败: " + imageId + ". Error: " + e.getMessage());
-
-            // 4. 返回失败信息，使用异常的 message 作为提示
+            // 6. 返回失败信息
             return AjaxResult.error(e.getMessage());
         }
     }
