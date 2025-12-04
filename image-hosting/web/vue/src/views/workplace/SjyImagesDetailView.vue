@@ -20,7 +20,7 @@
         
         <div class="md:col-span-2 bg-slate-100 rounded-2xl shadow-xl border border-slate-100 overflow-hidden dark:bg-slate-800 dark:border-slate-700">
           <div class="relative w-full aspect-[4/3] bg-white overflow-hidden dark:bg-slate-900 dark:border-slate-700">
-            <img :src="imageDetail.thumbnailMinioUrl" :alt="imageDetail.fileName" class="w-full h-full object-contain dark:bg-white/5" />
+            <img ref="previewImgRef" :src="imageDetail.thumbnailMinioUrl" :alt="imageDetail.fileName" class="w-full h-full object-contain dark:bg-white/5" />
           </div>
         </div>
         <div class="md:col-span-1 bg-white rounded-2xl shadow-xl border border-slate-100 p-6 flex flex-col justify-between dark:bg-slate-800 dark:border-slate-700">
@@ -99,7 +99,8 @@
               下载原图
             </button>
 
-            <button @click="showMintDialog" class="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 font-medium transition-all duration-200 -translate-y-0 hover:shadow-md dark:hover:shadow-indigo-500/20">
+            <!-- 铸造 NFT 按钮 (逻辑修改) -->
+            <button @click="handleShowMintDialog" class="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 font-medium transition-all duration-200 -translate-y-0 hover:shadow-md dark:hover:shadow-indigo-500/20">
               <SparklesIcon class="w-5 h-5" />
               铸造 NFT
             </button>
@@ -303,6 +304,72 @@
         </div>
       </Transition>
     </Teleport>
+
+    <!-- 模态框 2: 铸造 NFT (新增) -->
+    <Teleport to="body">
+      <Transition enter-active-class="transition ease-out duration-300" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition ease-in duration-200" leave-from-class="opacity-100" leave-to-class="opacity-0">
+        <div v-if="mintDialogVisible" class="fixed inset-0 z-[1000] flex items-center justify-center p-4" @click.self="mintDialogVisible = false">
+          
+          <!-- 背景遮罩 -->
+          <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm transition-opacity" @click="mintDialogVisible = false"></div>
+
+          <!-- 弹窗内容 -->
+          <div class="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-700 transform transition-all z-10">
+            
+            <!-- 标题栏 -->
+            <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
+              <div class="flex items-center gap-2">
+                <div class="p-1.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400">
+                  <SparklesIcon class="w-5 h-5" />
+                </div>
+                <h3 class="text-lg font-bold text-slate-800 dark:text-white">铸造数字资产 (NFT)</h3>
+              </div>
+              <button @click="mintDialogVisible = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+              </button>
+            </div>
+
+            <!-- 表单内容 -->
+            <div class="p-6 space-y-4">
+              <div class="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-lg text-xs text-indigo-600 dark:text-indigo-300">
+                铸造将把此图片的数字指纹写入区块链，确立您的所有权。
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">资产名称</label>
+                <input type="text" v-model="mintForm.name" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="给您的 NFT 起个名字">
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">描述</label>
+                <textarea v-model="mintForm.description" rows="3" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition resize-none" placeholder="描述这个资产..."></textarea>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">初始价格 (ETH)</label>
+                <input type="number" v-model.number="mintForm.price" step="0.0001" min="0" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                <p class="text-xs text-slate-400 mt-1">设置为 0 则表示暂不出售，仅铸造到仓库。</p>
+              </div>
+            </div>
+
+            <!-- 底部按钮 -->
+            <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3">
+              <button @click="mintDialogVisible = false" class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-700 transition text-sm font-medium">取消</button>
+              <button 
+                @click="handleMint" 
+                :disabled="minting"
+                class="px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md hover:shadow-lg hover:from-indigo-500 hover:to-purple-500 transition-all text-sm font-medium flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                <svg v-if="minting" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                {{ minting ? '铸造中...' : '确认铸造' }}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
   </div>
 </template>
 
@@ -314,6 +381,8 @@ import { API_BASE_URL } from '@/config';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useUserStore } from '@/stores/user';
 import { ArrowDownTrayIcon, SparklesIcon, TrashIcon, PencilSquareIcon, CheckIcon, LinkIcon } from '@heroicons/vue/24/outline';
+// 引入 NFT 相关 API (请确保这些已在 api/nft.ts 定义)
+import { checkRegistrationStatus, mintNFT } from '@/api/nft';
 
 // === 1. 扩展接口定义 (新增所有 EXIF/GPS/Analysis 字段) ===
 interface Image {
@@ -381,6 +450,18 @@ const editForm = reactive({
 
 // 新增：元数据 Tab 状态
 const activeTab = ref('EXIF/相机');
+
+// === 新增：铸造相关状态 ===
+const mintDialogVisible = ref(false);
+const minting = ref(false);
+const mintForm = reactive({
+  name: '',
+  description: '',
+  price: 0
+});
+
+// 定义mint图片的引用
+const previewImgRef = ref<HTMLImageElement | null>(null);
 
 // === 3. 核心业务逻辑 (保持不变或微调) ===
 
@@ -486,6 +567,93 @@ const deleteImage = async (image: Image) => {
   }
 };
 
+// === 新增：显示铸造弹窗前的逻辑 ===
+const handleShowMintDialog = async () => {
+  if (!imageDetail.value) return;
+
+  // 1. 检查是否已注册区块链账户
+  try {
+    const res = await checkRegistrationStatus();
+    // 假设 API 返回 { code: 200, data: { isRegistered: true/false } }
+    const isRegistered = res.data && res.data.isRegistered;
+
+    if (isRegistered) {
+      // 已注册 -> 初始化表单并显示弹窗
+      mintForm.name = imageDetail.value.fileName || '';
+      mintForm.description = imageDetail.value.description || '';
+      mintForm.price = 0;
+      mintDialogVisible.value = true;
+    } else {
+      // 未注册 -> 提示跳转
+      ElMessageBox.confirm(
+        '您尚未激活区块链账户，无法进行铸造操作。激活后即可拥有专属钱包地址。',
+        '需要激活账户',
+        {
+          confirmButtonText: '立即激活',
+          cancelButtonText: '稍后再说',
+          type: 'info',
+          center: true
+        }
+      ).then(() => {
+        // 跳转到 MyNFT 页面 (那里有一键激活功能)
+        router.push({ name: 'MyNFT' });
+      }).catch(() => {
+        // 取消操作
+      });
+    }
+  } catch (err) {
+    console.error('检查区块链账户状态失败:', err);
+    ElMessage.error('无法连接区块链服务，请稍后重试');
+  }
+};
+
+// === 执行铸造逻辑 ===
+const handleMint = async () => {
+  if (!imageDetail.value) return;
+  
+  // 1. 从 DOM 元素直接获取 src 
+  let realUrl = previewImgRef.value?.src;
+  
+  // 2. 如果 DOM 没取到，再退回到数据对象获取
+  if (!realUrl) {
+      realUrl = imageDetail.value.thumbnailMinioUrl;
+  }
+  if (!realUrl) {
+      ElMessage.error('无法获取图片链接，请等待图片加载完成或刷新重试');
+      return;
+  }
+  
+  if (!mintForm.name.trim()) {
+    ElMessage.warning('请输入资产名称');
+    return;
+  }
+  if (mintForm.price < 0) {
+    ElMessage.warning('价格不能小于 0');
+    return;
+  }
+
+  minting.value = true;
+  try {
+    const res = await mintNFT({
+      thumbnailMinioUrl: realUrl, // 使用从 DOM 抓取的真实 URL
+      name: mintForm.name,
+      description: mintForm.description,
+      price: mintForm.price
+    });
+
+    if (res.code === 200) {
+      ElMessage.success('铸造请求提交成功！请等待区块链确认。');
+      mintDialogVisible.value = false;
+    } else {
+      ElMessage.error(res.msg || '铸造失败');
+    }
+  } catch (err: any) {
+    console.error('Mint error:', err);
+    ElMessage.error('铸造请求异常');
+  } finally {
+    minting.value = false;
+  }
+};
 
 // === 4. 辅助函数 (新增 GPS 链接) ===
 const formatBytes = (bytes: number | undefined, decimals = 2): string => {
@@ -671,19 +839,19 @@ watch(() => route.params.imageId, (newImageId) => {
   }
 }, { immediate: true });
 
-// NFT Minting logic (保持不变)
-const mintDialogVisible = ref(false);
-const minting = ref(false);
-const mintFormRef = ref();
-const mintForm = ref({ description: '', price: 0 });
+// // NFT Minting logic (保持不变)
+// const mintDialogVisible = ref(false);
+// const minting = ref(false);
+// const mintFormRef = ref();
+// const mintForm = ref({ description: '', price: 0 });
 
-const showMintDialog = () => {
-  mintForm.value = {
-    description: imageDetail.value?.description || '',
-    price: 0
-  };
-  mintDialogVisible.value = true;
-};
+// const showMintDialog = () => {
+//   mintForm.value = {
+//     description: imageDetail.value?.description || '',
+//     price: 0
+//   };
+//   mintDialogVisible.value = true;
+// };
 
 // **新增：获取签名 URL 的核心方法**
 const fetchPresignedUrl = async (imageId: string): Promise<string> => {

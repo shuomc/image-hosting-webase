@@ -204,37 +204,62 @@ CREATE INDEX "strategies_type_index" ON "public"."strategies"("type");
 
 
 -- --------------------------------------------------------
--- 4. 用户基础表 (User Info for Image Hosting)
+-- 4. 用户基础表 (User Info for Image Hosting) - Enhanced
 -- --------------------------------------------------------
 DROP TABLE IF EXISTS "public"."user_info";
 CREATE TABLE "public"."user_info" (
+    -- 核心身份认证
                                       "user_id" varchar(100) NOT NULL,
-                                      "user_name" varchar(50) NOT NULL UNIQUE,
-                                      "password" varchar(255) NOT NULL,
-                                      "user_email" varchar(100) NOT NULL UNIQUE,
-                                      "user_role" varchar(20),                -- 角色 (admin, user)
-                                      "blockchain_address" varchar(255) UNIQUE, -- 可选：关联钱包地址
+                                      "user_name" varchar(50) NOT NULL UNIQUE,  -- 登录账号 (唯一，英文+数字)
+                                      "password" varchar(255) NOT NULL,         -- 密码哈希
+                                      "user_email" varchar(100) NOT NULL UNIQUE,-- 绑定邮箱
+                                      "phone_number" varchar(20),               -- 绑定手机 (可选)
+
+    -- 个人资料展示 (Profile)
+                                      "nickname" varchar(50),                   -- 显示昵称 (支持中文，可重复)
+                                      "avatar_url" varchar(500),                -- 头像链接 (MinIO URL)
+                                      "bio" varchar(500),                       -- 个人简介/签名
+                                      "website_url" varchar(255),               -- 个人网站/作品集链接
+
+    -- 业务限制与统计 (Business Logic)
+                                      "user_role" varchar(20) DEFAULT 'user',   -- 角色: admin, user, vip
+                                      "status" int2 DEFAULT 1,                  -- 状态: 1-正常, 0-禁用/封禁, 2-未激活
+                                      "storage_limit" int8 DEFAULT 1073741824,  -- 存储配额 (单位: 字节, 默认1GB)
+                                      "storage_used" int8 DEFAULT 0,            -- 已用存储 (单位: 字节)
+
+    -- Web3 关联
+                                      "blockchain_address" varchar(255) UNIQUE, -- 关联的钱包地址
+
+    -- 系统审计
+                                      "last_login_time" timestamp(6),           -- 最后登录时间
                                       "create_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
                                       "update_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
                                       "is_delete" bool NOT NULL DEFAULT false,
+
                                       CONSTRAINT "user_info_pkey" PRIMARY KEY ("user_id")
 );
 
--- 注释
+-- ----------------------------
+-- 注释 (Comments)
+-- ----------------------------
 COMMENT ON TABLE "public"."user_info" IS '图床系统的用户基础信息表';
-COMMENT ON COLUMN "public"."user_info"."user_id" IS '用户唯一ID (主键)';
-COMMENT ON COLUMN "public"."user_info"."user_name" IS '用户名 (唯一)';
-COMMENT ON COLUMN "public"."user_info"."password" IS '密码哈希值';
-COMMENT ON COLUMN "public"."user_info"."user_email" IS '邮箱 (唯一)';
-COMMENT ON COLUMN "public"."user_info"."user_role" IS '用户角色 (e.g., admin, user)';
-COMMENT ON COLUMN "public"."user_info"."blockchain_address" IS '关联的区块链钱包地址 (MinIO需要此字段做权限验证)';
-COMMENT ON COLUMN "public"."user_info"."create_time" IS '创建时间';
-COMMENT ON COLUMN "public"."user_info"."update_time" IS '更新时间';
-COMMENT ON COLUMN "public"."user_info"."is_delete" IS '是否删除 (软删除)';
 
--- 索引
-CREATE UNIQUE INDEX "user_info_blockchain_address_index" ON "public"."user_info"("blockchain_address");
-CREATE INDEX "user_info_is_delete_index" ON "public"."user_info"("is_delete");
+COMMENT ON COLUMN "public"."user_info"."user_id" IS '用户唯一ID (UUID)';
+COMMENT ON COLUMN "public"."user_info"."user_name" IS '登录用户名';
+COMMENT ON COLUMN "public"."user_info"."nickname" IS '前台展示昵称';
+COMMENT ON COLUMN "public"."user_info"."avatar_url" IS '用户头像URL';
+COMMENT ON COLUMN "public"."user_info"."bio" IS '个人简介';
+COMMENT ON COLUMN "public"."user_info"."storage_limit" IS '存储空间上限(Byte)';
+COMMENT ON COLUMN "public"."user_info"."storage_used" IS '已使用存储空间(Byte)';
+COMMENT ON COLUMN "public"."user_info"."status" IS '账号状态: 1-Active, 0-Banned';
+COMMENT ON COLUMN "public"."user_info"."blockchain_address" IS 'Web3钱包地址';
+
+-- ----------------------------
+-- 索引 (Indexes)
+-- ----------------------------
+CREATE UNIQUE INDEX "user_info_blockchain_address_idx" ON "public"."user_info"("blockchain_address");
+CREATE INDEX "user_info_email_idx" ON "public"."user_info"("user_email");
+CREATE INDEX "user_info_status_idx" ON "public"."user_info"("status");
 
 -- --------------------------------------------------------
 -- 5. 用户统计表 (User Stats)

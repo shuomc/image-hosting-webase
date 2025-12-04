@@ -1,181 +1,406 @@
 <template>
-  <div class="my-nfts">
-    <el-card class="box-card">
-      <template #header>
-        <div class="card-header">
-          <span>我的NFT</span>
-          <el-radio-group v-model="viewMode" size="small">
-            <el-radio-button label="owned" value="owned">我拥有的</el-radio-button>
-            <el-radio-button label="created" value="created">我创建的</el-radio-button>
-          </el-radio-group>
+  <div class="w-full min-h-screen transition-colors duration-300 pt-2 pb-10">
+
+    <!-- 全局加载状态 (检查注册中) -->
+    <div v-if="checkingStatus" class="flex flex-col items-center justify-center h-[80vh]">
+      <div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+      <div class="mt-4 text-slate-500 text-sm font-medium">正在连接区块链网络...</div>
+    </div>
+
+    <!-- 状态 1: 未注册/未激活 (引导页) -->
+    <div v-else-if="!isRegistered" class="flex flex-col items-center justify-center min-h-[80vh] px-4">
+      <div class="max-w-md w-full bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-800 p-8 text-center relative overflow-hidden">
+        <!-- 背景装饰 -->
+        <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+        
+        <div class="w-20 h-20 mx-auto bg-indigo-50 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mb-6">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+          </svg>
         </div>
-      </template>
 
-      <el-table :data="nftList" style="width: 100%" class="shadow-md rounded-lg overflow-hidden" v-loading="loading"
-        element-loading-text="加载中..." empty-text="暂无NFT数据。">
-        <el-table-column label="NFT ID" prop="nftId" width="180" show-overflow-tooltip>
-          <template #default="{ row }">
-            <el-tooltip :content="row.nftId" placement="top">
-              <span>{{ shortenAddress(row.nftId, 6) }}</span>
-            </el-tooltip>
-          </template>
-        </el-table-column>
+        <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-3">开启 Web3 之旅</h2>
+        <p class="text-slate-500 dark:text-slate-400 mb-8 leading-relaxed">
+          检测到您尚未激活区块链账户。激活后，您将获得一个专属的区块链钱包地址，用于存储和交易 NFT 数字资产。
+        </p>
 
-        <el-table-column label="描述" prop="description" show-overflow-tooltip>
-          <template #default="{ row }">
-            {{ row.description || '无描述' }}
-          </template>
-        </el-table-column>
-
-        <el-table-column label="价格" width="120">
-          <template #default="{ row }">
-            <span class="text-red-500 font-bold">{{ formatPrice(row.price) }} ETH</span>
-          </template>
-        </el-table-column>
-
-        <el-table-column label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="row.isForSale ? 'success' : 'info'">
-              {{ row.isForSale ? '在售' : '未售' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-
-        <el-table-column label="所有者" prop="blockchainAddress" width="180" show-overflow-tooltip>
-          <template #default="{ row }">
-            <el-tooltip :content="row.blockchainAddress" placement="top">
-              <span>{{ shortenAddress(row.blockchainAddress, 6) }}</span>
-            </el-tooltip>
-          </template>
-        </el-table-column>
-
-        <el-table-column label="合约地址" prop="contractAddress" width="180" show-overflow-tooltip>
-          <template #default="{ row }">
-            <el-tooltip :content="row.contractAddress" placement="top">
-              <span>{{ shortenAddress(row.contractAddress, 6) }}</span>
-            </el-tooltip>
-          </template>
-        </el-table-column>
-
-        <el-table-column label="Token ID" prop="tokenId" width="100"></el-table-column>
-
-        <el-table-column label="创建时间" prop="createTime" width="180">
-          <template #default="{ row }">
-            {{ formatTimestamp(row.createTime) }}
-          </template>
-        </el-table-column>
-
-        <el-table-column label="操作" width="100" fixed="right">
-          <template #default="{ row }">
-            <el-button type="primary" size="small" @click.stop="handleSetPrice(row)" v-if="!row.isForSale">
-              设置价格
-            </el-button>
-            <el-button type="danger" size="small" @click.stop="handleCancelSale(row)" v-if="row.isForSale">
-              取消出售
-            </el-button>
-          </template>
-        </el-table-column>
-
-        <el-table-column label="操作" width="100" fixed="right">
-          <template #default="{ row }">
-            <el-button type="" size="small" @click.stop="handleViewDetail(row)">
-              查看详情
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <div class="pagination-container">
-        <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :page-sizes="[12, 24, 36, 48]"
-          layout="total, sizes, prev, pager, next, jumper" :total="total" @size-change="handleSizeChange"
-          @current-change="handleCurrentChange" background />
+        <button 
+          @click="handleRegister" 
+          :disabled="registering"
+          class="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold shadow-lg shadow-indigo-500/30 transition-all transform active:scale-95 flex items-center justify-center gap-2"
+        >
+          <svg v-if="registering" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span>{{ registering ? '正在链上注册...' : '一键激活账户' }}</span>
+        </button>
+        
+        <p class="mt-4 text-xs text-slate-400">
+          此操作将在联盟链上为您生成密钥对，过程安全且不可逆。
+        </p>
       </div>
-    </el-card>
+    </div>
 
-    <el-dialog v-model="priceDialogVisible" title="设置价格" width="30%">
-      <el-form :model="priceForm" label-width="80px">
-        <el-form-item label="价格(ETH)">
-          <el-input-number v-model="priceForm.price" :min="0" :precision="4" :step="0.1" placeholder="请输入价格" />
-        </el-form-item>
-      </el-form>
+    <!-- 状态 2: 已注册 (NFT 列表) -->
+    <div v-else class="relative">
+      
+      <!-- 顶部悬浮控制栏 -->
+      <div class="fixed top-24 right-4 sm:right-8 z-40 flex items-center gap-3 p-1.5 rounded-3xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/60 dark:border-slate-700/60 shadow-xl transition-all duration-300">
+        
+        <!-- 视图切换 -->
+        <div class="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
+          <button @click="currentLayout = 'grid'" :class="layoutBtnClass('grid')" title="网格视图">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+          </button>
+          <button @click="currentLayout = 'list'" :class="layoutBtnClass('list')" title="列表视图">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <!-- 分割线 -->
+        <div class="w-px h-6 bg-slate-200 dark:bg-slate-700"></div>
+
+        <!-- 模式切换 (持有/创建) -->
+        <div class="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 text-xs font-medium">
+           <button 
+             v-for="mode in ['owned', 'created']" 
+             :key="mode"
+             @click="handleModeChange(mode)"
+             :class="[
+               'px-3 py-1.5 rounded-xl transition-all duration-200',
+               viewMode === mode 
+                 ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' 
+                 : 'text-slate-500 hover:text-slate-700'
+             ]"
+           >
+             {{ mode === 'owned' ? '我持有的' : '我铸造的' }}
+           </button>
+        </div>
+      </div>
+
+      <div class="container mx-auto px-4 max-w-7xl mt-8">
+        
+        <!-- 标题区 -->
+        <div class="mb-10">
+          <h1 class="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">
+            我的数字资产
+          </h1>
+          <p class="text-sm mt-2 text-slate-500 dark:text-slate-400 flex items-center gap-2">
+            <span>钱包地址:</span>
+            <span class="font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-600 dark:text-slate-300 select-all">
+              {{ blockchainAddress }}
+            </span>
+          </p>
+        </div>
+
+        <!-- 列表加载中 -->
+        <div v-if="loading" class="w-full h-64 flex flex-col items-center justify-center gap-3">
+          <div class="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+          <div class="text-slate-400 text-sm">加载资产中...</div>
+        </div>
+
+        <!-- 内容区 -->
+        <div v-else>
+          <!-- 空状态 -->
+          <div v-if="nftList.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
+            <div class="bg-slate-100 dark:bg-slate-800 p-6 rounded-full mb-4">
+               <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+            </div>
+            <h3 class="text-lg font-semibold text-slate-700 dark:text-slate-200">暂无 NFT</h3>
+            <p class="text-slate-500 dark:text-slate-400 mt-2 text-sm">您还没有{{ viewMode === 'owned' ? '持有' : '铸造' }}任何 NFT。</p>
+          </div>
+
+          <template v-else>
+            <!-- 网格视图 Grid View -->
+            <div v-if="currentLayout === 'grid'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+               <div v-for="nft in nftList" :key="nft.nftId"
+                 class="group relative bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer flex flex-col"
+                 @click="handleViewDetail(nft)">
+
+                 <!-- 图片区域 -->
+                 <div class="relative w-full aspect-square bg-slate-100 dark:bg-slate-900 overflow-hidden">
+                   <!-- 这里的 imageUrl 是后端 VO 返回的预览图 -->
+                   <img :src="nft.imageUrl || '/placeholder-nft.png'" :alt="nft.name"
+                     class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" />
+                   
+                   <!-- 遮罩层 -->
+                   <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                   
+                   <!-- 悬浮状态标签 -->
+                   <div class="absolute top-3 right-3">
+                      <span :class="[
+                        'text-[10px] font-bold px-2 py-1 rounded-full backdrop-blur-md shadow-sm',
+                        nft.isForSale ? 'bg-green-500/90 text-white' : 'bg-slate-500/80 text-white'
+                      ]">
+                        {{ nft.isForSale ? '在售' : '未售' }}
+                      </span>
+                   </div>
+
+                   <!-- 悬浮底部信息 -->
+                   <div class="absolute left-0 right-0 bottom-0 p-4 translate-y-4 group-hover:translate-y-0 transition-transform duration-300 opacity-0 group-hover:opacity-100">
+                      <div class="flex gap-2 justify-center">
+                        <!-- 详情按钮 -->
+                        <button class="px-3 py-1.5 bg-white/20 hover:bg-white/40 backdrop-blur-md rounded-lg text-white text-xs transition font-medium">
+                          查看详情
+                        </button>
+                      </div>
+                   </div>
+                 </div>
+                 
+                 <!-- 卡片信息 -->
+                 <div class="p-4 flex-1 flex flex-col justify-between">
+                    <div>
+                      <div class="flex justify-between items-start mb-1">
+                        <h3 class="font-bold text-slate-800 dark:text-white truncate pr-2" :title="nft.name">{{ nft.name || '未命名 NFT' }}</h3>
+                        <span class="text-xs font-mono text-slate-400">#{{ nft.tokenId }}</span>
+                      </div>
+                      <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 min-h-[2.5em]">{{ nft.description || '暂无描述' }}</p>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                       <div class="flex flex-col">
+                         <span class="text-[10px] text-slate-400 uppercase tracking-wider">当前价格</span>
+                         <span class="text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                           {{ nft.isForSale ? formatPrice(nft.price) + ' ETH' : '--' }}
+                         </span>
+                       </div>
+                       
+                       <!-- 快捷操作菜单 -->
+                       <div class="flex gap-1">
+                          <button v-if="!nft.isForSale" @click.stop="handleSetPrice(nft)" class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg" title="上架出售">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                          </button>
+                          <button v-else @click.stop="handleCancelSale(nft)" class="p-2 text-red-500 hover:bg-red-50 rounded-lg" title="取消出售">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" x2="9" y1="9" y2="15"/><line x1="9" x2="15" y1="9" y2="15"/></svg>
+                          </button>
+                       </div>
+                    </div>
+                 </div>
+               </div>
+            </div>
+
+            <!-- 列表视图 List View -->
+            <div v-else-if="currentLayout === 'list'" class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm bg-white dark:bg-slate-800">
+               <div class="overflow-x-auto">
+                 <table class="w-full text-sm text-left text-slate-500 dark:text-slate-400">
+                   <thead class="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-900/50 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
+                     <tr>
+                       <th scope="col" class="px-6 py-4 font-semibold">资产预览</th>
+                       <th scope="col" class="px-6 py-4 font-semibold">名称 / ID</th>
+                       <th scope="col" class="px-6 py-4 font-semibold">价格</th>
+                       <th scope="col" class="px-6 py-4 font-semibold">状态</th>
+                       <th scope="col" class="px-6 py-4 font-semibold">合约地址</th>
+                       <th scope="col" class="px-6 py-4 font-semibold">创建时间</th>
+                       <th scope="col" class="px-6 py-4 font-semibold text-right">操作</th>
+                     </tr>
+                   </thead>
+                   <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
+                     <tr v-for="nft in nftList" :key="nft.nftId" 
+                         class="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors cursor-pointer"
+                         @click="handleViewDetail(nft)">
+                       
+                       <td class="px-6 py-3">
+                         <div class="w-12 h-12 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                           <img :src="nft.imageUrl || '/placeholder-nft.png'" class="w-full h-full object-cover" loading="lazy">
+                         </div>
+                       </td>
+                       
+                       <td class="px-6 py-3">
+                         <div class="flex flex-col">
+                           <span class="font-medium text-slate-900 dark:text-white">{{ nft.name || '未命名' }}</span>
+                           <span class="text-xs text-slate-400 font-mono">ID: {{ shortenAddress(nft.nftId, 4) }}</span>
+                         </div>
+                       </td>
+                       
+                       <td class="px-6 py-3 font-bold text-indigo-600 dark:text-indigo-400">
+                         {{ nft.isForSale ? formatPrice(nft.price) + ' ETH' : '--' }}
+                       </td>
+                       
+                       <td class="px-6 py-3">
+                         <span :class="[
+                           'px-2 py-1 rounded text-xs font-medium',
+                           nft.isForSale ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                         ]">
+                           {{ nft.isForSale ? '在售' : '仓库中' }}
+                         </span>
+                       </td>
+
+                       <td class="px-6 py-3 text-xs font-mono text-slate-500">
+                          {{ shortenAddress(nft.contractAddress, 6) }}
+                       </td>
+                       
+                       <td class="px-6 py-3 text-xs">
+                         {{ formatTimestamp(nft.createTime) }}
+                       </td>
+                       
+                       <td class="px-6 py-3 text-right">
+                         <div class="flex items-center justify-end gap-2">
+                           <button v-if="!nft.isForSale" @click.stop="handleSetPrice(nft)" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg text-xs font-medium transition">
+                              上架
+                           </button>
+                           <button v-else @click.stop="handleCancelSale(nft)" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-medium transition">
+                              下架
+                           </button>
+                           <button @click.stop="handleViewDetail(nft)" class="p-2 text-slate-400 hover:text-slate-600 rounded-lg">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                           </button>
+                         </div>
+                       </td>
+
+                     </tr>
+                   </tbody>
+                 </table>
+               </div>
+            </div>
+            
+            <!-- 分页 -->
+            <div class="mt-8 flex justify-end" v-if="total > 0">
+              <el-pagination 
+                v-model:current-page="currentPage" 
+                v-model:page-size="pageSize" 
+                :page-sizes="[12, 24, 36, 48]"
+                layout="total, sizes, prev, pager, next" 
+                :total="total" 
+                @size-change="handleSizeChange"
+                @current-change="handleCurrentChange" 
+                background />
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <!-- 弹窗: 设置价格 -->
+    <el-dialog v-model="priceDialogVisible" title="设置出售价格" width="30%" class="rounded-2xl">
+      <div class="py-4">
+         <p class="text-sm text-slate-500 mb-4">上架后，其他用户可以在市场中购买您的 NFT。</p>
+         <el-form :model="priceForm" label-position="top">
+          <el-form-item label="价格 (ETH)">
+            <el-input-number v-model="priceForm.price" :min="0.0001" :precision="4" :step="0.1" class="w-full" />
+          </el-form-item>
+        </el-form>
+      </div>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="priceDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="confirmSetPrice">确认</el-button>
+          <el-button @click="priceDialogVisible = false" class="!rounded-lg">取消</el-button>
+          <el-button type="primary" @click="confirmSetPrice" class="!rounded-lg bg-indigo-600 border-indigo-600">确认上架</el-button>
         </span>
       </template>
     </el-dialog>
 
-    <el-dialog
-      v-model="detailDialogVisible"
-      title="NFT详情"
-      width="50%"
-    >
-      <nft-detail
-        v-if="selectedNFT"
-        :nft-id="selectedNFT.nftId"
-        @close="detailDialogVisible = false"
-        @refresh="fetchNFTList"
-      />
-    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getMyNFTs, setNFTPrice, cancelNFTSale } from '@/api/nft'
-import NFTDetail from './SjyNFTDetail.vue'
+// 引入之前定义的 API，假设您已在 api/nft.ts 中定义了这些方法
+import { getMyNFTs, setNFTPrice, offShelf } from '@/api/nft' 
+import request from '@/utils/request' // 用于调用 check 和 register
 import { useRouter } from 'vue-router'
 
-// Type definition for NFTInfo based on your provided JSON
+// ---------------- 类型定义 ----------------
 interface NFTInfo {
   nftId: string;
-  imageId: string;
-  ownerId: string;
-  tokenId: number;
-  contractAddress: string;
+  tokenId: string;
+  name: string;
   description: string | null;
+  imageUrl: string;
   price: number;
   isForSale: boolean;
+  ownerAddress: string;
+  contractAddress: string;
   createTime: string;
-  updateTime: string | null;
-  isDelete: boolean;
 }
 
-const viewMode = ref('owned')
-const currentPage = ref(1)
-const pageSize = ref(12)
-const total = ref(0)
-const nftList = ref<NFTInfo[]>([])
-const priceDialogVisible = ref(false)
-const detailDialogVisible = ref(false)
-const selectedNFT = ref<NFTInfo | null>(null)
-const loading = ref(false)
+// ---------------- 状态变量 ----------------
 const router = useRouter()
 
-const priceForm = ref({
-  price: 0
+// 页面状态
+const checkingStatus = ref(true)     // 是否正在检查注册状态
+const isRegistered = ref(false)      // 是否已注册
+const registering = ref(false)       // 注册按钮 Loading
+const blockchainAddress = ref('')    // 用户钱包地址
+
+// NFT 列表相关
+const loading = ref(false)
+const nftList = ref<NFTInfo[]>([])
+const total = ref(0)
+const currentPage = ref(1)
+const pageSize = ref(12)
+const viewMode = ref<'owned' | 'created'>('owned')
+const currentLayout = ref<'grid' | 'list'>('grid')
+
+// 操作相关
+const priceDialogVisible = ref(false)
+const selectedNFT = ref<NFTInfo | null>(null)
+const priceForm = ref({ price: 0 })
+
+// ---------------- 生命周期 ----------------
+
+onMounted(async () => {
+  await checkRegistrationStatus()
 })
 
-// Helper to shorten long addresses for display (e.g., Ethereum addresses, NFT IDs)
-const shortenAddress = (address: string, chars = 4) => {
-  if (!address || address.length < chars * 2 + 2) {
-    return address;
+// ---------------- 核心逻辑 ----------------
+
+// 1. 检查注册状态
+const checkRegistrationStatus = async () => {
+  checkingStatus.value = true
+  try {
+    // 调用后端 check 接口
+    const res = await request({
+      url: '/nft/user/check',
+      method: 'get'
+    })
+    
+    if (res.data && res.data.isRegistered) {
+      isRegistered.value = true
+      blockchainAddress.value = res.data.blockchainAddress
+      // 已注册，则加载 NFT 列表
+      fetchNFTList()
+    } else {
+      isRegistered.value = false
+    }
+  } catch (error) {
+    console.error('检查注册状态失败', error)
+    ElMessage.error('连接区块链服务失败')
+  } finally {
+    checkingStatus.value = false
   }
-  return `${address.substring(0, chars)}...${address.substring(address.length - chars)}`;
-};
+}
 
-// Function to format timestamp for display
-const formatTimestamp = (timestamp: string | number | Date) => {
-  if (!timestamp) return '';
-  const date = new Date(timestamp);
-  // Example format: YYYY-MM-DD HH:mm:ss
-  // You can adjust the format as needed
-  return date.toLocaleString(); // Uses user's locale for date and time
-};
+// 2. 注册/激活账户
+const handleRegister = async () => {
+  registering.value = true
+  try {
+    // 调用后端一键注册接口
+    const res = await request({
+      url: '/nft/user/register',
+      method: 'post'
+    })
+    
+    if (res.code === 200) {
+      ElMessage.success('区块链账户激活成功！')
+      isRegistered.value = true
+      // 刷新页面或重新获取列表
+      if (res.data && res.data.blockchainAddress) {
+        blockchainAddress.value = res.data.blockchainAddress
+      }
+      fetchNFTList()
+    } else {
+      ElMessage.error(res.msg || '激活失败')
+    }
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('激活请求异常，请稍后再试')
+  } finally {
+    registering.value = false
+  }
+}
 
-// 获取NFT列表
+// 3. 获取 NFT 列表
 const fetchNFTList = async () => {
   loading.value = true
   try {
@@ -185,34 +410,29 @@ const fetchNFTList = async () => {
       mode: viewMode.value
     })
 
-    // *** CRITICAL: Accessing data based on your highly nested JSON ***
-    // Your JSON structure: { msg, code, data: { msg, code, data: { total, list: [...] }}}
-    if (res.data && res.data) {
-      nftList.value = res.data.list as NFTInfo[];
-      total.value = res.data.total;
-    } else {
-      ElMessage.error('API响应数据结构不正确或数据为空。');
-      nftList.value = [];
-      total.value = 0;
+    if (res.data) {
+      nftList.value = res.data.list || []
+      total.value = res.data.total || 0
     }
-    console.log('Fetched NFT Data (parsed):', nftList.value);
-    console.log('Total NFTs (parsed):', total.value);
-    console.log('Full API Response (for debugging):', res.data); // Keep this for debugging
-
   } catch (error) {
-    console.error('获取NFT列表失败:', error);
-    ElMessage.error('获取NFT列表失败，请稍后再试。');
-    nftList.value = [];
-    total.value = 0;
+    console.error('获取NFT列表失败:', error)
+    nftList.value = []
   } finally {
-    loading.value = false;
+    loading.value = false
   }
 }
 
-// Handle pagination - no changes needed
+// ---------------- 交互事件 ----------------
+
+const handleModeChange = (mode: 'owned' | 'created') => {
+  viewMode.value = mode
+  currentPage.value = 1
+  fetchNFTList()
+}
+
 const handleSizeChange = (val: number) => {
   pageSize.value = val
-  currentPage.value = 1; // Reset to first page on page size change
+  currentPage.value = 1
   fetchNFTList()
 }
 
@@ -221,112 +441,93 @@ const handleCurrentChange = (val: number) => {
   fetchNFTList()
 }
 
-// Handle Set Price (remains the same)
+const handleViewDetail = (nft: NFTInfo) => {
+  router.push(`/nft/detail/${nft.nftId}`)
+}
+
+// 设置价格
 const handleSetPrice = (nft: NFTInfo) => {
   selectedNFT.value = nft
-  priceForm.value.price = nft.price
+  priceForm.value.price = nft.price || 0
   priceDialogVisible.value = true
 }
 
-// Confirm Set Price (remains the same)
 const confirmSetPrice = async () => {
-  if (selectedNFT.value === null) {
-    ElMessage.warning('没有选择NFT进行设置价格。')
-    return
-  }
+  if (!selectedNFT.value) return
   if (priceForm.value.price <= 0) {
-    ElMessage.warning('价格必须大于0。')
+    ElMessage.warning('价格必须大于 0')
     return
   }
 
   try {
-    // 修改为正确的参数传递方式
-    await setNFTPrice(selectedNFT.value.nftId, priceForm.value.price);
-    ElMessage.success('设置价格成功！');
-    priceDialogVisible.value = false;
-    fetchNFTList();
+    await setNFTPrice(selectedNFT.value.nftId, priceForm.value.price)
+    ElMessage.success('上架成功')
+    priceDialogVisible.value = false
+    fetchNFTList()
   } catch (error) {
-    console.error('设置价格失败:', error)
-    ElMessage.error('设置价格失败，请稍后再试。')
+    ElMessage.error('上架失败')
   }
 }
 
-// Handle Cancel Sale (remains the same)
+// 下架 (取消出售)
 const handleCancelSale = async (nft: NFTInfo) => {
   try {
-    await ElMessageBox.confirm('确定要取消出售此NFT吗？', '提示', {
-      confirmButtonText: '确定',
+    await ElMessageBox.confirm('确定要下架此 NFT 吗？下架后其他用户将无法购买。', '确认下架', {
+      confirmButtonText: '确认下架',
       cancelButtonText: '取消',
       type: 'warning',
-    });
-
-    await cancelNFTSale(nft.nftId)
-    ElMessage.success('取消出售成功！')
+    })
+    
+    await offShelf(nft.nftId)
+    ElMessage.success('下架成功')
     fetchNFTList()
-  } catch (error: any) {
-    if (error !== 'cancel') {
-      console.error('取消出售失败:', error)
-      ElMessage.error('取消出售失败，请稍后再试。')
-    }
+  } catch (error) {
+    if (error !== 'cancel') ElMessage.error('下架失败')
   }
 }
 
-// Format price (remains the same)
+// ---------------- 工具函数 ----------------
+
+const shortenAddress = (address: string, chars = 4) => {
+  if (!address) return '--'
+  if (address.length < chars * 2 + 2) return address
+  return `${address.substring(0, chars)}...${address.substring(address.length - chars)}`
+}
+
+const formatTimestamp = (timestamp: string | number) => {
+  if (!timestamp) return '--'
+  return new Date(timestamp).toLocaleString()
+}
+
 const formatPrice = (price: number) => {
-  return price.toFixed(4)
+  return Number(price).toFixed(4)
 }
 
-// Watch viewMode change (remains the same)
-watch(viewMode, () => {
-  currentPage.value = 1
-  fetchNFTList()
-})
-
-// OnMounted hook (remains the same)
-onMounted(() => {
-  fetchNFTList()
-})
-
-// 查看详情
-const handleViewDetail = (nft: NFTInfo) => {
-  router.push(`/nft/detail/${nft.tokenId}`)
+const layoutBtnClass = (layout: string) => {
+  return [
+    'flex items-center justify-center w-9 h-8 rounded-xl transition-all duration-200',
+    currentLayout.value === layout
+      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+  ]
 }
+
 </script>
 
----
-
 <style scoped>
-.my-nfts {
-  padding: 20px;
-  margin-top: 50px;
+/* 简单的动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
 }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
-/* Removed nft-card specific styles, as we are now using el-table */
-
-.pagination-container {
-  margin-top: 20px;
-  text-align: right;
-}
-
-/* El-table specific styles (optional, can be customized) */
-.el-table {
-  /* You can add custom table styles here */
-  --el-table-header-bg-color: #f5f7fa;
-  --el-table-row-hover-bg-color: #f5f7fa;
-  /* Adjust font sizes, padding as needed */
-  font-size: 14px;
-}
-
-/* Style for action buttons within the table, if needed */
-.el-table .el-button {
-  padding: 8px 12px;
-  /* Adjust button padding for table rows */
-  font-size: 12px;
+/* 自定义 el-pagination 样式覆盖 (使其更贴合 Tailwind) */
+:deep(.el-pagination.is-background .el-pager li:not(.is-disabled).is-active) {
+  background-color: #4f46e5; /* indigo-600 */
 }
 </style>

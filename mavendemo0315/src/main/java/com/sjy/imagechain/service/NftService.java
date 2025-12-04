@@ -56,14 +56,14 @@ public interface NftService {
 
     /**
      * 铸造 NFT
-     * @param imageId 图片ID
+     * @param thumbnailMinioUrl 图片缩略图url
      * @param name 名称
      * @param description 描述
      * @param price 初始价格
      * @param collectionId 集合ID
      * @return 生成的 nftId
      */
-    String mintNFT(String imageId, String name, String description, BigDecimal price, Integer collectionId);
+    String mintNFT(String thumbnailMinioUrl, String name, String description, BigDecimal price, Integer collectionId);
 
     /**
      * 购买 NFT

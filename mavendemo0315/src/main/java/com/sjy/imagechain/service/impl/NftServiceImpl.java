@@ -57,10 +57,10 @@ public class NftServiceImpl implements NftService {
     private UserUtils userUtils;
 
     // 合约相关配置
-    private static final String CONTRACT_ADDRESS = "0x7b9558d415a181859c0467653bc27cbb7b8799f6";  // ImageNFTv2
+    private static final String CONTRACT_ADDRESS = "0xcfa7a92ec0042884c86cf0b1590067d5982d20e9";  // ImageNFTv2
     private static final String CONTRACT_NAME = "ImageNFTv2";
     private static final String ABI_PATH = "src/main/resources/abi/";
-    private static final String BIN_PATH = "src/main/resources/bin/";
+    private static final String BIN_PATH = "src/main/resources/bin/ecc/";
     private static final int GROUP_ID = 1;
 
     // ==========================================
@@ -207,16 +207,16 @@ public class NftServiceImpl implements NftService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public String mintNFT(String imageId, String name, String description, BigDecimal price, Integer collectionId) {
+    public String mintNFT(String thumbnailMinioUrl, String name, String description, BigDecimal price, Integer collectionId) {
         try {
+            log.info("mintNFT：thumbnailMinioUrl={}, name={}, description={}, price={}, collectionId={}", thumbnailMinioUrl, name, description, price, collectionId);
+
             CryptoKeyPair keyPair = getUserKeyPair();
             AssembleTransactionProcessor processor = getProcessor(keyPair);
 
             // 1. 链上交互: mintNFT(minioUrl, description, price)
-            // 假设 imageId 即为 url, 实际需拼接
-            String minioUrl = imageId;
             List<Object> params = new ArrayList<>();
-            params.add(minioUrl);
+            params.add(thumbnailMinioUrl);
             params.add(description);
             params.add(price.toBigInteger());
 
@@ -233,7 +233,7 @@ public class NftServiceImpl implements NftService {
 
             // 2. 落库
             NftInfo nftInfo = new NftInfo();
-            nftInfo.setImageUrl(minioUrl);
+            nftInfo.setImageUrl(thumbnailMinioUrl);
             nftInfo.setName(name);
             nftInfo.setDescription(description);
             nftInfo.setPrice(price);
@@ -560,10 +560,16 @@ public class NftServiceImpl implements NftService {
     }
 
     private void handleContractError(TransactionResponse response) {
-        if (!Objects.equals(response.getTransactionReceipt().getStatus(), "0") || !Objects.equals(response.getTransactionReceipt().getStatus(), "0x0")) {
-            throw new RuntimeException("合约执行失败, Status: " + response.getTransactionReceipt().getStatus() +
-                    ", Msg: " + response.getReceiptMessages());
+        String status = response.getTransactionReceipt().getStatus();
+
+        // 如果是 0 或 0x0，直接返回（成功）
+        if ("0".equals(status) || "0x0".equals(status)) {
+            return;
         }
+
+        // 否则抛出异常
+        throw new RuntimeException("合约执行失败, Status: " + status +
+                ", Msg: " + response.getReceiptMessages());
     }
 
     /**

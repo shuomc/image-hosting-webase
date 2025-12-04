@@ -7,7 +7,9 @@ import lombok.*;
  * @Date 2025/5/14
  * @Description
  */
-
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Getter
 @Setter
 public class UserRegistrationResponse {
@@ -26,9 +28,6 @@ public class UserRegistrationResponse {
         this.blockchainAddress = blockchainAddress;
         this.message = message;
         this.success = success;
-    }
-
-    public UserRegistrationResponse() {
     }
 
     public boolean isSuccess() {
