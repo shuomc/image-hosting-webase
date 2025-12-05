@@ -169,4 +169,34 @@ public class AjaxResult extends HashMap<String, Object> implements Serializable 
     public static AjaxResult error(int code, String msg) {
         return new AjaxResult(code, msg, null);
     }
+
+
+    /**
+     * 检查是否成功 (新增方法)
+     * @return true if code == 200
+     */
+    public boolean isSuccess() {
+        Object code = super.get(CODE_TAG);
+        // 使用 String 比较可以兼容 Integer 和 String 类型的状态码，防止序列化类型丢失
+        return code != null && String.valueOf(HttpStatus.OK.value()).equals(code.toString());
+    }
+
+    /**
+     * 获取 data 数据 (新增方法)
+     * @return data 对象
+     */
+    public Object getData() {
+        return super.get(DATA_TAG);
+    }
+
+    /**
+     * 获取 msg 消息 (新增方法)
+     * @return 消息字符串
+     */
+    public String getMsg() {
+        Object msg = super.get(MSG_TAG);
+        return msg == null ? "" : msg.toString();
+    }
 }
+
+

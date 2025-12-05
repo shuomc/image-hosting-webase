@@ -1,9 +1,10 @@
-package moe.imtop1.imagehosting.system.controller;
+package moe.imtop1.imagehosting.nft.controller;
 
 import cn.dev33.satoken.stp.StpUtil;
+import lombok.extern.slf4j.Slf4j;
 import moe.imtop1.imagehosting.common.dto.AjaxResult;
 import moe.imtop1.imagehosting.system.domain.UserInfo;
-import moe.imtop1.imagehosting.system.service.INFTService;
+import moe.imtop1.imagehosting.nft.service.INFTService;
 import moe.imtop1.imagehosting.system.service.IUserInfoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/nft")
 public class NFTController {
@@ -107,14 +109,15 @@ public class NFTController {
     @PostMapping("/mint")
     public AjaxResult mintNFT(@RequestBody Map<String, Object> params) {
         // 推荐使用 @RequestBody 接收复杂参数，方便前端传 JSON
+        String imageId= (String) params.get("imageId");
         String thumbnailMinioUrl = (String) params.get("thumbnailMinioUrl");
         String name = (String) params.get("name");
         String description = (String) params.get("description");
         BigDecimal price = new BigDecimal(params.get("price").toString());
         Integer collectionId = params.get("collectionId") != null ?
                 Integer.parseInt(params.get("collectionId").toString()) : null;
-
-        return nftService.mintNFT(thumbnailMinioUrl, name, description, price, collectionId);
+        log.info("params:{}", params);
+        return nftService.mintNFT(imageId,thumbnailMinioUrl, name, description, price, collectionId);
     }
 
     @PostMapping("/buy/{nftId}")

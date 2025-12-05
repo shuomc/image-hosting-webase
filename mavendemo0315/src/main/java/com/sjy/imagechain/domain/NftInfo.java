@@ -51,6 +51,10 @@ public class NftInfo extends BaseEntity {
     @TableField("contract_address")
     private String contractAddress;
 
+    @Schema(description = "图片id")
+    @TableField("image_id")
+    private String imageId;
+
     @Schema(description = "图片资源地址")
     @TableField("image_url")
     private String imageUrl;

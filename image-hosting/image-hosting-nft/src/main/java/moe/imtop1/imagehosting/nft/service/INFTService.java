@@ -1,4 +1,4 @@
-package moe.imtop1.imagehosting.system.service;
+package moe.imtop1.imagehosting.nft.service;
 
 import moe.imtop1.imagehosting.common.dto.AjaxResult;
 import java.math.BigDecimal;
@@ -50,7 +50,7 @@ public interface INFTService {
      * @param name NFT名称
      * @param collectionId 系列ID (可选)
      */
-    AjaxResult mintNFT(String thumbnailMinioUrl, String name, String description, BigDecimal price, Integer collectionId);
+    AjaxResult mintNFT(String imageId, String thumbnailMinioUrl, String name, String description, BigDecimal price, Integer collectionId);
 
     /**
      * 购买NFT

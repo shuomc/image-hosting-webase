@@ -1,9 +1,9 @@
-package moe.imtop1.imagehosting.system.mapper;
+package moe.imtop1.imagehosting.nft.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import moe.imtop1.imagehosting.framework.base.BaseEntity;
+import moe.imtop1.imagehosting.nft.domain.NFTInfo;
 import org.apache.ibatis.annotations.Mapper;
-import moe.imtop1.imagehosting.system.entity.NFTInfo;
+
 
 @Mapper // 或使用 @Repository
 public interface NftInfoMapper extends BaseMapper<NFTInfo>{

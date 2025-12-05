@@ -88,6 +88,7 @@ public class NftController {
      */
     @PostMapping("/mint")
     public AjaxResult mintNFT(@RequestBody Map<String, Object> params) {
+        String imageId = (String) params.get("imageId");
         String thumbnailMinioUrl = (String) params.get("thumbnailMinioUrl");
         String name = (String) params.get("name");
         String description = (String) params.get("description");
@@ -97,7 +98,7 @@ public class NftController {
         Integer collectionId = params.get("collectionId") != null ?
                 Integer.parseInt(params.get("collectionId").toString()) : null;
 
-        String nftId = nftService.mintNFT(thumbnailMinioUrl, name, description, price, collectionId);
+        String nftId = nftService.mintNFT(imageId,thumbnailMinioUrl, name, description, price, collectionId);
         return AjaxResult.success("铸造成功", nftId);
     }
 

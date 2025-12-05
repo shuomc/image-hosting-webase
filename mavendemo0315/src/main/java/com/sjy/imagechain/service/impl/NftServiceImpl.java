@@ -207,7 +207,7 @@ public class NftServiceImpl implements NftService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public String mintNFT(String thumbnailMinioUrl, String name, String description, BigDecimal price, Integer collectionId) {
+    public String mintNFT(String imageId, String thumbnailMinioUrl, String name, String description, BigDecimal price, Integer collectionId) {
         try {
             log.info("mintNFT：thumbnailMinioUrl={}, name={}, description={}, price={}, collectionId={}", thumbnailMinioUrl, name, description, price, collectionId);
 
@@ -233,6 +233,7 @@ public class NftServiceImpl implements NftService {
 
             // 2. 落库
             NftInfo nftInfo = new NftInfo();
+            nftInfo.setImageId(imageId);
             nftInfo.setImageUrl(thumbnailMinioUrl);
             nftInfo.setName(name);
             nftInfo.setDescription(description);

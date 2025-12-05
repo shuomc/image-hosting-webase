@@ -62,6 +62,7 @@ DROP TABLE IF EXISTS "public"."image_data";
 CREATE TABLE "public"."image_data" (
                                        "image_id" varchar(100) NOT NULL,
                                        "user_id" varchar(100) NOT NULL,        -- 上传者ID
+                                       "nft_id" varchar(255),
                                        "file_name" varchar(100) NOT NULL,      -- 原始文件名
                                        "size" int8 NOT NULL,                   -- 文件大小 (Bytes)
                                        "content_type" varchar(50) NOT NULL,    -- MIME类型 (image/jpeg)

@@ -1,9 +1,12 @@
-package moe.imtop1.imagehosting.system.service.impl;
+package moe.imtop1.imagehosting.nft.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import moe.imtop1.imagehosting.common.dto.AjaxResult;
+import moe.imtop1.imagehosting.images.domain.ImageData;
+import moe.imtop1.imagehosting.images.service.ImageService;
+import moe.imtop1.imagehosting.nft.service.INFTService;
 import moe.imtop1.imagehosting.system.domain.UserInfo;
-import moe.imtop1.imagehosting.system.service.INFTService;
 import moe.imtop1.imagehosting.system.service.IUserInfoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,6 +35,9 @@ public class INFTServiceImpl implements INFTService {
 
     @Autowired
     private IUserInfoService userInfoService;
+
+    @Autowired
+    private ImageService imageService;
 
     // ==========================================
     // 1. 浏览与查询
@@ -89,11 +95,12 @@ public class INFTServiceImpl implements INFTService {
     // ==========================================
 
     @Override
-    public AjaxResult mintNFT(String thumbnailMinioUrl, String name, String description, BigDecimal price, Integer collectionId) {
+    public AjaxResult mintNFT(String imageId, String thumbnailMinioUrl, String name, String description, BigDecimal price, Integer collectionId) {
         String url = blockchainApiUrl + "/nft/mint";
 
         // 构造 Controller 需要的参数
         Map<String, Object> body = new HashMap<>();
+        body.put("imageId", imageId);
         body.put("thumbnailMinioUrl", thumbnailMinioUrl);
         body.put("name", name);
         body.put("description", description);
@@ -102,7 +109,25 @@ public class INFTServiceImpl implements INFTService {
             body.put("collectionId", collectionId);
         }
 
-        return forwardRequest(url, HttpMethod.POST, body);
+        AjaxResult result = forwardRequest(url, HttpMethod.POST, body);
+
+        if (result.isSuccess()) {
+            String newNftId = (String) result.getData();
+
+            // 3. 使用 MyBatis-Plus 的 LambdaUpdateWrapper 进行更新
+            // 语义：UPDATE image_table SET nft_id = newNftId WHERE image_id = imageId
+            boolean updateSuccess = imageService.update(new LambdaUpdateWrapper<ImageData>() // 泛型换成您的图片实体类名，如 ImageInfo
+                    .eq(ImageData::getImageId, imageId) // 条件：image_id 等于传入的 imageId
+                    .set(ImageData::getNftId, newNftId) // 动作：将 nft_id 字段设为 newNftId
+            );
+
+            if (!updateSuccess) {
+                // 记录日志：虽然链上成功了，但本地没更新到数据（可能图片ID不存在）
+                log.error("NFT铸造成功，但本地关联图片失败，ImageId: {}", imageId);
+            }
+        }
+
+        return result;
     }
 
     @Override

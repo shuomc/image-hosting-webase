@@ -19,9 +19,9 @@
       <div v-else-if="imageDetail" class="grid grid-cols-1 md:grid-cols-3 gap-6">
         
         <div class="md:col-span-2 bg-slate-100 rounded-2xl shadow-xl border border-slate-100 overflow-hidden dark:bg-slate-800 dark:border-slate-700">
-          <div class="relative w-full aspect-[4/3] bg-white overflow-hidden dark:bg-slate-900 dark:border-slate-700">
+          <!-- <div class="relative w-full aspect-[4/3] bg-white overflow-hidden dark:bg-slate-900 dark:border-slate-700">-->
             <img ref="previewImgRef" :src="imageDetail.thumbnailMinioUrl" :alt="imageDetail.fileName" class="w-full h-full object-contain dark:bg-white/5" />
-          </div>
+          <!--</div> -->
         </div>
         <div class="md:col-span-1 bg-white rounded-2xl shadow-xl border border-slate-100 p-6 flex flex-col justify-between dark:bg-slate-800 dark:border-slate-700">
           <div>
@@ -635,6 +635,7 @@ const handleMint = async () => {
   minting.value = true;
   try {
     const res = await mintNFT({
+      imageId: imageDetail.value.imageId,
       thumbnailMinioUrl: realUrl, // 使用从 DOM 抓取的真实 URL
       name: mintForm.name,
       description: mintForm.description,

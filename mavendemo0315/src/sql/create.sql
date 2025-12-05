@@ -81,6 +81,8 @@ CREATE TABLE "public"."nft_info" (
                                      "contract_address" varchar(255) NOT NULL, -- 冗余字段，方便查询
 
     -- 业务数据
+
+                                     "image_id" varchar(100) NOT NULL,
                                      "image_url" varchar(255) NOT NULL,     -- 图片实际访问地址 (MinIO)
                                      "price" decimal(20,8),
                                      "name" varchar(100),                   -- NFT名称
@@ -95,6 +97,7 @@ CREATE TABLE "public"."nft_info" (
                                      CONSTRAINT "fk_nft_collection" FOREIGN KEY ("collection_id") REFERENCES "public"."nft_collection" ("collection_id")
 );
 COMMENT ON TABLE "public"."nft_info" IS 'NFT资产详情表';
+CREATE INDEX idx_nft_image_id ON nft_info(image_id);
 
 -- ----------------------------
 -- 5. NFT 交易记录表 (NFT Transaction)

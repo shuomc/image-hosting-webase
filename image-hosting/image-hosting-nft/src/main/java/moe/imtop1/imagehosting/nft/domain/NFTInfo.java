@@ -1,4 +1,4 @@
-package moe.imtop1.imagehosting.system.entity;
+package moe.imtop1.imagehosting.nft.domain;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
