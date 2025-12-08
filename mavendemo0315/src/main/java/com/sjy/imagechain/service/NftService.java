@@ -1,5 +1,6 @@
 package com.sjy.imagechain.service;
 
+import com.sjy.imagechain.domain.NftInfo;
 import com.sjy.imagechain.domain.vo.NftTransactionVO;
 import com.sjy.imagechain.domain.vo.NftVO;
 import com.sjy.imagechain.domain.vo.PageData;
@@ -64,7 +65,7 @@ public interface NftService {
      * @param collectionId 集合ID
      * @return 生成的 nftId
      */
-    String mintNFT(String imageId, String thumbnailMinioUrl, String name, String description, BigDecimal price, Integer collectionId, String fileHash);
+    NftInfo mintNFT(String imageId, String thumbnailMinioUrl, String name, String description, BigDecimal price, Integer collectionId, String fileHash);
 
     /**
      * 购买 NFT

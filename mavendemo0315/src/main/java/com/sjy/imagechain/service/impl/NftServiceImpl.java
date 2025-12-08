@@ -207,7 +207,7 @@ public class NftServiceImpl implements NftService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public String mintNFT(String imageId, String thumbnailMinioUrl, String name, String description, BigDecimal price, Integer collectionId, String fileHash) {
+    public NftInfo mintNFT(String imageId, String thumbnailMinioUrl, String name, String description, BigDecimal price, Integer collectionId, String fileHash) {
         try {
             log.info("mintNFT 开始: imageId={}, hash={}, name={}, price={}", imageId, fileHash, name, price);
 
@@ -266,7 +266,7 @@ public class NftServiceImpl implements NftService {
                     response.getTransactionReceipt().getTransactionHash(),
                     1); // 1=Success
 
-            return nftInfo.getNftId();
+            return nftInfo;
         } catch (Exception e) {
             log.error("铸造NFT失败", e);
             throw new RuntimeException("铸造NFT失败: " + e.getMessage());

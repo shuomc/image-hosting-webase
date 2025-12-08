@@ -34,10 +34,14 @@ import moe.imtop1.imagehosting.images.mapper.ImageDataMapper;
 import moe.imtop1.imagehosting.images.mapper.ImageMapper;
 import moe.imtop1.imagehosting.images.service.ImageService;
 import net.coobird.thumbnailator.Thumbnails;
+import net.coobird.thumbnailator.geometry.Positions;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -49,6 +53,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static moe.imtop1.imagehosting.common.enums.ResultCodeEnum.DATABASE_ERROR;
@@ -76,6 +81,11 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
     private static final int THUMBNAIL_MAX_SIZE = 800;
     private static final float THUMBNAIL_QUALITY = 0.8f;
     private static final String THUMBNAIL_OUTPUT_FORMAT = "jpg";  // 缩略图格式强制jpg
+
+    // 水印图配置
+    private static final int WATERMARK_MAX_SIZE = 2400;
+    private static final float WATERMARK_QUALITY = 0.9f;
+    private static final String WATERMARK_OUTPUT_FORMAT = "jpg";  // 缩略图格式强制jpg
 
     private final RedisCache redisCache; // 注入 RedisCache
     private static final Integer CACHE_EXPIRATION_SECONDS = 600; // 10 分钟
@@ -261,6 +271,162 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
         return new BatchUploadResult(successfulUploads, failedFiles);
     }
 
+    @Override
+    public String generateNftWatermark(String imageId, String tokenId, String walletAddress) throws IOException {
+        // 1. 查询图片信息
+        ImageData imageData = this.getById(imageId);
+        if (imageData == null) {
+            throw new ServiceException("图片不存在");
+        }
+
+        // 2. 获取原图 (BufferedImage)
+        BufferedImage originalImage;
+        try (InputStream stream = minioClient.getObject(GetObjectArgs.builder()
+                .bucket(originBucket)
+                .object(imageData.getOriginMinioKey())
+                .build())) {
+            originalImage = ImageIO.read(stream);
+            if (originalImage == null) {
+                throw new ServiceException("无法读取原图数据");
+            }
+        } catch (Exception e) {
+            log.error("从 MinIO 获取原图失败: {}", e.getMessage());
+            throw new ServiceException("获取原图失败");
+        }
+
+        // --- 动态计算水印尺寸 ---
+        int originWidth = originalImage.getWidth();
+
+        // 1. 宽度策略：因为要显示完整地址(42字符)，水印需要足够宽
+        // 策略：占据原图宽度的 50% (看起来更霸气，且能容纳长地址)
+        // 限制最小宽度为 500px，否则字太小看不清
+        int watermarkWidth = Math.max(500, (int) (originWidth * 0.5));
+
+        // 2. 高度策略：宽度变宽了，高度可以相对矮一点，大概 1:3.5 的比例
+        int watermarkHeight = (int) (watermarkWidth / 3.5);
+
+        // 3. 生成水印 (传入的是 Token ID)
+        BufferedImage textWatermark = createTextWatermarkImage(tokenId, walletAddress, watermarkWidth, watermarkHeight);
+
+        // 4. 合成
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+
+        Thumbnails.of(originalImage)
+                .scale(0.9f) // 整体缩放 90%
+                .watermark(Positions.BOTTOM_RIGHT, textWatermark, 0.9f)
+                .outputQuality(WATERMARK_QUALITY)
+                .outputFormat(WATERMARK_OUTPUT_FORMAT)
+                .toOutputStream(os);
+
+        byte[] watermarkedBytes = os.toByteArray();
+        InputStream is = new ByteArrayInputStream(watermarkedBytes);
+
+        // 5. 上传
+        String originalKey = imageData.getOriginMinioKey();
+        String watermarkKey = originalKey.substring(0, originalKey.lastIndexOf(".")) + "_nft.jpg";
+
+        try {
+            minioClient.putObject(PutObjectArgs.builder()
+                    .bucket(watermarkBucket)
+                    .object(watermarkKey)
+                    .stream(is, watermarkedBytes.length, -1)
+                    .contentType("image/jpeg")
+                    .build());
+        } catch (Exception e) {
+            throw new ServiceException("上传水印图失败");
+        }
+
+        // 6. 更新数据库
+        String watermarkUrl = "/" + watermarkBucket + "/" + watermarkKey;
+        imageData.setWatermarkMinioUrl(watermarkUrl);
+        imageData.setWatermarkMinioKey(watermarkKey);
+        this.updateById(imageData);
+
+        log.info("NFT 水印图生成完毕: {}", watermarkKey);
+        return watermarkUrl;
+    }
+
+    /**
+     * 辅助方法：绘制包含完整地址的水印
+     */
+    private BufferedImage createTextWatermarkImage(String tokenId, String address, int width, int height) {
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = (Graphics2D) image.getGraphics();
+
+        // 开启抗锯齿 (Text + Graphics)
+        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+        g.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
+
+        // --- 1. 绘制半透明黑色圆角背景 ---
+        g.setColor(new Color(0, 0, 0, 160)); // 加深背景色，让白色文字更显眼
+        int bgMargin = width / 30;
+        g.fillRoundRect(bgMargin, bgMargin, width - bgMargin*2, height - bgMargin*2, height/5, height/5);
+
+        // --- 2. 字体与布局计算 ---
+        // 垂直方向留白
+        int contentHeight = height - bgMargin * 2;
+        // 我们有 3 行文字：Title, TokenID, Address
+        // 分配比例：Title(30%), TokenID(25%), Address(20%), 间距(25%)
+
+        int titleSize = (int) (contentHeight * 0.28);
+        int bodySize = (int) (contentHeight * 0.18);
+        int addressSize = (int) (contentHeight * 0.14); // 地址字号稍微小一点点以防溢出
+
+        // 字体
+        Font titleFont = new Font("Arial", Font.BOLD, titleSize);
+        Font bodyFont = new Font("Arial", Font.BOLD, bodySize);
+        // 使用 Monospaced 等宽字体显示地址，更有极客感
+        Font addressFont = new Font("Monospaced", Font.PLAIN, addressSize);
+
+        // 颜色
+        Color goldColor = new Color(255, 215, 0);
+        Color whiteColor = Color.WHITE;
+        Color shadowColor = Color.BLACK;
+
+        // 起始 X 坐标 (左对齐，留出边距)
+        int startX = bgMargin + (width / 20);
+        int currentY = bgMargin + titleSize + (contentHeight / 10); // 第一行基线
+
+        // --- Line 1: 标题 ---
+        g.setFont(titleFont);
+        drawShadowText(g, "NFT CERTIFIED", startX, currentY, goldColor, shadowColor);
+
+        // --- Line 2: Token ID ---
+        currentY += (bodySize * 1.5); // 行间距
+        g.setFont(bodyFont);
+        drawShadowText(g, "Token ID: #" + tokenId, startX, currentY, whiteColor, shadowColor);
+
+        // --- Line 3: 完整地址 ---
+        currentY += (addressSize * 1.8);
+        g.setFont(addressFont);
+
+        // 加上 "Owner: " 前缀
+        String fullAddressText = "Owner: " + address;
+
+        // 自动缩放逻辑：如果地址太长超出了背景框，就自动缩小字号
+        FontMetrics fm = g.getFontMetrics();
+        int maxWidth = width - bgMargin * 2 - (width / 10);
+        if (fm.stringWidth(fullAddressText) > maxWidth) {
+            // 简单粗暴：字号缩小 20%
+            addressFont = new Font("Monospaced", Font.PLAIN, (int)(addressSize * 0.8));
+            g.setFont(addressFont);
+        }
+
+        drawShadowText(g, fullAddressText, startX, currentY, new Color(200, 200, 200), shadowColor);
+
+        g.dispose();
+        return image;
+    }
+
+    // 绘制带阴影的文字的辅助小方法
+    private void drawShadowText(Graphics2D g, String text, int x, int y, Color color, Color shadowColor) {
+        g.setColor(shadowColor);
+        g.drawString(text, x + 2, y + 2); // 阴影偏移 2px
+        g.setColor(color);
+        g.drawString(text, x, y);
+    }
+
     /**
      * 处理原图字节数组，生成缩略图并上传到 MinIO 公有桶。
      *
@@ -439,7 +605,9 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
         imageData.setLikeCount(0L);
     }
 
-
+    // ===============================================
+    // 图片详情页
+    // ===============================================
     @Override
     public ImageData getImageData(String imageId) {
         // 使用 Mybatis Plus ServiceImpl 提供的 getById 方法
@@ -451,12 +619,12 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
         assert imageData != null;
         // imageData.setMinioUrl("localhost:19000" + imageData.getMinioUrl()); //测试用
 
-        // 确保 minioExternalUrl 不以斜杠结尾，MinioUrl 以斜杠开头
+        // 拼接配置文件中的minio服务url：确保 minioExternalUrl 不以斜杠结尾，MinioUrl 以斜杠开头
         String url = minioExternalUrl.endsWith("/") ? minioExternalUrl.substring(0, minioExternalUrl.length() - 1) : minioExternalUrl;
         imageData.setOriginMinioUrl(url + imageData.getOriginMinioUrl());
         imageData.setThumbnailMinioUrl(url + imageData.getThumbnailMinioUrl());
         if(imageData.getWatermarkMinioUrl() != null){
-            imageData.setWatermarkMinioUrl(imageData.getWatermarkMinioUrl());
+            imageData.setWatermarkMinioUrl(url + imageData.getWatermarkMinioUrl());
         }
         return imageData;
     }

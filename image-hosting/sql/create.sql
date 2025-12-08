@@ -63,6 +63,7 @@ CREATE TABLE "public"."image_data" (
                                        "image_id" varchar(100) NOT NULL,
                                        "user_id" varchar(100) NOT NULL,        -- 上传者ID
                                        "nft_id" varchar(255),
+                                       "token_id" varchar(255),
                                        "file_name" varchar(100) NOT NULL,      -- 原始文件名
                                        "size" int8 NOT NULL,                   -- 文件大小 (Bytes)
                                        "content_type" varchar(50) NOT NULL,    -- MIME类型 (image/jpeg)
@@ -125,6 +126,8 @@ COMMENT ON COLUMN "public"."image_data"."file_name" IS '原始文件名';
 COMMENT ON COLUMN "public"."image_data"."size" IS '文件大小 (Bytes)';
 COMMENT ON COLUMN "public"."image_data"."content_type" IS 'MIME类型 (e.g., image/jpeg)';
 COMMENT ON COLUMN "public"."image_data"."file_hash" IS 'SHA256哈希值';
+COMMENT ON COLUMN "public"."image_data"."nft_id" IS '区块链系统生成id';
+COMMENT ON COLUMN "public"."image_data"."token_id" IS '区块链智能合约生成, NFT核心身份标识';
 -- MinIO Key/URL 注释更新
 COMMENT ON COLUMN "public"."image_data"."origin_minio_key" IS '原图的MinIO存储对象Key (高清)';
 COMMENT ON COLUMN "public"."image_data"."origin_minio_url" IS '高清原图的MinIO内部路径，需授权访问';
@@ -177,6 +180,8 @@ CREATE UNIQUE INDEX "image_data_thumbnail_minio_key_uindex" ON "public"."image_d
 CREATE INDEX "image_data_thumbnail_minio_url_index" ON "public"."image_data"("thumbnail_minio_url");
 
 CREATE UNIQUE INDEX "image_data_file_hash_uindex" ON "public"."image_data"("file_hash");
+CREATE UNIQUE INDEX "image_data_nft_id_uindex" ON "public"."image_data"("nft_id");
+CREATE UNIQUE INDEX "image_data_token_id_uindex" ON "public"."image_data"("token_id");
 
 -- --------------------------------------------------------
 -- 3. 存储策略表 (Strategies)

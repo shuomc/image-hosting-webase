@@ -2,6 +2,7 @@ package moe.imtop1.imagehosting.nft.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import lombok.extern.slf4j.Slf4j;
 import moe.imtop1.imagehosting.common.dto.AjaxResult;
 import moe.imtop1.imagehosting.images.domain.ImageData;
 import moe.imtop1.imagehosting.images.service.ImageService;
@@ -22,9 +23,9 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
-import static cn.dev33.satoken.SaManager.log;
 
 @Service
+@Slf4j
 public class INFTServiceImpl implements INFTService {
 
     @Value("${blockchain.api-url}")
@@ -113,17 +114,40 @@ public class INFTServiceImpl implements INFTService {
         AjaxResult result = forwardRequest(url, HttpMethod.POST, body);
 
         if (result.isSuccess()) {  // 区块链系统铸造成功
-            String newNftId = (String) result.getData();
+            Map<String, Object> nftInfoMap = (Map<String, Object>) result.getData();
+            String newNftId = (String) nftInfoMap.get("nftId");
+            String newTokenId = (String) nftInfoMap.get("tokenId");
 
-            // 3. 使用 MyBatis-Plus 的 LambdaUpdateWrapper 进行更新
-            // 语义：UPDATE image_table SET nft_id = newNftId WHERE image_id = imageId
-            boolean updateSuccess = imageService.update(new LambdaUpdateWrapper<ImageData>() // 泛型换成您的图片实体类名，如 ImageInfo
-                    .eq(ImageData::getImageId, imageId) // 条件：image_id 等于传入的 imageId
-                    .set(ImageData::getNftId, newNftId) // 动作：将 nft_id 字段设为 newNftId
+            // 更新本地数据库
+            boolean updateSuccess = imageService.update(new LambdaUpdateWrapper<ImageData>()
+                    .eq(ImageData::getImageId, imageId)
+                    .set(ImageData::getNftId, newNftId)
+                    .set(ImageData::getTokenId, newTokenId)
             );
 
-            if (!updateSuccess) {
-                // 记录日志：虽然链上成功了，但本地没更新到数据（可能图片ID不存在）
+            if (updateSuccess) {
+                // 2. 异步或同步生成水印图
+                // 为了不阻塞用户请求，这里可以放入线程池，或者直接同步执行（如果图不大）
+                try {
+                    // A. 获取当前登录用户 ID (假设 Mint 操作必须登录)
+                    String currentUserId = StpUtil.getLoginIdAsString();
+
+                    // B. 查询用户信息以获取钱包地址
+                    UserInfo user = userInfoService.getById(currentUserId);
+                    String walletAddress = (user != null && user.getBlockchainAddress() != null)
+                            ? user.getBlockchainAddress()
+                            : "Unregistered Address"; // 兜底
+
+                    // C. 触发水印生成逻辑
+                    // 传入: imageId, nftId, walletAddress
+                    log.info("开始生成水印图，Current User Id: " + currentUserId);
+                    imageService.generateNftWatermark(imageId, newTokenId, walletAddress);
+
+                } catch (Exception e) {
+                    log.error("生成NFT水印图失败", e);
+                    // 注意：水印失败不应回滚 NFT 铸造，只记录日志即可
+                }
+            } else {
                 log.error("NFT铸造成功，但本地关联图片失败，ImageId: {}", imageId);
             }
         }

@@ -3,6 +3,7 @@ package com.sjy.imagechain.controller;
 
 import com.sjy.imagechain.common.dto.AjaxResult;
 
+import com.sjy.imagechain.domain.NftInfo;
 import com.sjy.imagechain.domain.vo.NftTransactionVO;
 import com.sjy.imagechain.domain.vo.NftVO;
 import com.sjy.imagechain.domain.vo.PageData;
@@ -99,8 +100,8 @@ public class NftController {
         Integer collectionId = params.get("collectionId") != null ?
                 Integer.parseInt(params.get("collectionId").toString()) : null;
 
-        String nftId = nftService.mintNFT(imageId,thumbnailMinioUrl, name, description, price, collectionId, fileHash);
-        return AjaxResult.success("铸造成功", nftId);
+        NftInfo nftInfo = nftService.mintNFT(imageId,thumbnailMinioUrl, name, description, price, collectionId, fileHash);
+        return AjaxResult.success("铸造成功", nftInfo);
     }
 
     /**

@@ -28,6 +28,7 @@ public class ImageData extends BaseEntity {
     private String imageId; // 图片唯一ID (主键)
     private String userId; // 上传者用户ID
     private String nftId; // nftID
+    private String tokenId; //tokenID
     private String fileName; // 原始文件名
     private Long size; // 文件大小 (int8 -> Long)
     private String contentType; // MIME类型

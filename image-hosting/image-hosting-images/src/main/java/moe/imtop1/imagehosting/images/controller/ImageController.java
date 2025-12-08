@@ -124,6 +124,27 @@ public class ImageController {
     }
 
     /**
+     * 手动触发生成 NFT 水印图（通常由内部调用，但也暴露给前端以便调试）
+     */
+    @PostMapping("/generateNftWatermark")
+    public AjaxResult generateNftWatermark(@RequestBody Map<String, String> params) {
+        String imageId = params.get("imageId");
+        String nftId = params.get("nftId");
+        String walletAddress = params.get("walletAddress");
+
+        if (imageId == null || nftId == null) {
+            return AjaxResult.error("参数缺失");
+        }
+
+        try {
+            String url = imageService.generateNftWatermark(imageId, nftId, walletAddress);
+            return AjaxResult.success("生成成功", url);
+        } catch (IOException e) {
+            return AjaxResult.error("生成水印失败: " + e.getMessage());
+        }
+    }
+
+    /**
      * 根据 ID 获取图片的元数据。
      *
      * @param imageId 图片的唯一 ID (@PathVariable)

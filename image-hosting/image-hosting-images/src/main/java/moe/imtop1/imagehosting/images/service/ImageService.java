@@ -16,6 +16,8 @@ public interface ImageService extends IService<ImageData> {
 
     BatchUploadResult batchUploadImages(MultipartFile[] files, ImageData imageData);
 
+    String generateNftWatermark(String imageId, String nftId, String walletAddress) throws IOException;
+
     ImageData getImageData(String imageId);
 
     ImageStreamData getImageStreamData(String imageId) throws IOException;
