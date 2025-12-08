@@ -44,6 +44,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -111,6 +112,36 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
         ImageData imageData = new ImageData();
         byte[] fileBytes = file.getBytes();
 
+        // 计算哈希值和校验
+        String fileHash;
+        try {
+            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] hashBytes = digest.digest(fileBytes);
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hashBytes) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
+            }
+            fileHash = hexString.toString();
+            imageData.setFileHash(fileHash); // 设置哈希值到实体
+
+        } catch (java.security.NoSuchAlgorithmException e) {
+            log.error("SHA-256 算法不可用", e);
+            throw new ServiceException(ResultCodeEnum.IMAGE_SHA256_ERROR);
+        }
+        log.info("成功获取到SHA-256哈希值{}", fileHash);
+
+        long count = this.count(new LambdaQueryWrapper<ImageData>()
+                .eq(ImageData::getFileHash, fileHash));
+
+        if (count > 0) {
+            log.warn("拦截重复上传，文件Hash已存在: {}", fileHash);
+            // 直接抛出异常，终止后续流程
+            throw new ServiceException(ResultCodeEnum.FILE_ALREADY_EXISTS);
+        }
+
+
         // 安全提取扩展名
         String fileExtension = FileUtil.getExtensionWithDotFromFilename(file.getOriginalFilename());
 
@@ -121,6 +152,7 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
         imageData.setUserId(imageDataDTO.getUserId());
         imageData.setFileName(file.getOriginalFilename()); // 原始文件名仍需存储在数据库
         imageData.setSize(file.getSize());
+        imageData.setFileHash(fileHash);
         imageData.setContentType(file.getContentType());
         imageData.setIsPublic(imageDataDTO.getIsPublic() != null ? imageDataDTO.getIsPublic() : false);
         imageData.setCategory(imageDataDTO.getCategory() != null ? imageDataDTO.getCategory() : "Uncategorized");
@@ -267,7 +299,7 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
                         .stream(thumbnailStream, thumbnailSize, -1)
                         .contentType("image/" + THUMBNAIL_OUTPUT_FORMAT)
                         .build());
-            } // 内部流在此关闭
+            }
 
             log.info("成功上传缩略图到 MinIO，Key: {}", thumbnailKey);
 

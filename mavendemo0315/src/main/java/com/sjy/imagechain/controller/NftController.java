@@ -92,13 +92,14 @@ public class NftController {
         String thumbnailMinioUrl = (String) params.get("thumbnailMinioUrl");
         String name = (String) params.get("name");
         String description = (String) params.get("description");
+        String fileHash = (String) params.get("fileHash");
         // 处理 BigDecimal 转换异常
         BigDecimal price = params.get("price") != null ?
                 new BigDecimal(params.get("price").toString()) : BigDecimal.ZERO;
         Integer collectionId = params.get("collectionId") != null ?
                 Integer.parseInt(params.get("collectionId").toString()) : null;
 
-        String nftId = nftService.mintNFT(imageId,thumbnailMinioUrl, name, description, price, collectionId);
+        String nftId = nftService.mintNFT(imageId,thumbnailMinioUrl, name, description, price, collectionId, fileHash);
         return AjaxResult.success("铸造成功", nftId);
     }
 

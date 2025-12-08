@@ -50,7 +50,7 @@ public interface INFTService {
      * @param name NFT名称
      * @param collectionId 系列ID (可选)
      */
-    AjaxResult mintNFT(String imageId, String thumbnailMinioUrl, String name, String description, BigDecimal price, Integer collectionId);
+    AjaxResult mintNFT(String imageId, String thumbnailMinioUrl, String name, String description, BigDecimal price, Integer collectionId, String fileHash);
 
     /**
      * 购买NFT

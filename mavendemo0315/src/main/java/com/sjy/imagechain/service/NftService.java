@@ -64,7 +64,7 @@ public interface NftService {
      * @param collectionId 集合ID
      * @return 生成的 nftId
      */
-    String mintNFT(String imageId, String thumbnailMinioUrl, String name, String description, BigDecimal price, Integer collectionId);
+    String mintNFT(String imageId, String thumbnailMinioUrl, String name, String description, BigDecimal price, Integer collectionId, String fileHash);
 
     /**
      * 购买 NFT

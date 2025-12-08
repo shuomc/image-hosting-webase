@@ -32,6 +32,9 @@ public class ImageData extends BaseEntity {
     private Long size; // 文件大小 (int8 -> Long)
     private String contentType; // MIME类型
 
+    @TableField("file_hash")
+    private String fileHash; // 文件SHA-256哈希值
+
     // 存储路径信息 (已更新以匹配数据库 DDL)
     @TableField("origin_minio_key")
     private String originMinioKey; // 原图/高清图的 MinIO Key (原 minioKey 已更名)

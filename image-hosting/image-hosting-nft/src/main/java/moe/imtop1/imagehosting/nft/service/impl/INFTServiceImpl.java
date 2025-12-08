@@ -95,7 +95,7 @@ public class INFTServiceImpl implements INFTService {
     // ==========================================
 
     @Override
-    public AjaxResult mintNFT(String imageId, String thumbnailMinioUrl, String name, String description, BigDecimal price, Integer collectionId) {
+    public AjaxResult mintNFT(String imageId, String thumbnailMinioUrl, String name, String description, BigDecimal price, Integer collectionId, String fileHash) {
         String url = blockchainApiUrl + "/nft/mint";
 
         // 构造 Controller 需要的参数
@@ -105,13 +105,14 @@ public class INFTServiceImpl implements INFTService {
         body.put("name", name);
         body.put("description", description);
         body.put("price", price);
+        body.put("fileHash", fileHash);
         if (collectionId != null) {
             body.put("collectionId", collectionId);
         }
 
         AjaxResult result = forwardRequest(url, HttpMethod.POST, body);
 
-        if (result.isSuccess()) {
+        if (result.isSuccess()) {  // 区块链系统铸造成功
             String newNftId = (String) result.getData();
 
             // 3. 使用 MyBatis-Plus 的 LambdaUpdateWrapper 进行更新

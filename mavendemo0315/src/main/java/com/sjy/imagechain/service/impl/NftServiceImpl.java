@@ -57,7 +57,7 @@ public class NftServiceImpl implements NftService {
     private UserUtils userUtils;
 
     // 合约相关配置
-    private static final String CONTRACT_ADDRESS = "0xcfa7a92ec0042884c86cf0b1590067d5982d20e9";  // ImageNFTv2
+    private static final String CONTRACT_ADDRESS = "0xa6703c6e9435efab35e543e30350ac05c9c4276d";  // ImageNFTv2
     private static final String CONTRACT_NAME = "ImageNFTv2";
     private static final String ABI_PATH = "src/main/resources/abi/";
     private static final String BIN_PATH = "src/main/resources/bin/ecc/";
@@ -207,18 +207,23 @@ public class NftServiceImpl implements NftService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public String mintNFT(String imageId, String thumbnailMinioUrl, String name, String description, BigDecimal price, Integer collectionId) {
+    public String mintNFT(String imageId, String thumbnailMinioUrl, String name, String description, BigDecimal price, Integer collectionId, String fileHash) {
         try {
-            log.info("mintNFT：thumbnailMinioUrl={}, name={}, description={}, price={}, collectionId={}", thumbnailMinioUrl, name, description, price, collectionId);
+            log.info("mintNFT 开始: imageId={}, hash={}, name={}, price={}", imageId, fileHash, name, price);
 
             CryptoKeyPair keyPair = getUserKeyPair();
             AssembleTransactionProcessor processor = getProcessor(keyPair);
 
-            // 1. 链上交互: mintNFT(minioUrl, description, price)
+            // =========================================================================
+            // 1. 链上交互: mintNFT(_imageId, _fileHash, _minioUrl, _name, _description, _price)
+            // =========================================================================
             List<Object> params = new ArrayList<>();
-            params.add(thumbnailMinioUrl);
-            params.add(description);
-            params.add(price.toBigInteger());
+            params.add(imageId);           // string _imageId
+            params.add(fileHash);          // string _fileHash (最关键的确权字段)
+            params.add(thumbnailMinioUrl); // string _minioUrl
+            params.add(name);              // string _name
+            params.add(description);       // string _description
+            params.add(price.toBigInteger()); // uint256 _price
 
             TransactionResponse response = processor.sendTransactionAndGetResponseByContractLoader(
                     CONTRACT_NAME, CONTRACT_ADDRESS, "mintNFT", params
@@ -230,12 +235,16 @@ public class NftServiceImpl implements NftService {
                 throw new RuntimeException("合约未返回 Token ID");
             }
             String tokenId = returnObjects.get(0).toString();
+            log.info("链上铸造成功, TokenID: {}", tokenId);
 
-            // 2. 落库
+            // =========================================================================
+            // 2. 数据库落库
+            // =========================================================================
             NftInfo nftInfo = new NftInfo();
             nftInfo.setImageId(imageId);
             nftInfo.setImageUrl(thumbnailMinioUrl);
             nftInfo.setName(name);
+            nftInfo.setFileHash(fileHash);
             nftInfo.setDescription(description);
             nftInfo.setPrice(price);
             nftInfo.setOwnerAddress(keyPair.getAddress());
@@ -249,7 +258,13 @@ public class NftServiceImpl implements NftService {
 
             nftInfoMapper.insert(nftInfo);
 
-            recordTransaction(nftInfo.getNftId(), "0x0000000000000000000000000000000000000000", keyPair.getAddress(), price, response.getTransactionReceipt().getTransactionHash(), 1); // 1=Success
+            // 记录交易历史
+            recordTransaction(nftInfo.getNftId(),
+                    "0x0000000000000000000000000000000000000000", // Mint 操作通常视为从空地址转入
+                    keyPair.getAddress(),
+                    price,
+                    response.getTransactionReceipt().getTransactionHash(),
+                    1); // 1=Success
 
             return nftInfo.getNftId();
         } catch (Exception e) {

@@ -66,6 +66,7 @@ CREATE TABLE "public"."image_data" (
                                        "file_name" varchar(100) NOT NULL,      -- 原始文件名
                                        "size" int8 NOT NULL,                   -- 文件大小 (Bytes)
                                        "content_type" varchar(50) NOT NULL,    -- MIME类型 (image/jpeg)
+                                       "file_hash" varchar(64) NOT NULL,       -- SHA256哈希值
 
 -- [存储路径区分]
                                        "origin_minio_key" varchar(255) NOT NULL,   -- 原图MinIO中的存储对象Key (由 minio_key 重命名)
@@ -79,7 +80,7 @@ CREATE TABLE "public"."image_data" (
 
     -- [基本信息]
                                        "description" text,                         -- 图片描述
-                                       "is_public" bool NOT NULL DEFAULT true,     -- 是否公开展示
+                                       "is_public" bool NOT NULL DEFAULT false,     -- 是否公开展示
                                        "audit_status" int2 DEFAULT 0,              -- 审核状态: 0-待审, 1-通过, 2-拒绝
                                        "audit_msg" varchar(255),                   -- 审核备注/拒绝原因
 
@@ -123,6 +124,7 @@ COMMENT ON COLUMN "public"."image_data"."user_id" IS '上传者用户ID';
 COMMENT ON COLUMN "public"."image_data"."file_name" IS '原始文件名';
 COMMENT ON COLUMN "public"."image_data"."size" IS '文件大小 (Bytes)';
 COMMENT ON COLUMN "public"."image_data"."content_type" IS 'MIME类型 (e.g., image/jpeg)';
+COMMENT ON COLUMN "public"."image_data"."file_hash" IS 'SHA256哈希值';
 -- MinIO Key/URL 注释更新
 COMMENT ON COLUMN "public"."image_data"."origin_minio_key" IS '原图的MinIO存储对象Key (高清)';
 COMMENT ON COLUMN "public"."image_data"."origin_minio_url" IS '高清原图的MinIO内部路径，需授权访问';
@@ -173,6 +175,8 @@ CREATE INDEX "image_data_watermark_minio_url_index" ON "public"."image_data"("wa
 
 CREATE UNIQUE INDEX "image_data_thumbnail_minio_key_uindex" ON "public"."image_data"("thumbnail_minio_key");
 CREATE INDEX "image_data_thumbnail_minio_url_index" ON "public"."image_data"("thumbnail_minio_url");
+
+CREATE UNIQUE INDEX "image_data_file_hash_uindex" ON "public"."image_data"("file_hash");
 
 -- --------------------------------------------------------
 -- 3. 存储策略表 (Strategies)
@@ -261,6 +265,7 @@ COMMENT ON COLUMN "public"."user_info"."blockchain_address" IS 'Web3钱包地址
 CREATE UNIQUE INDEX "user_info_blockchain_address_idx" ON "public"."user_info"("blockchain_address");
 CREATE INDEX "user_info_email_idx" ON "public"."user_info"("user_email");
 CREATE INDEX "user_info_status_idx" ON "public"."user_info"("status");
+CREATE INDEX "user_info_isdelete_idx" ON "public"."user_info"("is_delete");
 
 -- --------------------------------------------------------
 -- 5. 用户统计表 (User Stats)

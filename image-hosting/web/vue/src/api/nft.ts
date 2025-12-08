@@ -92,6 +92,8 @@ export function getBalance() {
  * 后端使用 @RequestBody Map，前端使用 data 传 JSON
  */
 export function mintNFT(data: { 
+  imageId: string;
+  fileHash: string;
   thumbnailMinioUrl: string; 
   name: string; 
   description: string; 

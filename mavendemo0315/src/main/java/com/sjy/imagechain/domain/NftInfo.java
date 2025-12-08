@@ -55,6 +55,10 @@ public class NftInfo extends BaseEntity {
     @TableField("image_id")
     private String imageId;
 
+    @Schema(description = "文件SHA-256哈希")
+    @TableField("file_hash")
+    private String fileHash;
+
     @Schema(description = "图片资源地址")
     @TableField("image_url")
     private String imageUrl;

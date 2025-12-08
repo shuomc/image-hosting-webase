@@ -112,12 +112,13 @@ public class NFTController {
         String imageId= (String) params.get("imageId");
         String thumbnailMinioUrl = (String) params.get("thumbnailMinioUrl");
         String name = (String) params.get("name");
+        String fileHash = (String) params.get("fileHash");
         String description = (String) params.get("description");
         BigDecimal price = new BigDecimal(params.get("price").toString());
         Integer collectionId = params.get("collectionId") != null ?
                 Integer.parseInt(params.get("collectionId").toString()) : null;
         log.info("params:{}", params);
-        return nftService.mintNFT(imageId,thumbnailMinioUrl, name, description, price, collectionId);
+        return nftService.mintNFT(imageId,thumbnailMinioUrl, name, description, price, collectionId, fileHash);
     }
 
     @PostMapping("/buy/{nftId}")

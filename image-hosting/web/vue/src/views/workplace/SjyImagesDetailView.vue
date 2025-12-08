@@ -19,9 +19,7 @@
       <div v-else-if="imageDetail" class="grid grid-cols-1 md:grid-cols-3 gap-6">
         
         <div class="md:col-span-2 bg-slate-100 rounded-2xl shadow-xl border border-slate-100 overflow-hidden dark:bg-slate-800 dark:border-slate-700">
-          <!-- <div class="relative w-full aspect-[4/3] bg-white overflow-hidden dark:bg-slate-900 dark:border-slate-700">-->
             <img ref="previewImgRef" :src="imageDetail.thumbnailMinioUrl" :alt="imageDetail.fileName" class="w-full h-full object-contain dark:bg-white/5" />
-          <!--</div> -->
         </div>
         <div class="md:col-span-1 bg-white rounded-2xl shadow-xl border border-slate-100 p-6 flex flex-col justify-between dark:bg-slate-800 dark:border-slate-700">
           <div>
@@ -89,7 +87,6 @@
           </div>
 
           <div class="mt-6 flex flex-col gap-3">
-            
             <button @click="showOriginal" class="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-green-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/20 font-medium transition-all duration-200 -translate-y-0 hover:shadow-md dark:hover:shadow-green-500/20">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5C5.636 5 2 12 2 12s3.636 7 10 7 10-7 10-7S18.364 5 12 5z"/><circle cx="12" cy="12" r="3"/></svg>
               查看原图
@@ -98,13 +95,10 @@
               <ArrowDownTrayIcon class="w-5 h-5" />
               下载原图
             </button>
-
-            <!-- 铸造 NFT 按钮 (逻辑修改) -->
             <button @click="handleShowMintDialog" class="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 font-medium transition-all duration-200 -translate-y-0 hover:shadow-md dark:hover:shadow-indigo-500/20">
               <SparklesIcon class="w-5 h-5" />
               铸造 NFT
             </button>
-
             <button @click="deleteImage(imageDetail)" :disabled="isDeleting" class="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 font-medium transition-all duration-200 -translate-y-0 hover:shadow-md dark:hover:shadow-red-500/20 disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none">
               <TrashIcon class="w-5 h-5" />
               {{ isDeleting ? '删除中...' : '删除图片' }}
@@ -113,15 +107,16 @@
         </div>
       </div>
 
+      <!-- 扩展元数据区域 -->
       <div v-if="imageDetail" class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
         <div class="md:col-span-2 bg-white rounded-2xl shadow-xl border border-slate-100 p-6 dark:bg-slate-800 dark:border-slate-700">
           <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-4">扩展元数据</h3>
           
-          <div class="flex border-b border-slate-200 dark:border-slate-700 mb-4">
-            <button v-for="tab in ['EXIF/相机', 'GPS/位置', '统计/分析']" 
+          <div class="flex border-b border-slate-200 dark:border-slate-700 mb-4 overflow-x-auto">
+            <button v-for="tab in ['EXIF/相机', 'GPS/位置', '统计/分析', '安全/哈希']" 
                     :key="tab"
                     @click="activeTab = tab"
-                    class="py-2 px-4 text-sm font-medium transition-colors"
+                    class="py-2 px-4 text-sm font-medium transition-colors whitespace-nowrap"
                     :class="activeTab === tab 
                         ? 'text-indigo-600 border-b-2 border-indigo-600 dark:text-indigo-400 dark:border-indigo-400'
                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'">
@@ -130,6 +125,7 @@
           </div>
 
           <div class="space-y-4 text-sm text-slate-600 dark:text-slate-300">
+            <!-- EXIF Tab -->
             <div v-if="activeTab === 'EXIF/相机'" class="grid grid-cols-2 gap-4">
               <div class="flex flex-col">
                 <span class="font-medium text-slate-700 dark:text-slate-200">相机厂商 (Make):</span>
@@ -165,6 +161,7 @@
               </div>
             </div>
 
+            <!-- GPS Tab -->
             <div v-else-if="activeTab === 'GPS/位置'" class="grid grid-cols-2 gap-4">
               <div class="flex flex-col col-span-2">
                 <span class="font-medium text-slate-700 dark:text-slate-200">位置名称 (Name):</span>
@@ -189,6 +186,7 @@
               </div>
             </div>
 
+            <!-- 统计 Tab -->
             <div v-else-if="activeTab === '统计/分析'" class="grid grid-cols-2 gap-4">
               <div class="flex flex-col">
                 <span class="font-medium text-slate-700 dark:text-slate-200">浏览次数 (Views):</span>
@@ -206,7 +204,6 @@
                 <span class="font-medium text-slate-700 dark:text-slate-200">图片分类 (Category):</span>
                 <span class="text-xs">{{ imageDetail.category || '未分类' }}</span>
               </div>
-              
               <div class="flex flex-col col-span-2">
                 <span class="font-medium text-slate-700 dark:text-slate-200">主色调 (Dominant Color):</span>
                 <div class="flex items-center gap-2 mt-1">
@@ -215,6 +212,31 @@
                 </div>
               </div>
             </div>
+            
+            <!-- 新增：安全/哈希 Tab -->
+            <div v-else-if="activeTab === '安全/哈希'" class="space-y-4">
+                <div class="flex flex-col">
+                    <span class="font-medium text-slate-700 dark:text-slate-200 mb-1">文件指纹 (SHA-256):</span>
+                    <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-2 rounded-lg group relative">
+                        <code class="text-xs font-mono text-slate-600 dark:text-slate-300 break-all select-all">
+                            {{ imageDetail.fileHash || '未计算' }}
+                        </code>
+                        <button v-if="imageDetail.fileHash" 
+                                @click="copyToClipboard(imageDetail.fileHash)" 
+                                class="p-1 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500" 
+                                title="复制哈希值">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="text-xs text-slate-400 dark:text-slate-500 leading-relaxed">
+                    <p>此哈希值是文件的数字指纹，唯一对应原始图片文件内容。</p>
+                    <p class="mt-1">当您将此图片铸造为 NFT 时，该值将被写入区块链，作为不可篡改的存证凭据，用于验证版权和文件完整性。</p>
+                </div>
+            </div>
+
           </div>
         </div>
 
@@ -233,6 +255,7 @@
       </div>
     </div>
 
+    <!-- 模态框 1: 原图预览 -->
     <Teleport to="body">
       <Transition
         enter-active-class="transition ease-out duration-300"
@@ -245,11 +268,7 @@
         <div v-if="modalVisible" 
              class="fixed inset-0 z-[1000] flex items-center justify-center p-4 sm:p-8"
              @click.self="closeModal">
-          
-          <!-- 模糊背景 -->
           <div class="absolute inset-0 bg-slate-900/95 backdrop-blur-md transition-opacity" @click="closeModal"></div>
-
-          <!-- 关闭按钮 -->
           <button class="absolute top-4 right-4 sm:top-6 sm:right-6 z-[1010] p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white border border-white/5 backdrop-blur-sm transition-all duration-200 group" 
                   @click="closeModal"
                   title="关闭预览">
@@ -257,11 +276,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-
-          <!-- 图片容器 -->
           <div class="relative w-full h-full flex flex-col items-center justify-center pointer-events-none z-10">
-
-            <!-- 加载状态 -->
             <div v-if="originalImageLoading" class="absolute inset-0 flex items-center justify-center z-20">
               <div class="flex flex-col items-center gap-3 p-6 rounded-2xl bg-slate-800/50 backdrop-blur-md border border-white/10 shadow-2xl">
                 <svg class="animate-spin h-10 w-10 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -271,8 +286,6 @@
                 <span class="text-sm font-medium text-slate-300 tracking-wide">正在加载原图...</span>
               </div>
             </div>
-            
-            <!-- 图片本体 -->
             <img 
               v-if="presignedUrl"
               :src="presignedUrl" 
@@ -280,17 +293,12 @@
               class="pointer-events-auto max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl ring-1 ring-white/10 transition-all duration-500 select-none"
               :class="originalImageLoading ? 'opacity-0 scale-95' : 'opacity-100 scale-100'"
             />
-
-            <!-- 底部悬浮栏 (文件名 & 下载) -->
             <div v-if="!originalImageLoading && presignedUrl && imageDetail" 
                  class="pointer-events-auto mt-6 px-6 py-3 bg-slate-900/80 backdrop-blur-xl rounded-full border border-white/10 flex items-center gap-4 shadow-2xl transition-all hover:bg-slate-900">
-              
               <span class="text-sm font-medium text-slate-200 max-w-[150px] sm:max-w-[300px] truncate" :title="imageDetail.fileName">
                 {{ imageDetail.fileName }}
               </span>
-              
               <div class="w-px h-4 bg-white/20"></div>
-              
               <a :href="presignedUrl" 
                  :download="imageDetail.fileName" 
                  target="_blank"
@@ -299,24 +307,17 @@
                  访问图片地址
               </a>
             </div>
-
           </div>
         </div>
       </Transition>
     </Teleport>
 
-    <!-- 模态框 2: 铸造 NFT (新增) -->
+    <!-- 模态框 2: 铸造 NFT -->
     <Teleport to="body">
       <Transition enter-active-class="transition ease-out duration-300" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition ease-in duration-200" leave-from-class="opacity-100" leave-to-class="opacity-0">
         <div v-if="mintDialogVisible" class="fixed inset-0 z-[1000] flex items-center justify-center p-4" @click.self="mintDialogVisible = false">
-          
-          <!-- 背景遮罩 -->
           <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm transition-opacity" @click="mintDialogVisible = false"></div>
-
-          <!-- 弹窗内容 -->
           <div class="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-700 transform transition-all z-10">
-            
-            <!-- 标题栏 -->
             <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
               <div class="flex items-center gap-2">
                 <div class="p-1.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400">
@@ -328,31 +329,24 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
               </button>
             </div>
-
-            <!-- 表单内容 -->
             <div class="p-6 space-y-4">
               <div class="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-lg text-xs text-indigo-600 dark:text-indigo-300">
                 铸造将把此图片的数字指纹写入区块链，确立您的所有权。
               </div>
-
               <div>
                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">资产名称</label>
                 <input type="text" v-model="mintForm.name" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="给您的 NFT 起个名字">
               </div>
-
               <div>
                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">描述</label>
                 <textarea v-model="mintForm.description" rows="3" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition resize-none" placeholder="描述这个资产..."></textarea>
               </div>
-
               <div>
                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">初始价格 (ETH)</label>
                 <input type="number" v-model.number="mintForm.price" step="0.0001" min="0" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition">
                 <p class="text-xs text-slate-400 mt-1">设置为 0 则表示暂不出售，仅铸造到仓库。</p>
               </div>
             </div>
-
-            <!-- 底部按钮 -->
             <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3">
               <button @click="mintDialogVisible = false" class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-700 transition text-sm font-medium">取消</button>
               <button 
@@ -364,8 +358,37 @@
                 {{ minting ? '铸造中...' : '确认铸造' }}
               </button>
             </div>
-
           </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- 模态框 3: 激活账户弹窗 (新增) -->
+    <Teleport to="body">
+      <Transition enter-active-class="transition ease-out duration-300" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition ease-in duration-200" leave-from-class="opacity-100" leave-to-class="opacity-0">
+        <div v-if="activationDialogVisible" class="fixed inset-0 z-[1000] flex items-center justify-center p-4" @click.self="activationDialogVisible = false">
+            <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm transition-opacity" @click="activationDialogVisible = false"></div>
+            <div class="relative w-full max-w-sm bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-700 transform transition-all z-10">
+                <div class="p-6 text-center">
+                    <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900/30 mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">需要激活账户</h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6">
+                        您尚未激活区块链账户，无法进行 NFT 铸造。激活后您将获得专属的区块链钱包地址。
+                    </p>
+                    <div class="flex gap-3">
+                        <button @click="activationDialogVisible = false" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition-colors">
+                            稍后再说
+                        </button>
+                        <button @click="goToActivation" class="flex-1 px-4 py-2.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 font-medium shadow-md shadow-indigo-200 dark:shadow-none transition-all">
+                            立即激活
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
       </Transition>
     </Teleport>
@@ -381,12 +404,11 @@ import { API_BASE_URL } from '@/config';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useUserStore } from '@/stores/user';
 import { ArrowDownTrayIcon, SparklesIcon, TrashIcon, PencilSquareIcon, CheckIcon, LinkIcon } from '@heroicons/vue/24/outline';
-// 引入 NFT 相关 API (请确保这些已在 api/nft.ts 定义)
 import { checkRegistrationStatus, mintNFT } from '@/api/nft';
 
-// === 1. 扩展接口定义 (新增所有 EXIF/GPS/Analysis 字段) ===
+// === 1. 扩展接口定义 ===
 interface Image {
-  // 基础信息
+  // ... (保持原样)
   imageId: string;
   thumbnailMinioUrl: string;
   watermarkMinioUrl: string;
@@ -394,36 +416,29 @@ interface Image {
   fileName: string;
   userId: string;
   contentType: string;
+  fileHash: string; // 确保包含 fileHash
   size: number;
   isPublic: boolean;
   description: string | null;
-  uploadTime?: string; // 基础时间
-
-  // 尺寸
+  uploadTime?: string;
   width: number | null;
   height: number | null;
-
-  // EXIF 元数据
   cameraMake: string | null;
   cameraModel: string | null;
   lensModel: string | null;
-  focalLength: string | null; // e.g. "50.0 mm"
-  aperture: string | null; // e.g. "f/2.8"
-  shutterSpeed: string | null; // e.g. "1/100s"
+  focalLength: string | null;
+  aperture: string | null;
+  shutterSpeed: string | null;
   iso: number | null;
-  shootTime: string | null; // 专业的拍摄时间，后端可能是 LocalDateTime/String
-
-  // 地理位置
+  shootTime: string | null;
   locationName: string | null;
   latitude: number | null;
   longitude: number | null;
-
-  // 统计与分类
   viewCount: number | null;
   downloadCount: number | null;
   likeCount: number | null;
   category: string | null;
-  dominantColor: string | null; // e.g. "#001B4B"
+  dominantColor: string | null;
 }
 
 // === 2. 状态定义 ===
@@ -434,36 +449,27 @@ const imageDetail = ref<Image | null>(null);
 const loading = ref(true);
 const error = ref<Error | null>(null);
 const isDeleting = ref(false);
-// **新增：原图模态框状态**
 const modalVisible = ref(false);
 const presignedUrl = ref('');
 const originalImageLoading = ref(false);
-
-// 编辑状态
 const isEditing = ref(false);
 const isUpdating = ref(false); 
-const editForm = reactive({
-    fileName: '',
-    description: '',
-    isPublic: false
-});
-
-// 新增：元数据 Tab 状态
+const editForm = reactive({ fileName: '', description: '', isPublic: false });
 const activeTab = ref('EXIF/相机');
 
-// === 新增：铸造相关状态 ===
+// Mint 相关状态
 const mintDialogVisible = ref(false);
 const minting = ref(false);
-const mintForm = reactive({
-  name: '',
-  description: '',
-  price: 0
-});
+const mintForm = reactive({ name: '', description: '', price: 0 });
 
-// 定义mint图片的引用
+// === 新增：激活账户弹窗状态 ===
+const activationDialogVisible = ref(false);
+
 const previewImgRef = ref<HTMLImageElement | null>(null);
 
-// === 3. 核心业务逻辑 (保持不变或微调) ===
+// === 3. 业务逻辑 ===
+
+// ... (toggleEditMode, handleUpdateImage, downloadImage, deleteImage 保持不变)
 
 const toggleEditMode = async () => {
     if (isEditing.value) {
@@ -480,33 +486,24 @@ const toggleEditMode = async () => {
 
 const handleUpdateImage = async () => {
     if (!imageDetail.value) return;
-    
     if (!editForm.fileName.trim()) {
         ElMessage.warning('文件名不能为空');
         return;
     }
-
     isUpdating.value = true;
-
     try {
         const formData = new FormData();
         formData.append('imageId', imageDetail.value.imageId);
         formData.append('fileName', editForm.fileName);
         formData.append('description', editForm.description);
         formData.append('isPublic', editForm.isPublic.toString());
-
         const updateUrl = `${API_BASE_URL}/api/images/update`;
-        
         const responseData = await service.post(updateUrl, formData);
-
         if (responseData.code === 200) {
             ElMessage.success('图片信息修改成功');
-            
-            // 更新本地视图数据
             imageDetail.value.fileName = editForm.fileName;
             imageDetail.value.description = editForm.description;
             imageDetail.value.isPublic = editForm.isPublic;
-            
             isEditing.value = false;
         } else {
             ElMessage.error(responseData.msg || '修改失败');
@@ -518,7 +515,6 @@ const handleUpdateImage = async () => {
     }
 };
 
-// ... 原有的下载、删除、Mint 逻辑保持不变 ...
 const downloadImage = (image: Image) => {
   if (!image || !image.imageId || !image.fileName) {
     ElMessage.warning('图片信息不完整，无法下载。');
@@ -538,68 +534,45 @@ const deleteImage = async (image: Image) => {
     ElMessage.warning('图片信息不完整，无法删除。');
     return;
   }
-
   try {
     await ElMessageBox.confirm(`确定要删除图片 "${image.fileName}" 吗？`, '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning',
     });
-
     isDeleting.value = true;
     const deleteUrl = `${API_BASE_URL}/api/images/deleteById/${image.imageId}`;
     const responseData = await service.post(deleteUrl);
-
     if (responseData.code === 200) {
       ElMessage.success(responseData.msg || '删除成功');
       router.push({ name: 'MyImages' });
     } else {
-       console.error('图片删除业务失败:', responseData.msg);
        ElMessage.error(responseData.msg || '删除失败');
     }
-
   } catch (error: any) {
-    if (error !== 'cancel') {
-        console.error('图片删除请求或确认框错误:', error);
-    } 
+    // cancelled
   } finally {
     isDeleting.value = false;
   }
 };
 
-// === 新增：显示铸造弹窗前的逻辑 ===
+
+// === 修改：显示 Mint 弹窗逻辑 (不再使用 ElMessageBox) ===
 const handleShowMintDialog = async () => {
   if (!imageDetail.value) return;
 
-  // 1. 检查是否已注册区块链账户
   try {
     const res = await checkRegistrationStatus();
-    // 假设 API 返回 { code: 200, data: { isRegistered: true/false } }
     const isRegistered = res.data && res.data.isRegistered;
 
     if (isRegistered) {
-      // 已注册 -> 初始化表单并显示弹窗
       mintForm.name = imageDetail.value.fileName || '';
       mintForm.description = imageDetail.value.description || '';
       mintForm.price = 0;
       mintDialogVisible.value = true;
     } else {
-      // 未注册 -> 提示跳转
-      ElMessageBox.confirm(
-        '您尚未激活区块链账户，无法进行铸造操作。激活后即可拥有专属钱包地址。',
-        '需要激活账户',
-        {
-          confirmButtonText: '立即激活',
-          cancelButtonText: '稍后再说',
-          type: 'info',
-          center: true
-        }
-      ).then(() => {
-        // 跳转到 MyNFT 页面 (那里有一键激活功能)
-        router.push({ name: 'MyNFT' });
-      }).catch(() => {
-        // 取消操作
-      });
+      // 弹出自定义激活弹窗
+      activationDialogVisible.value = true;
     }
   } catch (err) {
     console.error('检查区块链账户状态失败:', err);
@@ -607,14 +580,16 @@ const handleShowMintDialog = async () => {
   }
 };
 
-// === 执行铸造逻辑 ===
+// === 新增：跳转激活逻辑 ===
+const goToActivation = () => {
+    activationDialogVisible.value = false;
+    router.push({ name: 'MyNFT' });
+};
+
+// === 执行铸造逻辑 (保持不变) ===
 const handleMint = async () => {
   if (!imageDetail.value) return;
-  
-  // 1. 从 DOM 元素直接获取 src 
   let realUrl = previewImgRef.value?.src;
-  
-  // 2. 如果 DOM 没取到，再退回到数据对象获取
   if (!realUrl) {
       realUrl = imageDetail.value.thumbnailMinioUrl;
   }
@@ -622,7 +597,6 @@ const handleMint = async () => {
       ElMessage.error('无法获取图片链接，请等待图片加载完成或刷新重试');
       return;
   }
-  
   if (!mintForm.name.trim()) {
     ElMessage.warning('请输入资产名称');
     return;
@@ -636,8 +610,9 @@ const handleMint = async () => {
   try {
     const res = await mintNFT({
       imageId: imageDetail.value.imageId,
-      thumbnailMinioUrl: realUrl, // 使用从 DOM 抓取的真实 URL
+      thumbnailMinioUrl: realUrl,
       name: mintForm.name,
+      fileHash: imageDetail.value.fileHash,
       description: mintForm.description,
       price: mintForm.price
     });
@@ -656,7 +631,8 @@ const handleMint = async () => {
   }
 };
 
-// === 4. 辅助函数 (新增 GPS 链接) ===
+// ... (辅助函数和数据获取逻辑保持不变)
+
 const formatBytes = (bytes: number | undefined, decimals = 2): string => {
   if (bytes === undefined || bytes === null || bytes === 0) return '0 Bytes';
   const k = 1024;
@@ -669,7 +645,6 @@ const formatBytes = (bytes: number | undefined, decimals = 2): string => {
 const formatTimestamp = (timestamp: string | undefined): string => {
   if (!timestamp) return '未知时间';
   try {
-    // 尝试解析 ISO 格式的字符串 (LocalDateTime)
     const date = new Date(timestamp);
     if (isNaN(date.getTime())) return '无效时间';
     const year = date.getFullYear();
@@ -683,87 +658,45 @@ const formatTimestamp = (timestamp: string | undefined): string => {
   }
 };
 
-// === 5. EXIF 格式化辅助函数 (新增) ===
-
-/**
- * 通用 EXIF 分数格式化函数
- * 接收 "Numerator/Denominator" 字符串，返回精确的小数值。
- */
 const formatExifValue = (value: string | null): number | null => {
     if (!value || typeof value !== 'string') return null;
-
-    // 检查是否包含分数形式
     if (value.includes('/')) {
         const parts = value.split('/').map(p => parseFloat(p.trim()));
         const numerator = parts[0];
         const denominator = parts[1];
-        
-        // 确保分子和分母都是有效的数字且分母不为零
         if (isFinite(numerator) && isFinite(denominator) && denominator !== 0) {
             return numerator / denominator;
         }
     }
-    
-    // 如果不是分数形式，尝试直接解析为浮点数
     const num = parseFloat(value.trim());
     return isFinite(num) ? num : null;
 };
 
-/**
- * 格式化焦距 (Focal Length)
- * @param value "560/10"
- * @returns "56mm" 或 "N/A"
- */
 const formatFocalLength = (value: string | null): string => {
     const num = formatExifValue(value);
     if (num === null) return 'N/A';
-    
-    // 焦距通常保留整数或一位小数
     return `${num.toFixed(0)}mm`; 
 };
 
-/**
- * 格式化光圈 (Aperture)
- * @param value "f/18/10" 或 "1.8" (虽然您的数据是 "18/10"，但需处理前缀)
- * @returns "f/1.8" 或 "N/A"
- */
 const formatAperture = (value: string | null): string => {
     let rawValue = value;
-    // 移除可能存在的 "f/" 前缀
     if (rawValue && rawValue.toLowerCase().startsWith('f/')) {
         rawValue = rawValue.substring(2);
     }
-    
     const num = formatExifValue(rawValue);
     if (num === null) return 'N/A';
-    
-    // 光圈值通常保留一位小数
     return `f/${num.toFixed(1)}`;
 };
 
-/**
- * 格式化快门速度 (Shutter Speed)
- * @param value "9321928/1000000"
- * @returns "1/640s" 或 "N/A"
- */
 const formatShutterSpeed = (value: string | null): string => {
     const num = formatExifValue(value);
     if (num === null) return 'N/A';
-    
-    // 快门速度：
-    // 如果值小于 1 秒，表示为分数形式 1/N
     if (num < 1) {
-        // 计算分母的倒数，并四舍五入到最近的整百/整十以便美观，例如 0.0015625 -> 1/640
-        // 这里采用简单的倒数取整
         const denominator = Math.round(1 / num);
-        // 如果倒数结果为 1，则表示 1/1s
         if (denominator === 1) return `1s`;
-        
         return `1/${denominator}s`;
     } 
-    // 如果值大于等于 1 秒
     else {
-        // 保留一位小数并加上 's'
         return `${num.toFixed(1)}s`;
     }
 };
@@ -792,11 +725,7 @@ const getLinkByLabel = (label: string) => {
   }
 };
 
-/**
- * 生成 Google Maps 链接，方便用户跳转查看 GPS 位置
- */
 const getMapLink = (lat: number, lon: number): string => {
-    // 使用 Google Maps 链接作为通用链接
     return `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
 };
 
@@ -807,7 +736,6 @@ const fetchImageDetail = async (imageId: string) => {
 
   const storedImage = userStore.findImageById(imageId);
   if (storedImage) {
-    // 需要确保storedImage包含所有扩展字段
     imageDetail.value = storedImage as Image; 
     loading.value = false;
   } else {
@@ -815,7 +743,6 @@ const fetchImageDetail = async (imageId: string) => {
     try {
       const responseData = await service.get(apiUrl);
       if (responseData.code === 200 && responseData.data) {
-        // 确保从后端获取的数据类型正确
         imageDetail.value = responseData.data as Image;
       } else {
         error.value = new Error(responseData.msg || '获取图片详情失败');
@@ -840,23 +767,7 @@ watch(() => route.params.imageId, (newImageId) => {
   }
 }, { immediate: true });
 
-// // NFT Minting logic (保持不变)
-// const mintDialogVisible = ref(false);
-// const minting = ref(false);
-// const mintFormRef = ref();
-// const mintForm = ref({ description: '', price: 0 });
-
-// const showMintDialog = () => {
-//   mintForm.value = {
-//     description: imageDetail.value?.description || '',
-//     price: 0
-//   };
-//   mintDialogVisible.value = true;
-// };
-
-// **新增：获取签名 URL 的核心方法**
 const fetchPresignedUrl = async (imageId: string): Promise<string> => {
-    // 假设您的后端接口是 /api/images/minio/getPresignedUrl
     const apiUrl = `${API_BASE_URL}/api/images/minio/getPresignedUrl/${imageId}`;
     try {
         const responseData = await service.get(apiUrl);
@@ -872,21 +783,16 @@ const fetchPresignedUrl = async (imageId: string): Promise<string> => {
     }
 };
 
-// **新增：显示原图模态框**
 const showOriginal = async () => {
     if (!imageDetail.value) return;
-
-    // 由图片id查询key
     const imageId = imageDetail.value.imageId;
     if (!imageId) {
         ElMessage.warning('原图 id 获取失败');
         return;
     }
-
     modalVisible.value = true;
     originalImageLoading.value = true;
     presignedUrl.value = '';
-
     try {
         const url = await fetchPresignedUrl(imageId);
         presignedUrl.value = url;
@@ -897,14 +803,29 @@ const showOriginal = async () => {
     }
 };
 
-// **新增：关闭模态框**
 const closeModal = () => {
     modalVisible.value = false;
-    presignedUrl.value = ''; // 释放链接
+    presignedUrl.value = ''; 
 };
-
 </script>
 
 <style scoped>
-
+/* 确保滚动条样式 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
 </style>
