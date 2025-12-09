@@ -24,5 +24,6 @@ public class NftVO {
     private String creatorName;     // 铸造者名字
 
     private String contractAddress; // 合约地址
+    private String fileHash;        // 文件Hash
     private LocalDateTime createTime;
 }

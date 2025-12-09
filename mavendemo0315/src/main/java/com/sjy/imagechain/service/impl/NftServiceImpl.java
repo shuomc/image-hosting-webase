@@ -9,6 +9,7 @@ import com.sjy.imagechain.mapper.AppUserMapper;
 import com.sjy.imagechain.domain.vo.NftTransactionVO;
 import com.sjy.imagechain.domain.vo.NftVO;
 import com.sjy.imagechain.domain.vo.PageData;
+import com.sjy.imagechain.domain.vo.TransactionStatsVO;
 import com.sjy.imagechain.mapper.NftInfoMapper;
 import com.sjy.imagechain.mapper.NftTransactionMapper;
 import com.sjy.imagechain.service.AppUserService;
@@ -182,6 +183,70 @@ public class NftServiceImpl implements NftService {
         }
 
         return new PageData<>(voList, total);
+    }
+
+    @Override
+    public PageData<NftTransactionVO> getAllTransactions(Integer page, Integer pageSize, String type) {
+        // 1. 查询所有交易
+        LambdaQueryWrapper<NftTransaction> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(type)) {
+            wrapper.eq(NftTransaction::getType, type);
+        }
+        wrapper.orderByDesc(NftTransaction::getCreateTime);
+
+        Page<NftTransaction> pageParam = new Page<>(page, pageSize);
+        Page<NftTransaction> resultPage = nftTransactionMapper.selectPage(pageParam, wrapper);
+
+        List<NftTransaction> pagedList = resultPage.getRecords();
+        Long total = resultPage.getTotal();
+
+        // 3. 转换为 VO 并填充 NFT 信息
+        List<NftTransactionVO> voList = pagedList.stream().map(tx -> {
+            NftTransactionVO vo = new NftTransactionVO();
+            BeanUtils.copyProperties(tx, vo);
+            return vo;
+        }).collect(Collectors.toList());
+
+        // 4. 批量填充关联的 NFT 信息
+        if (!voList.isEmpty()) {
+            Set<String> nftIds = pagedList.stream().map(NftTransaction::getNftId).collect(Collectors.toSet());
+            if (!nftIds.isEmpty()) {
+                List<NftInfo> nftInfos = nftInfoMapper.selectBatchIds(nftIds);
+                Map<String, NftInfo> nftMap = nftInfos.stream()
+                        .collect(Collectors.toMap(NftInfo::getNftId, Function.identity()));
+
+                for (int i = 0; i < voList.size(); i++) {
+                    NftTransactionVO vo = voList.get(i);
+                    String currentNftId = pagedList.get(i).getNftId();
+                    if (nftMap.containsKey(currentNftId)) {
+                        NftInfo nft = nftMap.get(currentNftId);
+                        vo.setNftName(nft.getName());
+                        vo.setImageUrl(nft.getImageUrl());
+                    }
+                }
+            }
+        }
+
+        return new PageData<>(voList, total);
+    }
+
+    @Override
+    public List<TransactionStatsVO> getTransactionStats(String type) {
+        LocalDateTime startTime;
+        String format = "YYYY-MM-DD";
+
+        if ("week".equalsIgnoreCase(type)) {
+            startTime = LocalDateTime.now().minusWeeks(12);
+            format = "IYYY-IW"; 
+        } else if ("month".equalsIgnoreCase(type)) {
+            startTime = LocalDateTime.now().minusMonths(12);
+            format = "YYYY-MM";
+        } else {
+            startTime = LocalDateTime.now().minusDays(30);
+            format = "YYYY-MM-DD";
+        }
+        
+        return nftTransactionMapper.selectStats(startTime, format);
     }
 
     @Override
@@ -364,56 +429,26 @@ public class NftServiceImpl implements NftService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean putOnShelf(String nftId) {
+        // 检查价格
         NftInfo nftInfo = nftInfoMapper.selectById(nftId);
-        if(nftInfo.getPrice() == null || nftInfo.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+        if (nftInfo == null) throw new RuntimeException("NFT不存在");
+        if (nftInfo.getPrice() == null || nftInfo.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
             throw new RuntimeException("上架前请先设置有效价格");
         }
 
-        try {
-            CryptoKeyPair keyPair = getUserKeyPair();
-            AssembleTransactionProcessor processor = getProcessor(keyPair);
-
-            List<Object> params = new ArrayList<>();
-            params.add(new BigInteger(nftInfo.getTokenId()));
-            params.add(nftInfo.getPrice().toBigInteger());
-
-            TransactionResponse response = processor.sendTransactionAndGetResponseByContractLoader(
-                    CONTRACT_NAME, CONTRACT_ADDRESS, "listNFT", params
-            );
-            handleContractError(response);
-
-            nftInfo.setIsForSale(true);
-            nftInfoMapper.updateById(nftInfo);
-            return true;
-        } catch (Exception e) {
-            log.error("上架失败", e);
-            throw new RuntimeException("上架失败");
-        }
+        // 调用 setForSale(tokenId, true)
+        return executeContractAction(nftId, "setForSale", new Object[]{true}, nft -> {
+            nft.setIsForSale(true);
+        });
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean offShelf(String nftId) {
-        try {
-            NftInfo nftInfo = nftInfoMapper.selectById(nftId);
-            CryptoKeyPair keyPair = getUserKeyPair();
-            AssembleTransactionProcessor processor = getProcessor(keyPair);
-
-            List<Object> params = new ArrayList<>();
-            params.add(new BigInteger(nftInfo.getTokenId()));
-
-            TransactionResponse response = processor.sendTransactionAndGetResponseByContractLoader(
-                    CONTRACT_NAME, CONTRACT_ADDRESS, "delistNFT", params
-            );
-            handleContractError(response);
-
-            nftInfo.setIsForSale(false);
-            nftInfoMapper.updateById(nftInfo);
-            return true;
-        } catch (Exception e) {
-            log.error("下架失败", e);
-            throw new RuntimeException("下架失败");
-        }
+        // 调用 setForSale(tokenId, false)
+        return executeContractAction(nftId, "setForSale", new Object[]{false}, nft -> {
+            nft.setIsForSale(false);
+        });
     }
 
     // ==========================================
@@ -516,6 +551,9 @@ public class NftServiceImpl implements NftService {
                 AppUser creator = userMap.get(nft.getCreatorAddress());
                 vo.setCreatorName(creator.getUsername());
             }
+            
+            // 显式设置 fileHash，防止 copyProperties 遗漏（虽然字段名一致通常会自动复制）
+            vo.setFileHash(nft.getFileHash());
 
             return vo;
         }).collect(Collectors.toList());

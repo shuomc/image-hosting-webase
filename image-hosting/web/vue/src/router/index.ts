@@ -109,9 +109,9 @@ const router = createRouter({
           meta: { requiresAuth: true }
         },
         {
-          path: '/nft-list-view',
-          name: 'NFTListView',
-          component: () => import('@/views/nft/NFTListView.vue'),
+          path: '/nft-market',
+          name: 'NFTMarket',
+          component: () => import('@/views/nft/NFTMarket.vue'),
           meta: { title: 'NFTMarket' }
         },
         {

@@ -117,6 +117,7 @@ CREATE TABLE "public"."nft_transaction" (
 
     -- 链上状态监控
                                             "status" INT2 DEFAULT 0 NOT NULL,         -- 0-打包中, 1-成功, 2-失败
+                                            "type" VARCHAR(20),                       -- 交易类型: MINT, BUY, TRANSFER
                                             "block_number" INT8,                      -- 区块高度
                                             "group_id" INT4 DEFAULT 1,                -- FISCO BCOS 群组ID (默认1)
 

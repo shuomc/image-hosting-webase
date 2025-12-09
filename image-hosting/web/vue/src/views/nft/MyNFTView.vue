@@ -209,7 +209,7 @@
                        <td class="px-6 py-3">
                          <div class="flex flex-col">
                            <span class="font-medium text-slate-900 dark:text-white">{{ nft.name || '未命名' }}</span>
-                           <span class="text-xs text-slate-400 font-mono">ID: {{ shortenAddress(nft.nftId, 4) }}</span>
+                           <span class="text-xs text-slate-400 font-mono">Token ID: #{{ nft.tokenId }}</span>
                          </div>
                        </td>
                        
@@ -256,15 +256,25 @@
             
             <!-- 分页 -->
             <div class="mt-8 flex justify-end" v-if="total > 0">
-              <el-pagination 
-                v-model:current-page="currentPage" 
-                v-model:page-size="pageSize" 
-                :page-sizes="[12, 24, 36, 48]"
-                layout="total, sizes, prev, pager, next" 
-                :total="total" 
-                @size-change="handleSizeChange"
-                @current-change="handleCurrentChange" 
-                background />
+              <div class="flex items-center gap-2">
+                <button 
+                  @click="handleCurrentChange(currentPage - 1)" 
+                  :disabled="currentPage === 1"
+                  class="px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  上一页
+                </button>
+                <span class="text-sm text-slate-500 dark:text-slate-400">
+                  第 {{ currentPage }} 页 / 共 {{ Math.ceil(total / pageSize) }} 页
+                </span>
+                <button 
+                  @click="handleCurrentChange(currentPage + 1)" 
+                  :disabled="currentPage * pageSize >= total"
+                  class="px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  下一页
+                </button>
+              </div>
             </div>
           </template>
         </div>
@@ -272,22 +282,46 @@
     </div>
 
     <!-- 弹窗: 设置价格 -->
-    <el-dialog v-model="priceDialogVisible" title="设置出售价格" width="30%" class="rounded-2xl">
-      <div class="py-4">
-         <p class="text-sm text-slate-500 mb-4">上架后，其他用户可以在市场中购买您的 NFT。</p>
-         <el-form :model="priceForm" label-position="top">
-          <el-form-item label="价格 (ETH)">
-            <el-input-number v-model="priceForm.price" :min="0.0001" :precision="4" :step="0.1" class="w-full" />
-          </el-form-item>
-        </el-form>
+    <div v-if="priceDialogVisible" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <!-- 背景遮罩 -->
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" @click="priceDialogVisible = false"></div>
+      
+      <!-- 弹窗内容 -->
+      <div class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md p-6 transform transition-all scale-100">
+        <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">设置出售价格</h3>
+        <p class="text-sm text-slate-500 mb-6">上架后，其他用户可以在市场中购买您的 NFT。</p>
+        
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">价格 (ETH)</label>
+          <div class="relative">
+            <input 
+              type="number" 
+              v-model="priceForm.price" 
+              step="0.0001"
+              min="0.0001"
+              class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+              placeholder="0.00"
+            />
+            <div class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">ETH</div>
+          </div>
+        </div>
+
+        <div class="flex gap-3">
+          <button 
+            @click="priceDialogVisible = false"
+            class="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+          >
+            取消
+          </button>
+          <button 
+            @click="confirmSetPrice"
+            class="flex-1 px-4 py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-500/30 transition"
+          >
+            确认上架
+          </button>
+        </div>
       </div>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="priceDialogVisible = false" class="!rounded-lg">取消</el-button>
-          <el-button type="primary" @click="confirmSetPrice" class="!rounded-lg bg-indigo-600 border-indigo-600">确认上架</el-button>
-        </span>
-      </template>
-    </el-dialog>
+    </div>
 
   </div>
 </template>
@@ -296,7 +330,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 // 引入之前定义的 API，假设您已在 api/nft.ts 中定义了这些方法
-import { getMyNFTs, setNFTPrice, offShelf } from '@/api/nft' 
+import { getMyNFTs, setNFTPrice, offShelf, putOnShelf } from '@/api/nft' 
 import request from '@/utils/request' // 用于调用 check 和 register
 import { useRouter } from 'vue-router'
 
@@ -310,6 +344,8 @@ interface NFTInfo {
   price: number;
   isForSale: boolean;
   ownerAddress: string;
+  creatorAddress: string;
+  fileHash: string;
   contractAddress: string;
   createTime: string;
 }
@@ -460,11 +496,19 @@ const confirmSetPrice = async () => {
   }
 
   try {
+    // 1. 设置价格
     await setNFTPrice(selectedNFT.value.nftId, priceForm.value.price)
+    
+    // 2. 如果当前未上架，则执行上架操作
+    if (!selectedNFT.value.isForSale) {
+      await putOnShelf(selectedNFT.value.nftId)
+    }
+    
     ElMessage.success('上架成功')
     priceDialogVisible.value = false
     fetchNFTList()
   } catch (error) {
+    console.error(error)
     ElMessage.error('上架失败')
   }
 }
@@ -524,10 +568,5 @@ const layoutBtnClass = (layout: string) => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
-}
-
-/* 自定义 el-pagination 样式覆盖 (使其更贴合 Tailwind) */
-:deep(.el-pagination.is-background .el-pager li:not(.is-disabled).is-active) {
-  background-color: #4f46e5; /* indigo-600 */
 }
 </style>

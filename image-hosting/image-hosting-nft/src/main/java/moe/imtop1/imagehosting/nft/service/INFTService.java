@@ -37,6 +37,13 @@ public interface INFTService {
     AjaxResult getNFTTransactions(Integer page, Integer pageSize, String type);
 
     /**
+     * 获取所有交易历史
+     */
+    AjaxResult getAllNFTTransactions(Integer page, Integer pageSize, String type);
+
+    AjaxResult getTransactionStats(String type);
+
+    /**
      * 获取当前余额
      */
     AjaxResult getBalance();

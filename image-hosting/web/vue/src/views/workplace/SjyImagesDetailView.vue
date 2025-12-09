@@ -63,7 +63,7 @@
             <div class="space-y-2 text-sm text-slate-500 dark:text-slate-300 border-t border-slate-100 dark:border-slate-700 pt-4">
               <div class="grid grid-cols-1 gap-y-4">
                 <div><span class="font-medium text-slate-700 dark:text-slate-200">图片ID:</span> {{ imageDetail.imageId}}</div>
-                <div><span class="font-medium text-slate-700 dark:text-slate-200">上传用户:</span> {{ imageDetail.userId}}</div>
+                <div><span class="font-medium text-slate-700 dark:text-slate-200">持有者:</span> {{ imageDetail.userId}}</div>
                 <div><span class="font-medium text-slate-700 dark:text-slate-200">类型:</span> {{ imageDetail.contentType }}</div>
                 <div><span class="font-medium text-slate-700 dark:text-slate-200">大小:</span> {{ formatBytes(imageDetail.size) }}</div>
                 <div><span class="font-medium text-slate-700 dark:text-slate-200">尺寸:</span> {{ imageDetail.width }}x{{ imageDetail.height }}</div>
@@ -95,9 +95,13 @@
               <ArrowDownTrayIcon class="w-5 h-5" />
               下载原图
             </button>
-            <button @click="handleShowMintDialog" class="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 font-medium transition-all duration-200 -translate-y-0 hover:shadow-md dark:hover:shadow-indigo-500/20">
+            <button v-if="!imageDetail.nftId" @click="handleShowMintDialog" class="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 font-medium transition-all duration-200 -translate-y-0 hover:shadow-md dark:hover:shadow-indigo-500/20">
               <SparklesIcon class="w-5 h-5" />
               铸造 NFT
+            </button>
+            <button v-else @click="goToNFTDetail(imageDetail.nftId!)" class="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-500/20 font-medium transition-all duration-200 -translate-y-0 hover:shadow-md dark:hover:shadow-purple-500/20">
+              <SparklesIcon class="w-5 h-5" />
+              查看 NFT 详情
             </button>
             <button @click="deleteImage(imageDetail)" :disabled="isDeleting" class="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 font-medium transition-all duration-200 -translate-y-0 hover:shadow-md dark:hover:shadow-red-500/20 disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none">
               <TrashIcon class="w-5 h-5" />
@@ -509,6 +513,8 @@ interface Image {
   likeCount: number | null;
   category: string | null;
   dominantColor: string | null;
+  nftId?: string;
+  tokenId?: string;
 }
 
 // === 2. 状态定义 ===
@@ -645,6 +651,10 @@ const handleShowMintDialog = async () => {
 const goToActivation = () => {
     activationDialogVisible.value = false;
     router.push({ name: 'MyNFT' });
+};
+
+const goToNFTDetail = (nftId: string) => {
+  router.push({ name: 'NFTDetail', params: { nftId: nftId } });
 };
 
 // === 执行铸造逻辑 (添加自动刷新) ===

@@ -3,7 +3,7 @@ pragma solidity ^0.6.10;
 pragma experimental ABIEncoderV2; // 开启高级编码器，支持返回结构体
 
 // ----------------------------------------------------------------------------
-// SafeMath 库: 防止整数溢出 (Solidity 0.8.0以下必须使用)
+// SafeMath 库: 防止整数溢出
 // ----------------------------------------------------------------------------
 library SafeMath {
     function add(uint256 a, uint256 b) internal pure returns (uint256) {
@@ -29,17 +29,21 @@ library SafeMath {
 // ----------------------------------------------------------------------------
 // 主合约
 // ----------------------------------------------------------------------------
-contract ImageNFT {
+contract ImageNFTv2 {
     using SafeMath for uint256; // 对 uint256 类型使用 SafeMath 方法
 
     // 基础数据结构
     struct NFT {
-        uint256 id;           // 冗余存储ID，方便前端处理
-        string uri;           // NFT的URI (格式: 'nft:' + minio_url)
-        string description;   // NFT描述
-        uint256 price;        // 价格 (单位: 积分/Wei)
+        uint256 id;           // 链上自增 Token ID
+        string imageId;       // 链下业务系统图片ID (UUID)
+        string fileHash;      // 文件SHA-256哈希 (核心确权凭证)
+        string uri;           // 图片访问地址 (MinIO URL)
+        string name;          // NFT名称
+        string description;   // 描述
+        uint256 price;        // 价格
         bool isForSale;       // 是否在售
         address owner;        // 所有者地址
+        uint256 createTime;   // 铸造时间戳
     }
 
     // 状态变量
@@ -48,7 +52,7 @@ contract ImageNFT {
     uint256 private nextTokenId = 1;                // 自增ID计数器
 
     // 事件 (Java后端监听这些事件来同步数据库)
-    event NFTMinted(address indexed owner, uint256 indexed tokenId, string uri);
+    event NFTMinted(address indexed owner, uint256 indexed tokenId, string imageId, string fileHash);
     event NFTSold(address indexed seller, address indexed buyer, uint256 indexed tokenId, uint256 price);
     event PriceUpdated(uint256 indexed tokenId, uint256 newPrice);
     event SaleStatusChanged(uint256 indexed tokenId, bool isForSale);
@@ -60,25 +64,33 @@ contract ImageNFT {
     // ==========================================
 
     /**
-     * @dev 铸造单个NFT
+     * @dev 铸造单个NFT (包含完整的元数据)
      */
-    function mintNFT(string memory minioUrl, string memory description, uint256 price) public returns (uint256) {
+    function mintNFT(
+        string memory _imageId,
+        string memory _fileHash,
+        string memory _minioUrl,
+        string memory _name,
+        string memory _description,
+        uint256 _price
+    ) public returns (uint256) {
         uint256 tokenId = nextTokenId;
         nextTokenId = nextTokenId.add(1);
 
-        // 拼接URI
-        string memory uri = string(abi.encodePacked("nft:", minioUrl));
-        
         nfts[tokenId] = NFT({
             id: tokenId,
-            uri: uri,
-            description: description,
-            price: price,
-            isForSale: false, // 默认不上架，需要手动上架
-            owner: msg.sender
+            imageId: _imageId,
+            fileHash: _fileHash,
+            uri: _minioUrl,
+            name: _name,
+            description: _description,
+            price: _price,
+            isForSale: false, // 默认不上架
+            owner: msg.sender,
+            createTime: block.timestamp // 记录链上时间
         });
 
-        emit NFTMinted(msg.sender, tokenId, uri);
+        emit NFTMinted(msg.sender, tokenId, _imageId, _fileHash);
         return tokenId;
     }
 
@@ -86,7 +98,7 @@ contract ImageNFT {
      * @dev 购买 NFT
      */
     function buyNFT(uint256 tokenId) public {
-        NFT storage nft = nfts[tokenId]; // 使用 storage 引用，直接修改状态
+        NFT storage nft = nfts[tokenId];
 
         require(nft.id != 0, "NFT does not exist");
         require(nft.isForSale, "NFT is not for sale");
@@ -95,17 +107,18 @@ contract ImageNFT {
 
         address seller = nft.owner;
         uint256 price = nft.price;
-        
-        // 资金转移 (使用 SafeMath)
+
+        // 资金转移
         balances[msg.sender] = balances[msg.sender].sub(price);
         balances[seller] = balances[seller].add(price);
-        
+
         // 所有权转移
         nft.owner = msg.sender;
         nft.isForSale = false; // 购买后自动下架
-        
+
         emit NFTSold(seller, msg.sender, tokenId, price);
     }
+
 
     /**
      * @dev 转移 NFT (赠送，不涉及资金)
@@ -115,7 +128,7 @@ contract ImageNFT {
         require(to != address(0), "Invalid address");
 
         nfts[tokenId].owner = to;
-        nfts[tokenId].isForSale = false; // 转移后自动下架
+        nfts[tokenId].isForSale = false;
 
         emit Transfer(msg.sender, to, tokenId);
     }
@@ -168,18 +181,6 @@ contract ImageNFT {
     // ==========================================
 
     /**
-     * @dev 批量铸造
-     */
-    function batchMint(string[] memory minioUrls, string[] memory descriptions, uint256[] memory prices) public {
-        require(minioUrls.length == descriptions.length, "Length mismatch: urls vs desc");
-        require(descriptions.length == prices.length, "Length mismatch: desc vs prices");
-        
-        for (uint256 i = 0; i < minioUrls.length; i++) {
-            mintNFT(minioUrls[i], descriptions[i], prices[i]);
-        }
-    }
-
-    /**
      * @dev 获取单个NFT详情
      */
     function getNFT(uint256 tokenId) public view returns (NFT memory) {
@@ -200,7 +201,7 @@ contract ImageNFT {
     function getForSaleNFTs(uint256 page, uint256 size) public view returns (NFT[] memory) {
         uint256 total = nextTokenId.sub(1);
         uint256 count = 0;
-        
+
         // 1. 计算在售总数 (注意：数据量极大时这里可能会耗尽Gas，建议在后端通过数据库查询筛选)
         for (uint256 i = 1; i <= total; i++) {
             if (nfts[i].isForSale) {
@@ -212,7 +213,7 @@ contract ImageNFT {
         uint256 start = (page.sub(1)).mul(size);
         uint256 end = start.add(size);
         if (end > count) end = count;
-        
+
         if (start >= count) {
             return new NFT[](0); // 空结果
         }

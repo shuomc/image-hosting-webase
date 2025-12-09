@@ -56,6 +56,9 @@ public class NftTransaction implements Serializable {
     @Schema(description = "状态: 0-打包中, 1-成功, 2-失败")
     private Integer status;
 
+    @Schema(description = "交易类型: MINT, BUY, TRANSFER")
+    private String type;
+
     @Schema(description = "区块高度")
     @TableField("block_number")
     private Long blockNumber;

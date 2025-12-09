@@ -71,6 +71,25 @@ public class NftController {
     }
 
     /**
+     * 获取所有交易记录
+     */
+    @GetMapping("/transactions/all")
+    public AjaxResult getAllTransactions(@RequestParam(defaultValue = "1") Integer page,
+                                         @RequestParam(defaultValue = "10") Integer pageSize,
+                                         @RequestParam(required = false) String type) {
+        PageData<NftTransactionVO> data = nftService.getAllTransactions(page, pageSize, type);
+        return AjaxResult.success(data);
+    }
+
+    /**
+     * 获取交易统计
+     */
+    @GetMapping("/transactions/stats")
+    public AjaxResult getTransactionStats(@RequestParam(defaultValue = "day") String type) {
+        return AjaxResult.success(nftService.getTransactionStats(type));
+    }
+
+    /**
      * 获取当前用户余额
      */
     @GetMapping("/balance")

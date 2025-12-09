@@ -86,6 +86,24 @@ public class INFTServiceImpl implements INFTService {
     }
 
     @Override
+    public AjaxResult getAllNFTTransactions(Integer page, Integer pageSize, String type) {
+        String url = blockchainApiUrl + "/nft/transactions/all?page=" + page + "&pageSize=" + pageSize;
+        if (StringUtils.hasText(type)) {
+            url += "&type=" + type;
+        }
+        return forwardRequest(url, HttpMethod.GET, null);
+    }
+
+    @Override
+    public AjaxResult getTransactionStats(String type) {
+        String url = blockchainApiUrl + "/nft/transactions/stats";
+        if (StringUtils.hasText(type)) {
+            url += "?type=" + type;
+        }
+        return forwardRequest(url, HttpMethod.GET, null);
+    }
+
+    @Override
     public AjaxResult getBalance() {
         String url = blockchainApiUrl + "/nft/balance";
         return forwardRequest(url, HttpMethod.GET, null);
@@ -97,6 +115,12 @@ public class INFTServiceImpl implements INFTService {
 
     @Override
     public AjaxResult mintNFT(String imageId, String thumbnailMinioUrl, String name, String description, BigDecimal price, Integer collectionId, String fileHash) {
+        // 检查图片是否已铸造
+        ImageData imageData = imageService.getById(imageId);
+        if (imageData != null && StringUtils.hasText(imageData.getNftId())) {
+            return AjaxResult.error("该图片已铸造为NFT，请勿重复操作");
+        }
+
         String url = blockchainApiUrl + "/nft/mint";
 
         // 构造 Controller 需要的参数
@@ -133,15 +157,15 @@ public class INFTServiceImpl implements INFTService {
                     String currentUserId = StpUtil.getLoginIdAsString();
 
                     // B. 查询用户信息以获取钱包地址
-                    UserInfo user = userInfoService.getById(currentUserId);
-                    String walletAddress = (user != null && user.getBlockchainAddress() != null)
-                            ? user.getBlockchainAddress()
-                            : "Unregistered Address"; // 兜底
+//                    UserInfo user = userInfoService.getById(currentUserId);
+//                    String walletAddress = (user != null && user.getBlockchainAddress() != null)
+//                            ? user.getBlockchainAddress()
+//                            : "Unregistered Address"; // 兜底
 
                     // C. 触发水印生成逻辑
-                    // 传入: imageId, nftId, walletAddress
+                    // 传入: imageId, nftId, newNftId
                     log.info("开始生成水印图，Current User Id: " + currentUserId);
-                    imageService.generateNftWatermark(imageId, newTokenId, walletAddress);
+                    imageService.generateNftWatermark(imageId, newTokenId, newNftId);
 
                 } catch (Exception e) {
                     log.error("生成NFT水印图失败", e);
@@ -158,7 +182,20 @@ public class INFTServiceImpl implements INFTService {
     @Override
     public AjaxResult buyNFT(String nftId) {
         String url = blockchainApiUrl + "/nft/buy/" + nftId;
-        return forwardRequest(url, HttpMethod.POST, null);
+        AjaxResult result = forwardRequest(url, HttpMethod.POST, null);
+
+        if (result.isSuccess()) {
+            try {
+                String currentUserId = StpUtil.getLoginIdAsString();
+                imageService.update(new LambdaUpdateWrapper<ImageData>()
+                        .eq(ImageData::getNftId, nftId)
+                        .set(ImageData::getUserId, currentUserId));
+                log.info("NFT购买成功，已更新图片所有者。NFT ID: {}, 新所有者ID: {}", nftId, currentUserId);
+            } catch (Exception e) {
+                log.error("NFT购买成功，但更新图片所有者失败。NFT ID: {}", nftId, e);
+            }
+        }
+        return result;
     }
 
     @Override

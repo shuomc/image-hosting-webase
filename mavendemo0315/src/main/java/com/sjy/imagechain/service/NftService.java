@@ -4,8 +4,10 @@ import com.sjy.imagechain.domain.NftInfo;
 import com.sjy.imagechain.domain.vo.NftTransactionVO;
 import com.sjy.imagechain.domain.vo.NftVO;
 import com.sjy.imagechain.domain.vo.PageData;
+import com.sjy.imagechain.domain.vo.TransactionStatsVO;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public interface NftService {
 
@@ -44,6 +46,16 @@ public interface NftService {
      * 获取我的交易历史
      */
     PageData<NftTransactionVO> getMyTransactions(Integer page, Integer pageSize, String type);
+
+    /**
+     * 获取所有交易历史 (管理员/市场浏览器)
+     */
+    PageData<NftTransactionVO> getAllTransactions(Integer page, Integer pageSize, String type);
+
+    /**
+     * 获取交易统计数据
+     */
+    List<TransactionStatsVO> getTransactionStats(String type);
 
     /**
      * 获取用户余额

@@ -9,6 +9,7 @@ public class NftTransactionVO {
     private String transactionId;
     private String transactionHash; // 链上哈希
 
+    private String nftId;           // NFT ID
     private String nftName;         // 关联的NFT名称
     private String imageUrl;        // 图片预览
 

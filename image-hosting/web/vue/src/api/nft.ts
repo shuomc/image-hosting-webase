@@ -74,6 +74,35 @@ export function getNFTTransactions(params: {
 }
 
 /**
+ * 获取所有交易历史 (全局)
+ * @param params
+ *  - type: 交易类型筛选 (可选)
+ */
+export function getAllNFTTransactions(params: { 
+  page: number; 
+  pageSize: number; 
+  type?: string 
+}) {
+  return request({
+    url: '/nft/transactions/all',
+    method: 'get',
+    params
+  })
+}
+
+/**
+ * 获取交易统计
+ * @param type 'day' | 'week' | 'month'
+ */
+export function getTransactionStats(type: 'day' | 'week' | 'month' = 'day') {
+  return request({
+    url: '/nft/transactions/stats',
+    method: 'get',
+    params: { type }
+  })
+}
+
+/**
  * 获取当前余额
  */
 export function getBalance() {
@@ -191,27 +220,19 @@ export function withdraw(amount: number) {
 }
 
 // ==========================================
-// 5. 兼容旧接口
+// 5. 兼容旧接口 (已废弃或迁移)
 // ==========================================
+
+// export function getWebaseNFTInfo(tokenId: string) {
+//   return request({
+//     url: `/nft/webase/nft/${tokenId}`,
+//     method: 'get'
+//   })
+// }
 
 export function getWebaseBalance() {
   return request({
     url: '/nft/webase/balance',
-    method: 'get'
-  })
-}
-
-export function webaseDeposit(amount: number) {
-  return request({
-    url: '/nft/webase/deposit',
-    method: 'post',
-    params: { amount }
-  })
-}
-
-export function getWebaseNFTInfo(tokenId: string) {
-  return request({
-    url: `/nft/webase/nft/${tokenId}`,
     method: 'get'
   })
 }
@@ -272,6 +293,7 @@ export interface NFTInfo {
   creatorName: string
   contractAddress: string
   createTime: string
+  fileHash: string
 }
 
 export interface NFTTransaction {

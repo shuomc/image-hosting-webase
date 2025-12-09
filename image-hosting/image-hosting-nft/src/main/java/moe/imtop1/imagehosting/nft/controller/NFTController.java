@@ -89,12 +89,23 @@ public class NFTController {
         return nftService.getNFTDetail(nftId);
     }
 
-    @GetMapping("/transactions")
-    public AjaxResult getNFTTransactions(
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer pageSize,
-            @RequestParam(required = false) String type) {
+        @GetMapping("/transactions")
+    public AjaxResult getTransactions(@RequestParam(defaultValue = "1") Integer page,
+                                      @RequestParam(defaultValue = "10") Integer pageSize,
+                                      @RequestParam(required = false) String type) {
         return nftService.getNFTTransactions(page, pageSize, type);
+    }
+
+    @GetMapping("/transactions/all")
+    public AjaxResult getAllTransactions(@RequestParam(defaultValue = "1") Integer page,
+                                         @RequestParam(defaultValue = "10") Integer pageSize,
+                                         @RequestParam(required = false) String type) {
+        return nftService.getAllNFTTransactions(page, pageSize, type);
+    }
+
+    @GetMapping("/transactions/stats")
+    public AjaxResult getTransactionStats(@RequestParam(defaultValue = "day") String type) {
+        return nftService.getTransactionStats(type);
     }
 
     @GetMapping("/balance")

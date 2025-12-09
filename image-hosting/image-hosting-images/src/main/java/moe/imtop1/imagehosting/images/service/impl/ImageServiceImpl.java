@@ -272,7 +272,7 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
     }
 
     @Override
-    public String generateNftWatermark(String imageId, String tokenId, String walletAddress) throws IOException {
+    public String generateNftWatermark(String imageId, String tokenId, String nftId) throws IOException {
         // 1. 查询图片信息
         ImageData imageData = this.getById(imageId);
         if (imageData == null) {
@@ -306,7 +306,7 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
         int watermarkHeight = (int) (watermarkWidth / 3.5);
 
         // 3. 生成水印 (传入的是 Token ID)
-        BufferedImage textWatermark = createTextWatermarkImage(tokenId, walletAddress, watermarkWidth, watermarkHeight);
+        BufferedImage textWatermark = createTextWatermarkImage(tokenId, nftId, watermarkWidth, watermarkHeight);
 
         // 4. 合成
         ByteArrayOutputStream os = new ByteArrayOutputStream();
@@ -349,7 +349,7 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
     /**
      * 辅助方法：绘制包含完整地址的水印
      */
-    private BufferedImage createTextWatermarkImage(String tokenId, String address, int width, int height) {
+    private BufferedImage createTextWatermarkImage(String tokenId, String nftId, int width, int height) {
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = (Graphics2D) image.getGraphics();
 
@@ -402,7 +402,7 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
         g.setFont(addressFont);
 
         // 加上 "Owner: " 前缀
-        String fullAddressText = "Owner: " + address;
+        String fullAddressText = "NFT ID: " + nftId;
 
         // 自动缩放逻辑：如果地址太长超出了背景框，就自动缩小字号
         FontMetrics fm = g.getFontMetrics();

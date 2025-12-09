@@ -78,7 +78,7 @@ const menuItems = [
   { name: 'UploadImage', label: '图片上传', icon: ArrowUpTrayIcon },
   { name: 'MyFiles', label: '我的文件', icon: FolderIcon },
   { name: 'UploadFile', label: '文件上传', icon: ArrowUpTrayIcon },
-  { name: 'NFTListView', label: 'NFT市场', icon: CubeIcon },
+  { name: 'NFTMarket', label: 'NFT市场', icon: CubeIcon },
   { name: 'MyNFT', label: '我的NFT', icon: CubeIcon },
   { name: 'NFTTransactions', label: 'NFT交易', icon: CreditCardIcon },
   { name: 'NFTBalance', label: 'NFT余额', icon: CreditCardIcon },
