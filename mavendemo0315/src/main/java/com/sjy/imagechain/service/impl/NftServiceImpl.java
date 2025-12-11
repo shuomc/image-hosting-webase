@@ -231,7 +231,13 @@ public class NftServiceImpl implements NftService {
     }
 
     @Override
-    public List<TransactionStatsVO> getTransactionStats(String type) {
+    public Object getTransactionStats(String type) {
+        if ("all".equalsIgnoreCase(type)) {
+            Map<String, Object> result = new HashMap<>();
+            result.put("total", nftTransactionMapper.countAll());
+            return result;
+        }
+
         LocalDateTime startTime;
         String format = "YYYY-MM-DD";
 

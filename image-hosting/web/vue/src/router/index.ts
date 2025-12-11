@@ -18,10 +18,48 @@ import ImagesDetailView from '@/views/workplace/SjyImagesDetailView.vue';
 import UserProfile from '@/views/userui/SjyUserProfile.vue';
 import NotFound from '@/views/SjyNotFoundView.vue'
 import Profile from '@/views/workplace/Profile.vue';
+import AdminLogin from '@/views/bgadmin/adminLogin.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    {
+      path: '/admin/login',
+      name: 'AdminLogin',
+      component: AdminLogin,
+      meta: { requiresAuth: false }
+    },
+    {
+      path: '/admin',
+      component: () => import('@/views/bgadmin/AdminLayout.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+      children: [
+        {
+          path: 'dashboard',
+          name: 'AdminDashboard',
+          component: () => import('@/views/bgadmin/AdminDashboard.vue')
+        },
+        {
+          path: 'users',
+          name: 'AdminUsers',
+          component: () => import('@/views/bgadmin/AdminUserList.vue')
+        },
+        {
+          path: 'images',
+          name: 'AdminImages',
+          component: () => import('@/views/bgadmin/AdminImageList.vue')
+        },
+        {
+          path: 'settings',
+          name: 'AdminSettings',
+          component: () => import('@/views/bgadmin/AdminSettings.vue')
+        },
+        {
+          path: '',
+          redirect: '/admin/dashboard'
+        }
+      ]
+    },
     {
       path: '/',
       redirect: '/userhome'
@@ -207,12 +245,23 @@ router.beforeEach(async (to, from, next) => {
       }
     }
 
+    // Check for admin requirement
+    if (to.meta.requiresAdmin && userStore.userInfo?.userRole !== 'admin') {
+      ElMessage.error('无权访问管理员区域')
+      next({ path: '/workplace' })
+      return
+    }
+
     // 已登录并且加载了用户信息，继续访问
     next()
   }
   // 如果是登录页，且已登录，则重定向到工作区
   else if ((to.name === 'login' || to.name === 'register') && userStore.isLoggedIn) {
     next({ path: '/workplace' })
+  }
+  // 如果是管理员登录页，且已登录为管理员，重定向到管理员工作区
+  else if (to.name === 'AdminLogin' && userStore.isLoggedIn && userStore.userInfo?.userRole === 'admin') {
+    next({ path: '/admin/dashboard' })
   }
   // 其他情况，允许访问
   else {

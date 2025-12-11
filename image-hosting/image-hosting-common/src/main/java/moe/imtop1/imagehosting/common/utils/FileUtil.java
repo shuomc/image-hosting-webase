@@ -18,6 +18,30 @@ public class FileUtil {
     private static final String CHAR_LOWER = "abcdefghijklmnopqrstuvwxyz";
     private static final String CHAR_UPPER = CHAR_LOWER.toUpperCase();
     private static final String NUMBER = "0123456789";
+
+    public static String formatFileSize(long size) {
+        long limit = 10 * 1024;
+        if (size < limit) {
+            return size + " B";
+        } else {
+            size = size / 1024;
+        }
+        if (size < limit) {
+            return size + " KB";
+        } else {
+            size = size / 1024;
+        }
+        if (size < limit) {
+            return size + " MB";
+        } else {
+            size = size / 1024;
+        }
+        if (size < limit) {
+            return size + " GB";
+        } else {
+            return (size / 1024) + " TB";
+        }
+    }
     private static final String ALLOWED_CHARACTERS = CHAR_LOWER + CHAR_UPPER + NUMBER;
 
     private static final SecureRandom RANDOM = new SecureRandom();

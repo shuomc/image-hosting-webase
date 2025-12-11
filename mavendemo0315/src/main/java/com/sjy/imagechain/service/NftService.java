@@ -55,7 +55,7 @@ public interface NftService {
     /**
      * 获取交易统计数据
      */
-    List<TransactionStatsVO> getTransactionStats(String type);
+    Object getTransactionStats(String type);
 
     /**
      * 获取用户余额

@@ -29,6 +29,11 @@ public class LoginController {
         return loginService.login(loginDTO);
     }
 
+    @PostMapping("/admin/login")
+    public LoginVO adminLogin(@Validated @RequestBody LoginDTO loginDTO) {
+        return loginService.adminLogin(loginDTO);
+    }
+
     @DeleteMapping("/logout")
     public AjaxResult logout() {
         loginService.logout();

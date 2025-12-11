@@ -965,4 +965,9 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
             throw new ServiceException(DATABASE_ERROR, "切换图片公开状态时发生错误");
         }
     }
+
+    @Override
+    public Long getTotalStorageUsage() {
+        return baseMapper.sumSize();
+    }
 }

@@ -67,6 +67,45 @@ public class LoginServiceImpl implements ILoginService {
     }
 
     @Override
+    public LoginVO adminLogin(LoginDTO loginDTO) {
+        // 校验验证码
+        Object cacheObject = redisCache.getCacheObject(loginDTO.getCodeKey());
+        if (ObjectUtils.isEmpty(cacheObject) ||
+                !loginDTO.getCaptcha().equalsIgnoreCase(cacheObject.toString())) {
+            throw new SystemException(ResultCodeEnum.VALIDATECODE_ERROR);
+        }
+
+        LambdaQueryWrapper<UserInfo> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(UserInfo::getUserName, loginDTO.getUserName());
+
+        UserInfo userInfo = userInfoMapper.selectOne(wrapper);
+
+        if (userInfo == null) {
+            throw new SystemException(ResultCodeEnum.LOGIN_ERROR);
+        }
+
+        // 校验密码
+        if (!EncryptUtil.verifyArgon2idHash(loginDTO.getPassword(), userInfo.getPassword())) {
+            throw new SystemException(ResultCodeEnum.LOGIN_ERROR);
+        }
+
+        // 校验管理员权限
+        if (!"admin".equals(userInfo.getUserRole())) {
+            throw new SystemException(ResultCodeEnum.LOGIN_ERROR);
+        }
+
+        redisCache.deleteObject(loginDTO.getCodeKey());
+
+        SecurityUtil.login(this.loginUserBuilder(userInfo), loginDTO.getRemembered());
+
+        LoginVO loginVO = new LoginVO();
+        loginVO.setCode(ResultCodeEnum.SUCCESS.getCode());
+        loginVO.setToken(StpUtil.getTokenValue());
+
+        return loginVO;
+    }
+
+    @Override
     public void logout() {
         if (!StpUtil.isLogin()) {
             throw new SystemException(ResultCodeEnum.LOGIN_AUTH);
@@ -85,6 +124,7 @@ public class LoginServiceImpl implements ILoginService {
         loginUser.setUserId(userInfo.getUserId());
         loginUser.setUserName(userInfo.getUserName());
         loginUser.setUserEmail(userInfo.getUserEmail());
+        loginUser.setUserRole(userInfo.getUserRole());
 
         // TODO 权限相关
 

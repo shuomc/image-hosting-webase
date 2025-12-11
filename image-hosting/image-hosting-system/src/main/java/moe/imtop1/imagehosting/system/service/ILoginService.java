@@ -5,5 +5,8 @@ import moe.imtop1.imagehosting.system.domain.vo.LoginVO;
 
 public interface ILoginService {
     LoginVO login(LoginDTO loginDTO);
+
+    LoginVO adminLogin(LoginDTO loginDTO);
+
     void logout();
 }

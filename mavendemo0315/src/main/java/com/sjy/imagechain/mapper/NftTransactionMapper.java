@@ -22,6 +22,9 @@ public interface NftTransactionMapper extends BaseMapper<NftTransaction> {
             "ORDER BY date ASC")
     List<TransactionStatsVO> selectStats(@Param("startTime") LocalDateTime startTime, @Param("format") String format);
 
+    @Select("SELECT COUNT(*) FROM nft_transaction")
+    Long countAll();
+
     /**
      * 查询用户的交易历史 (作为买家或卖家)
      *
