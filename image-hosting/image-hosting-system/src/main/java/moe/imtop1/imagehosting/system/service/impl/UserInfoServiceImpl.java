@@ -50,6 +50,25 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
                         UserInfo::getAvatarUrl));
     }
 
+    @Override
+    public boolean updateUserProfile(UserInfo userInfo) {
+        // 1. 获取数据库中的现有用户信息
+        UserInfo dbUser = this.getById(userInfo.getUserId());
+        if (dbUser == null) {
+            return false;
+        }
+
+        // 2. 只更新允许修改的字段
+        if (userInfo.getNickname() != null) dbUser.setNickname(userInfo.getNickname());
+        if (userInfo.getBio() != null) dbUser.setBio(userInfo.getBio());
+        if (userInfo.getWebsiteUrl() != null) dbUser.setWebsiteUrl(userInfo.getWebsiteUrl());
+        if (userInfo.getPhoneNumber() != null) dbUser.setPhoneNumber(userInfo.getPhoneNumber());
+        if (userInfo.getAvatarUrl() != null) dbUser.setAvatarUrl(userInfo.getAvatarUrl());
+
+        // 3. 执行更新
+        return this.updateById(dbUser);
+    }
+
     // ==========================================
     // 新增：存储配额管理 (需要在 IUserInfoService 接口中定义)
     // ==========================================

@@ -17,7 +17,7 @@ import MyFilesView from '@/views/workplace/SjyMyFilesView.vue';
 import ImagesDetailView from '@/views/workplace/SjyImagesDetailView.vue';
 import UserProfile from '@/views/userui/SjyUserProfile.vue';
 import NotFound from '@/views/SjyNotFoundView.vue'
-import SjyProfile from '@/views/workplace/SjyProfile.vue';
+import Profile from '@/views/workplace/Profile.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -141,7 +141,7 @@ const router = createRouter({
         {
           path: 'profile',
           name: 'Profile',
-          component: SjyProfile,
+          component: Profile,
           meta: { requiresAuth: true }
         },
       ],
