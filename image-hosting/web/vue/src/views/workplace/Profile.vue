@@ -45,15 +45,9 @@
              <div class="relative z-10 mt-12">
                 <div class="relative inline-block">
                   <div class="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full blur opacity-40 group-hover:opacity-60 transition-opacity duration-500 animate-pulse"></div>
-                  <!-- <img 
-                    :src="form.avatarUrl || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'" 
-                    class="relative h-36 w-36 rounded-full object-cover border-4 border-white dark:border-slate-800 shadow-xl mx-auto transition-transform duration-500 transform group-hover:scale-105"
-                    alt="Avatar"
-                  /> -->
-                    <div class="relative h-36 w-36 rounded-full object-cover border-1 border-white dark:border-slate-800 shadow-xl mx-auto transition-transform duration-500 transform group-hover:scale-105 from-indigo-500 to-purple-500 text-white flex items-center justify-center text-6xl font-bold shadow-indigo-500/20 ring-2 ring-white dark:ring-slate-800">
+                  <div class="relative h-36 w-36 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center text-6xl font-bold shadow-xl mx-auto transition-transform duration-500 transform group-hover:scale-105 ring-4 ring-white dark:ring-slate-800 shadow-indigo-500/20">
                     {{ form.userName ? form.userName.charAt(0).toUpperCase() : '?' }}
-          </div>
-                  <!-- Removed Edit Icon as requested -->
+                  </div>
                 </div>
                 <h2 class="mt-6 text-2xl font-bold text-slate-900 dark:text-white tracking-tight">{{ form.nickname || form.userName }}</h2>
                 <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">{{ form.userEmail }}</p>

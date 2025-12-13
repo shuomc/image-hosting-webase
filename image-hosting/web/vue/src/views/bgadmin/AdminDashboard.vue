@@ -35,10 +35,19 @@
         <div ref="uploadChartRef" class="w-full h-80"></div>
       </div>
 
-      <!-- Storage Usage Chart -->
+      <!-- Image Distribution Charts -->
       <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
-        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-6">存储分布</h3>
-        <div ref="storageChartRef" class="w-full h-80"></div>
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-6">图片分布统计</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="h-80">
+            <h4 class="text-center text-sm font-medium text-slate-500 mb-2">上传 / 铸造</h4>
+            <div ref="mintedChartRef" class="w-full h-full"></div>
+          </div>
+          <div class="h-80">
+            <h4 class="text-center text-sm font-medium text-slate-500 mb-2">公开 / 私有</h4>
+            <div ref="publicChartRef" class="w-full h-full"></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -67,6 +76,37 @@ const loadStats = async () => {
       stats.value[1].value = data.totalImages.toLocaleString();
       stats.value[2].value = data.storageUsed;
       stats.value[3].value = data.nftTransactionVolume.toLocaleString();
+
+      // Update Charts
+      if (uploadChart) {
+        uploadChart.setOption({
+          xAxis: { data: data.uploadTrendDates },
+          series: [{ data: data.uploadTrendCounts }]
+        });
+      }
+
+      if (mintedChart) {
+        const unminted = data.totalImages - data.mintedImageCount;
+        mintedChart.setOption({
+          series: [{
+            data: [
+              { value: data.mintedImageCount, name: '已铸造' },
+              { value: unminted, name: '未铸造' }
+            ]
+          }]
+        });
+      }
+
+      if (publicChart) {
+        publicChart.setOption({
+          series: [{
+            data: [
+              { value: data.publicImageCount, name: '公开' },
+              { value: data.privateImageCount, name: '私有' }
+            ]
+          }]
+        });
+      }
     }
   } catch (error) {
     console.error('Failed to load dashboard stats', error);
@@ -74,9 +114,11 @@ const loadStats = async () => {
 };
 
 const uploadChartRef = ref<HTMLElement | null>(null);
-const storageChartRef = ref<HTMLElement | null>(null);
+const mintedChartRef = ref<HTMLElement | null>(null);
+const publicChartRef = ref<HTMLElement | null>(null);
 let uploadChart: echarts.ECharts | null = null;
-let storageChart: echarts.ECharts | null = null;
+let mintedChart: echarts.ECharts | null = null;
+let publicChart: echarts.ECharts | null = null;
 
 const initCharts = () => {
   if (uploadChartRef.value) {
@@ -92,29 +134,50 @@ const initCharts = () => {
         smooth: true,
         areaStyle: { opacity: 0.3, color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#6366f1' }, { offset: 1, color: '#e0e7ff' }]) },
         itemStyle: { color: '#6366f1' },
-        data: [120, 132, 101, 134, 90, 230, 210]
+        data: [0, 0, 0, 0, 0, 0, 0]
       }]
     });
   }
 
-  if (storageChartRef.value) {
-    storageChart = echarts.init(storageChartRef.value);
-    storageChart.setOption({
-      tooltip: { trigger: 'item' },
-      legend: { bottom: '0%' },
+  const pieOption = {
+    tooltip: { trigger: 'item' },
+    legend: { bottom: '0%' },
+    series: [{
+      type: 'pie',
+      radius: ['40%', '70%'],
+      avoidLabelOverlap: false,
+      itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+      label: { show: false, position: 'center' },
+      emphasis: { label: { show: true, fontSize: '20', fontWeight: 'bold' } },
+      data: []
+    }]
+  };
+
+  if (mintedChartRef.value) {
+    mintedChart = echarts.init(mintedChartRef.value);
+    mintedChart.setOption({
+      ...pieOption,
       series: [{
-        name: 'Storage',
-        type: 'pie',
-        radius: ['40%', '70%'],
-        avoidLabelOverlap: false,
-        itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
-        label: { show: false, position: 'center' },
-        emphasis: { label: { show: true, fontSize: '20', fontWeight: 'bold' } },
+        ...pieOption.series[0],
+        name: 'Mint Status',
         data: [
-          { value: 1048, name: 'Images' },
-          { value: 735, name: 'Thumbnails' },
-          { value: 580, name: 'Backups' },
-          { value: 484, name: 'Logs' },
+          { value: 0, name: '已铸造' },
+          { value: 0, name: '未铸造' }
+        ]
+      }]
+    });
+  }
+
+  if (publicChartRef.value) {
+    publicChart = echarts.init(publicChartRef.value);
+    publicChart.setOption({
+      ...pieOption,
+      series: [{
+        ...pieOption.series[0],
+        name: 'Public Status',
+        data: [
+          { value: 0, name: '公开' },
+          { value: 0, name: '私有' }
         ]
       }]
     });
@@ -123,7 +186,8 @@ const initCharts = () => {
 
 const handleResize = () => {
   uploadChart?.resize();
-  storageChart?.resize();
+  mintedChart?.resize();
+  publicChart?.resize();
 };
 
 onMounted(() => {
@@ -135,6 +199,7 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
   uploadChart?.dispose();
-  storageChart?.dispose();
+  mintedChart?.dispose();
+  publicChart?.dispose();
 });
 </script>

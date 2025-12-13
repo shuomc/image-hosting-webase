@@ -6,10 +6,12 @@ import moe.imtop1.imagehosting.images.domain.dto.BatchUploadResult;
 import moe.imtop1.imagehosting.images.domain.dto.ImageStreamData;
 import moe.imtop1.imagehosting.images.domain.vo.ImagePresignedUrlData;
 import moe.imtop1.imagehosting.images.domain.vo.ImageUrlData;
+import moe.imtop1.imagehosting.images.domain.dto.StatsDTO;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 public interface ImageService extends IService<ImageData> {
     ImageData uploadImage(MultipartFile file, ImageData imageData) throws IOException;
@@ -41,4 +43,18 @@ public interface ImageService extends IService<ImageData> {
     void switchPublicStatus(String imageId);
 
     Long getTotalStorageUsage();
+
+    List<StatsDTO> getUploadTrend();
+
+    List<StatsDTO> getImageTypeDistribution();
+
+    Long getMintedCount();
+
+    Long getPublicCount();
+
+    Long getPrivateCount();
+
+    void deleteImage(String imageId);
+
+    com.baomidou.mybatisplus.extension.plugins.pagination.Page<ImageData> getImageList(Integer page, Integer size, String keyword, String type);
 }

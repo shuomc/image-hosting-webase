@@ -4,6 +4,10 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import moe.imtop1.imagehosting.system.domain.UserInfo;
 import java.util.List;
 
+import moe.imtop1.imagehosting.system.domain.dto.UserListQueryDTO;
+import moe.imtop1.imagehosting.system.domain.dto.UserUpdateDTO;
+import moe.imtop1.imagehosting.system.domain.vo.UserPageVO;
+
 public interface IUserInfoService extends IService<UserInfo> {
 
     boolean setPassword(String userEmail, String newPassword);
@@ -25,4 +29,8 @@ public interface IUserInfoService extends IService<UserInfo> {
     boolean increaseStorageUsed(String userId, Long size);
 
     boolean decreaseStorageUsed(String userId, Long size);
+
+    UserPageVO getUserList(UserListQueryDTO query);
+
+    boolean updateUserStatus(UserUpdateDTO update);
 }

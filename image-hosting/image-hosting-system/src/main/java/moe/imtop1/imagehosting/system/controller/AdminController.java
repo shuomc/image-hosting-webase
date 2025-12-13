@@ -6,9 +6,10 @@ import moe.imtop1.imagehosting.common.dto.AjaxResult;
 import moe.imtop1.imagehosting.common.service.StatsProvider;
 import moe.imtop1.imagehosting.common.vo.AdminDashboardStatsVO;
 import moe.imtop1.imagehosting.system.service.IUserInfoService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import moe.imtop1.imagehosting.system.domain.dto.UserListQueryDTO;
+import moe.imtop1.imagehosting.system.domain.dto.UserUpdateDTO;
+import moe.imtop1.imagehosting.system.domain.vo.UserPageVO;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -36,5 +37,19 @@ public class AdminController {
         }
 
         return AjaxResult.success(stats);
+    }
+
+    @SaCheckRole("admin")
+    @PostMapping("/users/list")
+    public AjaxResult getUserList(@RequestBody UserListQueryDTO query) {
+        UserPageVO page = userInfoService.getUserList(query);
+        return AjaxResult.success(page);
+    }
+
+    @SaCheckRole("admin")
+    @PutMapping("/users")
+    public AjaxResult updateUser(@RequestBody UserUpdateDTO update) {
+        boolean success = userInfoService.updateUserStatus(update);
+        return success ? AjaxResult.success() : AjaxResult.error("Update failed");
     }
 }

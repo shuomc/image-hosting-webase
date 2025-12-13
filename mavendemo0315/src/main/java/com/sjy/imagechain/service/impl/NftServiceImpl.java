@@ -653,4 +653,11 @@ public class NftServiceImpl implements NftService {
         tx.setCreateTime(LocalDateTime.now());
         nftTransactionMapper.insert(tx); // 存入自动生成主键
     }
+
+    @Override
+    public void deleteByImageId(String imageId) {
+        LambdaQueryWrapper<NftInfo> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(NftInfo::getImageId, imageId);
+        nftInfoMapper.delete(wrapper); // MyBatis Plus 逻辑删除
+    }
 }

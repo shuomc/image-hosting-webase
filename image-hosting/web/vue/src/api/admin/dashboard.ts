@@ -5,6 +5,13 @@ export interface AdminDashboardStats {
   totalImages: number;
   storageUsed: string;
   nftTransactionVolume: number;
+  uploadTrendDates: string[];
+  uploadTrendCounts: number[];
+  imageTypes: string[];
+  imageTypeCounts: number[];
+  mintedImageCount: number;
+  publicImageCount: number;
+  privateImageCount: number;
 }
 
 export function getDashboardStats() {

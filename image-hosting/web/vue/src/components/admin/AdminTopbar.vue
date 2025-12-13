@@ -22,11 +22,9 @@
       <!-- User Profile Dropdown -->
       <div class="relative group">
         <button class="flex items-center gap-3 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-          <img 
-            src="https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png" 
-            class="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700"
-            alt="Admin"
-          />
+          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center text-xs font-bold border border-slate-200 dark:border-slate-700">
+            A
+          </div>
           <span class="text-sm font-medium text-slate-700 dark:text-slate-200 hidden sm:block">Administrator</span>
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />

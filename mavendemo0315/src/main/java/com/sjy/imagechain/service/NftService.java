@@ -134,4 +134,10 @@ public interface NftService {
      * 提现
      */
     Boolean withdraw(BigDecimal amount);
+
+    /**
+     * 根据图片ID删除NFT信息 (逻辑删除)
+     * @param imageId 图片ID
+     */
+    void deleteByImageId(String imageId);
 }

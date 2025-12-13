@@ -18,6 +18,7 @@ import io.minio.PutObjectArgs;
 import io.minio.errors.MinioException;
 import io.minio.http.Method;
 import lombok.RequiredArgsConstructor;
+import moe.imtop1.imagehosting.images.domain.dto.StatsDTO;
 import lombok.extern.slf4j.Slf4j;
 import moe.imtop1.imagehosting.common.enums.ResultCodeEnum;
 import moe.imtop1.imagehosting.common.utils.FileUtil;
@@ -38,6 +39,9 @@ import net.coobird.thumbnailator.geometry.Positions;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -88,6 +92,11 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
     private static final String WATERMARK_OUTPUT_FORMAT = "jpg";  // 缩略图格式强制jpg
 
     private final RedisCache redisCache; // 注入 RedisCache
+    private final RestTemplate restTemplate; // 注入 RestTemplate
+
+    @Value("${blockchain.api-url}")
+    private String blockchainApiUrl;
+
     private static final Integer CACHE_EXPIRATION_SECONDS = 600; // 10 分钟
 
     // 从 application.properties 或 application.yml 读取配置值
@@ -969,5 +978,92 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
     @Override
     public Long getTotalStorageUsage() {
         return baseMapper.sumSize();
+    }
+
+    @Override
+    public List<StatsDTO> getUploadTrend() {
+        return baseMapper.getUploadTrend();
+    }
+
+    @Override
+    public List<StatsDTO> getImageTypeDistribution() {
+        return baseMapper.getImageTypeDistribution();
+    }
+
+    @Override
+    public Long getMintedCount() {
+        return baseMapper.countMinted();
+    }
+
+    @Override
+    public Long getPublicCount() {
+        return baseMapper.countPublic();
+    }
+
+    @Override
+    public Long getPrivateCount() {
+        return baseMapper.countPrivate();
+    }
+
+    @Override
+    public void deleteImage(String imageId) {
+        ImageData image = getById(imageId);
+        if (image == null) {
+            throw new ServiceException("Image not found");
+        }
+
+        // 1. Delete from MinIO
+        try {
+            if (StringUtil.isNotEmpty(image.getOriginMinioKey())) {
+                minioClient.removeObject(io.minio.RemoveObjectArgs.builder().bucket(originBucket).object(image.getOriginMinioKey()).build());
+            }
+            if (StringUtil.isNotEmpty(image.getThumbnailMinioKey())) {
+                minioClient.removeObject(io.minio.RemoveObjectArgs.builder().bucket(thumbnailBucket).object(image.getThumbnailMinioKey()).build());
+            }
+        } catch (Exception e) {
+            log.error("Failed to delete from MinIO", e);
+        }
+
+        // 2. Delete from DB
+        removeById(imageId);
+
+        // 3. Delete from Blockchain
+        try {
+            restTemplate.delete(blockchainApiUrl + "/nft/image/" + imageId);
+        } catch (Exception e) {
+            log.error("Failed to delete from Blockchain", e);
+        }
+    }
+
+    @Override
+    public com.baomidou.mybatisplus.extension.plugins.pagination.Page<ImageData> getImageList(Integer page, Integer size, String keyword, String type) {
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<ImageData> p = new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size);
+        LambdaQueryWrapper<ImageData> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtil.isNotEmpty(keyword)) {
+            wrapper.and(w -> w.like(ImageData::getFileName, keyword).or().eq(ImageData::getImageId, keyword));
+        }
+        if (StringUtil.isNotEmpty(type)) {
+             if ("public".equalsIgnoreCase(type)) {
+                 wrapper.eq(ImageData::getIsPublic, true);
+             } else if ("private".equalsIgnoreCase(type)) {
+                 wrapper.eq(ImageData::getIsPublic, false);
+             }
+        }
+        wrapper.orderByDesc(ImageData::getCreateTime);
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<ImageData> result = page(p, wrapper);
+
+        // 处理 URL，加上 minioExternalUrl
+        if (result.getRecords() != null) {
+            result.getRecords().forEach(img -> {
+                if (img.getOriginMinioUrl() != null && !img.getOriginMinioUrl().startsWith("http")) {
+                    img.setOriginMinioUrl(minioExternalUrl + img.getOriginMinioUrl());
+                }
+                if (img.getThumbnailMinioUrl() != null && !img.getThumbnailMinioUrl().startsWith("http")) {
+                    img.setThumbnailMinioUrl(minioExternalUrl + img.getThumbnailMinioUrl());
+                }
+            });
+        }
+
+        return result;
     }
 }

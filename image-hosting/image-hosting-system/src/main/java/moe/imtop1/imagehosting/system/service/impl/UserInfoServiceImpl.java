@@ -11,6 +11,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import moe.imtop1.imagehosting.system.domain.dto.UserListQueryDTO;
+import moe.imtop1.imagehosting.system.domain.dto.UserUpdateDTO;
+import moe.imtop1.imagehosting.system.domain.vo.UserListVO;
+import moe.imtop1.imagehosting.system.domain.vo.UserPageVO;
+import org.springframework.beans.BeanUtils;
+import java.util.stream.Collectors;
+
 /**
  * 用户信息服务实现
  * @author shuomc
@@ -85,5 +94,40 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
     public boolean decreaseStorageUsed(String userId, Long size) {
         int rows = userInfoMapper.decreaseStorage(userId, size);
         return rows > 0;
+    }
+
+    @Override
+    public UserPageVO getUserList(UserListQueryDTO query) {
+        Page<UserInfo> page = new Page<>(query.getPage(), query.getSize());
+        LambdaQueryWrapper<UserInfo> wrapper = Wrappers.lambdaQuery();
+        
+        if (query.getKeyword() != null && !query.getKeyword().isEmpty()) {
+            wrapper.like(UserInfo::getUserName, query.getKeyword())
+                   .or()
+                   .like(UserInfo::getUserEmail, query.getKeyword());
+        }
+        
+        Page<UserInfo> result = this.page(page, wrapper);
+        
+        UserPageVO vo = new UserPageVO();
+        vo.setTotal(result.getTotal());
+        vo.setList(result.getRecords().stream().map(user -> {
+            UserListVO item = new UserListVO();
+            BeanUtils.copyProperties(user, item);
+            return item;
+        }).collect(Collectors.toList()));
+        
+        return vo;
+    }
+
+    @Override
+    public boolean updateUserStatus(UserUpdateDTO update) {
+        UserInfo user = this.getById(update.getUserId());
+        if (user == null) return false;
+        
+        if (update.getUserRole() != null) user.setUserRole(update.getUserRole());
+        if (update.getStatus() != null) user.setStatus(update.getStatus());
+        
+        return this.updateById(user);
     }
 }

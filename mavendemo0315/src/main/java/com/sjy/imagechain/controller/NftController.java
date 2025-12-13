@@ -199,4 +199,13 @@ public class NftController {
         nftService.withdraw(amount);
         return AjaxResult.success("提现申请成功");
     }
+
+    /**
+     * 根据图片ID删除NFT信息
+     */
+    @DeleteMapping("/image/{imageId}")
+    public AjaxResult deleteByImageId(@PathVariable String imageId) {
+        nftService.deleteByImageId(imageId);
+        return AjaxResult.success("删除成功");
+    }
 }
