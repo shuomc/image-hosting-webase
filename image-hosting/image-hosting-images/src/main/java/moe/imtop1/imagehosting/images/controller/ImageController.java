@@ -276,6 +276,34 @@ public class ImageController {
     }
 
     /**
+     * 根据 ID 获取水印图的实际文件内容（流）用于下载。
+     *
+     * @param imageId 图片的唯一 ID (@PathVariable)
+     * @return ResponseEntity 包含水印图的 InputStreamResource，或标准的 HTTP 错误状态
+     */
+    @GetMapping("/watermark/{imageId}")
+    public ResponseEntity<InputStreamResource> getWatermarkImageById(@PathVariable String imageId) {
+        try {
+            // 1. 调用 Service 层获取包含流和元数据的 DTO
+            ImageStreamData streamData = imageService.getWatermarkImageById(imageId);
+
+            // 2. 检查 Service 层是否成功返回数据
+            if (streamData == null || streamData.getInputStream() == null) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "找不到指定的水印图文件。");
+            }
+
+            // 3. 使用 MinioService 处理流和生成 ResponseEntity
+            return minioService.createResponseEntity(streamData);
+
+        } catch (ResponseStatusException rse) {
+            throw rse;
+        } catch (Exception e) {
+            log.error("获取水印图内容时发生错误，imageId={}: {}", imageId, e.getMessage(), e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "无法获取水印图内容。", e);
+        }
+    }
+
+    /**
      * 获取所有公开图片的元数据列表。
      *
      * @return AjaxResult 包含公开图片元数据列表

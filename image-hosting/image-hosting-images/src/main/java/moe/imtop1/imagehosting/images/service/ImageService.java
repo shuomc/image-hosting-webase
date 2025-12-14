@@ -30,6 +30,8 @@ public interface ImageService extends IService<ImageData> {
 
     ImageStreamData getMinioImageById(String imageId);
 
+    ImageStreamData getWatermarkImageById(String imageId);
+
     List<ImageStreamData> getMinioImagesByUserId(String userId);
 
     List<ImageUrlData> getMinioImageUrlListByUserId(String userId);

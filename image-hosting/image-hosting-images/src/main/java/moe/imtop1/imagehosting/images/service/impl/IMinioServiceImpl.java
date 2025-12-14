@@ -39,7 +39,10 @@ public class IMinioServiceImpl implements IMinioService {
         }
 
         // 3.2 设置 Content-Length (文件大小)
-        headers.setContentLength(streamData.getSize());
+        // 如果 size 为 null，则不设置 Content-Length，让浏览器自动处理
+        if (streamData.getSize() != null) {
+            headers.setContentLength(streamData.getSize());
+        }
 
         // 3.3 设置 Content-Disposition (建议的文件名和显示方式)
         // 'inline' 尝试在浏览器中直接显示图片

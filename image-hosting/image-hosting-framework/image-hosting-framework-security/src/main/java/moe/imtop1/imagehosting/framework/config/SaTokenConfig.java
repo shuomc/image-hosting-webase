@@ -33,6 +33,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
                         "/modify/**",
                         "/api/images/minio/**",
                         "/api/images/public",
+                        "/api/images/watermark/**",
                         "/api/images/user/**",
                         "/api/user/getUserById",
                         "/api/user/getUserList"

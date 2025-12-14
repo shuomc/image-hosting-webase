@@ -3,6 +3,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.drew.imaging.ImageMetadataReader;
 import com.drew.lang.GeoLocation;
@@ -770,8 +771,25 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
         LambdaQueryWrapper<ImageData> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(ImageData::getIsPublic, true) // 条件：isPublic 为 true
                 .eq(ImageData::getIsDelete, false) // 条件：未被删除
+                .isNotNull(ImageData::getNftId) // 条件：nftId 不为 null
                 .orderByDesc(ImageData::getCreateTime); // 可选：按创建时间排序
-        return this.list(queryWrapper);
+        List<ImageData> imageDataList = this.list(queryWrapper);
+
+        // 拼接配置文件中的minio服务url
+        String url = minioExternalUrl.endsWith("/") ? minioExternalUrl.substring(0, minioExternalUrl.length() - 1) : minioExternalUrl;
+        for (ImageData imageData : imageDataList) {
+            if (imageData.getOriginMinioUrl() != null) {
+                imageData.setOriginMinioUrl(url + imageData.getOriginMinioUrl());
+            }
+            if (imageData.getThumbnailMinioUrl() != null) {
+                imageData.setThumbnailMinioUrl(url + imageData.getThumbnailMinioUrl());
+            }
+            if (imageData.getWatermarkMinioUrl() != null) {
+                imageData.setWatermarkMinioUrl(url + imageData.getWatermarkMinioUrl());
+            }
+        }
+
+        return imageDataList;
     }
 
     //使用此方法获取原图
@@ -823,6 +841,52 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
         // 注意：这里获取的 InputStream 不需要手动关闭，
         // 因为它将被传递给 Controller 中的 InputStreamResource，
         // Spring 会在响应完成后自动关闭它。
+    }
+
+    //使用此方法获取水印图
+    @Override
+    public ImageStreamData getWatermarkImageById(String imageId) {
+        // 1. 从数据库获取元数据
+        ImageData imageData = this.getById(imageId);
+
+        // 2. 检查图片是否存在且未被删除
+        if (imageData == null || imageData.getIsDelete()) {
+            log.warn("找不到图片数据或图片已被标记为删除，imageId: {}", imageId);
+            throw new ServiceException(ResultCodeEnum.NOT_FOUND);
+        }
+
+        // 3. 检查水印图是否存在
+        if (StringUtil.isNull(imageData.getWatermarkMinioKey())) {
+            log.error("水印图不存在，imageId: {}", imageId);
+            throw new ServiceException("水印图不存在，imageId: " + imageId);
+        }
+
+        // 4. 从 MinIO 获取水印图输入流
+        try {
+            InputStream inputStream = minioClient.getObject(
+                    GetObjectArgs.builder()
+                            .bucket(watermarkBucket)
+                            .object(imageData.getWatermarkMinioKey())
+                            .build());
+            log.info("成功从 MinIO 取得水印图对象流，Key: {}", imageData.getWatermarkMinioKey());
+
+            // 5. 创建并返回 ImageStreamData DTO
+            return new ImageStreamData(
+                    inputStream,
+                    "image/jpeg",  // 水印图固定为 JPEG 格式
+                    null,          // 水印图大小未单独存储
+                    imageData.getFileName() != null ? imageData.getFileName().replaceFirst("\\.[^.]+$", "_watermark.jpg") : "watermark.jpg"
+            );
+        } catch (MinioException e) {
+            log.error("从 MinIO 获取水印图时发生 MinioException，Key {}: {}", imageData.getWatermarkMinioKey(), e.getMessage(), e);
+            throw new ServiceException("无法从存储体获取水印图: " + e.getMessage(), e);
+        } catch (InvalidKeyException | NoSuchAlgorithmException | IOException e) {
+            log.error("从 MinIO 获取水印图时发生错误，Key {}: {}", imageData.getWatermarkMinioKey(), e.getMessage(), e);
+            throw new ServiceException("获取水印图流时发生错误: " + e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("从 MinIO 获取水印图时发生未预期错误，Key {}: {}", imageData.getWatermarkMinioKey(), e.getMessage(), e);
+            throw new ServiceException("获取水印图时发生未预期错误: " + e.getMessage(), e);
+        }
     }
 
     // 获取缩略图列表
@@ -1036,8 +1100,8 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
     }
 
     @Override
-    public com.baomidou.mybatisplus.extension.plugins.pagination.Page<ImageData> getImageList(Integer page, Integer size, String keyword, String type) {
-        com.baomidou.mybatisplus.extension.plugins.pagination.Page<ImageData> p = new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size);
+    public Page<ImageData> getImageList(Integer page, Integer size, String keyword, String type) {
+        Page<ImageData> p = new Page<>(page, size);
         LambdaQueryWrapper<ImageData> wrapper = new LambdaQueryWrapper<>();
         if (StringUtil.isNotEmpty(keyword)) {
             wrapper.and(w -> w.like(ImageData::getFileName, keyword).or().eq(ImageData::getImageId, keyword));
@@ -1050,7 +1114,7 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
              }
         }
         wrapper.orderByDesc(ImageData::getCreateTime);
-        com.baomidou.mybatisplus.extension.plugins.pagination.Page<ImageData> result = page(p, wrapper);
+        Page<ImageData> result = page(p, wrapper);
 
         // 处理 URL，加上 minioExternalUrl
         if (result.getRecords() != null) {
