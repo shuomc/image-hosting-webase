@@ -142,12 +142,19 @@ async function handleLogin() {
   try {
     const loginResponse = await adminLogin(loginData);
     userStore.setLoginInfo({ token: loginResponse.token });
-    await userStore.loadUserInfo();
+    
+    // 加载用户信息，并检查是否成功
+    const loadSuccess = await userStore.loadUserInfo();
+    if (!loadSuccess) {
+      ElMessage.error('获取用户信息失败，请重试');
+      userStore.clearLoginState();
+      return;
+    }
     
     // Check role again on frontend just in case, though backend enforces it
     if (userStore.userInfo?.userRole !== 'admin') {
-       ElMessage.error('非管理员账号');
-       userStore.clearLoginInfo();
+       ElMessage.error('非管理员账号，禁止访问');
+       userStore.clearLoginState();
        return;
     }
 

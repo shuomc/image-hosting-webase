@@ -6,12 +6,14 @@ import moe.imtop1.imagehosting.common.dto.AjaxResult;
 import moe.imtop1.imagehosting.common.service.StatsProvider;
 import moe.imtop1.imagehosting.common.vo.AdminDashboardStatsVO;
 import moe.imtop1.imagehosting.system.service.IUserInfoService;
+import moe.imtop1.imagehosting.system.service.IConfigService;
 import moe.imtop1.imagehosting.system.domain.dto.UserListQueryDTO;
 import moe.imtop1.imagehosting.system.domain.dto.UserUpdateDTO;
 import moe.imtop1.imagehosting.system.domain.vo.UserPageVO;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -19,6 +21,7 @@ import java.util.List;
 public class AdminController {
 
     private final IUserInfoService userInfoService;
+    private final IConfigService configService;
     private final List<StatsProvider> statsProviders;
 
     @SaCheckRole("admin")
@@ -51,5 +54,18 @@ public class AdminController {
     public AjaxResult updateUser(@RequestBody UserUpdateDTO update) {
         boolean success = userInfoService.updateUserStatus(update);
         return success ? AjaxResult.success() : AjaxResult.error("Update failed");
+    }
+
+    @SaCheckRole("admin")
+    @GetMapping("/config")
+    public AjaxResult getConfigs() {
+        return AjaxResult.success(configService.getAllConfigs());
+    }
+
+    @SaCheckRole("admin")
+    @PostMapping("/config")
+    public AjaxResult updateConfigs(@RequestBody Map<String, String> configs) {
+        configService.updateConfigs(configs);
+        return AjaxResult.success();
     }
 }
