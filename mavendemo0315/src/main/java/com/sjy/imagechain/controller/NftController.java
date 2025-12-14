@@ -176,6 +176,16 @@ public class NftController {
         return AjaxResult.success("下架成功");
     }
 
+    /**
+     * 系统级下架 (用于管理员删除图片时自动下架)
+     * 不需要用户认证，使用NFT所有者的密钥执行
+     */
+    @PostMapping("/shelf/system-off/{nftId}")
+    public AjaxResult systemOffShelf(@PathVariable String nftId) {
+        nftService.systemOffShelf(nftId);
+        return AjaxResult.success("系统下架成功");
+    }
+
     // ==========================================
     // 4. 资金接口
     // ==========================================

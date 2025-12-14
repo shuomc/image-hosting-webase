@@ -1076,6 +1076,32 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
             throw new ServiceException("Image not found");
         }
 
+        // 0. 如果图片已铸造为NFT且已上架，先下架
+        if (StringUtil.isNotEmpty(image.getNftId())) {
+            try {
+                // 先查询NFT状态
+                ResponseEntity<Map> nftResponse = restTemplate.getForEntity(
+                        blockchainApiUrl + "/nft/" + image.getNftId(), Map.class);
+                if (nftResponse.getStatusCode().is2xxSuccessful() && nftResponse.getBody() != null) {
+                    Map<String, Object> responseBody = nftResponse.getBody();
+                    if (responseBody.get("data") != null) {
+                        Map<String, Object> nftData = (Map<String, Object>) responseBody.get("data");
+                        Boolean isForSale = (Boolean) nftData.get("isForSale");
+                        if (Boolean.TRUE.equals(isForSale)) {
+                            // NFT已上架，使用系统级下架接口（不需要用户认证）
+                            log.info("NFT {} 当前已上架，执行系统级下架操作", image.getNftId());
+                            restTemplate.postForEntity(
+                                    blockchainApiUrl + "/nft/shelf/system-off/" + image.getNftId(),
+                                    null, Map.class);
+                            log.info("NFT {} 系统下架成功", image.getNftId());
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("查询或下架NFT失败，继续执行删除操作: {}", e.getMessage());
+            }
+        }
+
         // 1. Delete from MinIO
         try {
             if (StringUtil.isNotEmpty(image.getOriginMinioKey())) {
@@ -1084,18 +1110,26 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
             if (StringUtil.isNotEmpty(image.getThumbnailMinioKey())) {
                 minioClient.removeObject(io.minio.RemoveObjectArgs.builder().bucket(thumbnailBucket).object(image.getThumbnailMinioKey()).build());
             }
+            if (StringUtil.isNotEmpty(image.getWatermarkMinioKey())) {
+                minioClient.removeObject(io.minio.RemoveObjectArgs.builder().bucket(watermarkBucket).object(image.getWatermarkMinioKey()).build());
+            }
         } catch (Exception e) {
             log.error("Failed to delete from MinIO", e);
         }
 
-        // 2. Delete from DB
-        removeById(imageId);
+        // 2. 逻辑删除 (而非物理删除)
+        UpdateWrapper<ImageData> updateWrapper = new UpdateWrapper<>();
+        updateWrapper.eq("image_id", imageId);
+        updateWrapper.set("is_delete", true);
+        imageDataMapper.update(null, updateWrapper);
 
-        // 3. Delete from Blockchain
-        try {
-            restTemplate.delete(blockchainApiUrl + "/nft/image/" + imageId);
-        } catch (Exception e) {
-            log.error("Failed to delete from Blockchain", e);
+        // 3. Delete from Blockchain (标记删除)
+        if (StringUtil.isNotEmpty(image.getNftId())) {
+            try {
+                restTemplate.delete(blockchainApiUrl + "/nft/image/" + imageId);
+            } catch (Exception e) {
+                log.error("Failed to delete from Blockchain", e);
+            }
         }
     }
 

@@ -121,6 +121,14 @@ public interface NftService {
      */
     Boolean offShelf(String nftId);
 
+    /**
+     * 系统级下架 (用于管理员删除图片时自动下架)
+     * 使用NFT所有者的密钥执行操作，不需要当前用户认证
+     * @param nftId NFT ID
+     * @return 是否成功
+     */
+    Boolean systemOffShelf(String nftId);
+
     // ==========================================
     // 4. 资金管理
     // ==========================================

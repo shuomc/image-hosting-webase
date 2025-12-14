@@ -15,4 +15,11 @@ public interface AppUserService {
 
     CryptoKeyPair getCryptoKeyPairByUserId(String userId);
 
+    /**
+     * 根据区块链地址获取用户密钥对
+     * @param blockchainAddress 区块链钱包地址
+     * @return 密钥对
+     */
+    CryptoKeyPair getCryptoKeyPairByAddress(String blockchainAddress);
+
 }

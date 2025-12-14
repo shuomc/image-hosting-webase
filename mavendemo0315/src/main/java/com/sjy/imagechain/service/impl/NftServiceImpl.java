@@ -457,6 +457,51 @@ public class NftServiceImpl implements NftService {
         });
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean systemOffShelf(String nftId) {
+        // 系统级下架 - 使用NFT所有者的密钥执行操作
+        NftInfo nftInfo = nftInfoMapper.selectById(nftId);
+        if (nftInfo == null) {
+            throw new RuntimeException("NFT不存在");
+        }
+        
+        // 如果已经下架，直接返回成功
+        if (!Boolean.TRUE.equals(nftInfo.getIsForSale())) {
+            log.info("NFT {} 已经处于下架状态", nftId);
+            return true;
+        }
+        
+        try {
+            // 使用NFT所有者的密钥执行下架操作（通过ownerAddress查找用户）
+            CryptoKeyPair ownerKeyPair = appUserService.getCryptoKeyPairByAddress(nftInfo.getOwnerAddress());
+            if (ownerKeyPair == null) {
+                throw new RuntimeException("NFT所有者密钥加载失败");
+            }
+            
+            AssembleTransactionProcessor processor = getProcessor(ownerKeyPair);
+            
+            List<Object> params = new ArrayList<>();
+            params.add(new BigInteger(nftInfo.getTokenId()));
+            params.add(false); // setForSale = false 表示下架
+            
+            TransactionResponse response = processor.sendTransactionAndGetResponseByContractLoader(
+                    CONTRACT_NAME, CONTRACT_ADDRESS, "setForSale", params
+            );
+            handleContractError(response);
+            
+            // 更新数据库状态
+            nftInfo.setIsForSale(false);
+            nftInfoMapper.updateById(nftInfo);
+            
+            log.info("系统级下架NFT成功: nftId={}", nftId);
+            return true;
+        } catch (Exception e) {
+            log.error("系统级下架NFT失败: nftId={}", nftId, e);
+            throw new RuntimeException("系统下架失败: " + e.getMessage());
+        }
+    }
+
     // ==========================================
     // 4. 资金管理
     // ==========================================

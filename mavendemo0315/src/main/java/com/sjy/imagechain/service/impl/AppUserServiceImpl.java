@@ -1,5 +1,6 @@
 package com.sjy.imagechain.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.sjy.imagechain.domain.AppRole;
 import com.sjy.imagechain.domain.AppUser;
@@ -159,6 +160,23 @@ public class AppUserServiceImpl implements AppUserService {
 
         // 创建 keyPair (这里使用的是 Hex 私钥直接恢复，如果字段名是 encrypted 但存的是明文 Hex，则无需解密)
         // 如果存的是 AES 加密后的串，此处需要先解密
+        Client client = bcosSDK.getClient(1);
+        return client.getCryptoSuite().createKeyPair(appUser.getEncryptedPrivateKey());
+    }
+
+    @Override
+    public CryptoKeyPair getCryptoKeyPairByAddress(String blockchainAddress) {
+        AppUser appUser = appUserMapper.selectOne(
+                new LambdaQueryWrapper<AppUser>()
+                        .eq(AppUser::getBlockchainAddress, blockchainAddress)
+        );
+        if (appUser == null) {
+            throw new RuntimeException("未找到对应区块链地址的用户: " + blockchainAddress);
+        }
+        if (!StringUtils.hasText(appUser.getEncryptedPrivateKey())) {
+            throw new RuntimeException("用户未绑定区块链账户私钥");
+        }
+
         Client client = bcosSDK.getClient(1);
         return client.getCryptoSuite().createKeyPair(appUser.getEncryptedPrivateKey());
     }
