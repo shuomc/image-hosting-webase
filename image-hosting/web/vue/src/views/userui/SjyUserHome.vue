@@ -127,7 +127,7 @@
               />
               <button 
                 @click="handleSearch"
-                class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white font-medium rounded-lg transition-colors"
+                class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white font-medium rounded-xl transition-colors"
               >
                 搜索
               </button>
@@ -437,7 +437,6 @@ import axios from 'axios';
 import FooterComponent from '@/views/userui/components/SjyFooterComponent.vue';
 import TopAuthors from '@/views/userui/components/SjyTopAuthorsComponent.vue';
 import ChallengesPage from '@/views/userui/components/SjyChallengesComponent.vue';
-import { MINIO_SERVER_PORT } from '@/config/index';
 import {
   MagnifyingGlassIcon,
   ChevronDownIcon,

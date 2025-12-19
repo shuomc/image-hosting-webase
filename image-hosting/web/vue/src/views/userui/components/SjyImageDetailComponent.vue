@@ -1,117 +1,199 @@
 <template>
-  <el-dialog
-    v-model="dialogVisible"
-    fullscreen
-    :show-close="false"
-    :close-on-click-modal="true"
-    :close-on-press-escape="true"
-    class="image-detail-dialog"
-  >
-    <template #header>
-      <div class="dialog-header">
-        <div class="header-left">
-          <el-button link class="close-button" @click="handleClose">
-            <el-icon><CloseBold /></el-icon>
-          </el-button>
-          <div class="author-info">
-            <div class="author-avatar-circle" :style="{ backgroundColor: getRandomColor() }">
-              <span>{{ displayedImage?.authorName?.charAt(0).toUpperCase() || '?' }}</span>
+  <Teleport to="body">
+    <Transition name="modal">
+      <div 
+        v-if="dialogVisible && displayedImage" 
+        class="fixed inset-0 z-[9999] flex items-center justify-center"
+      >
+        <!-- Backdrop -->
+        <div 
+          class="absolute inset-0 bg-black/80 backdrop-blur-sm"
+          @click="handleClose"
+        ></div>
+
+        <!-- Modal Panel -->
+        <div class="relative w-full max-w-6xl max-h-[90vh] m-4 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+          
+          <!-- Modal Header -->
+          <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-700 shrink-0">
+            <div class="flex items-center gap-4">
+              <div 
+                class="flex items-center gap-3 cursor-pointer"
+                @click="goToUserProfile(displayedImage.userId)"
+              >
+                <div 
+                  class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow-md"
+                  :style="{ backgroundColor: getRandomColor() }"
+                >
+                  {{ currentAuthorName.charAt(0).toUpperCase() }}
+                </div>
+                <div>
+                  <div class="font-bold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                    {{ currentAuthorName }}
+                  </div>
+                  <div class="text-xs text-slate-500 dark:text-slate-400">关注 · 捐赠</div>
+                </div>
+              </div>
             </div>
-            <div class="author-text">
-              <span class="author-name">{{ displayedImage?.authorName || '未知作者' }}</span>
-              <el-button type="primary" size="small" class="follow-button">关注</el-button>
+
+            <div class="flex items-center gap-3">
+              <button class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors" title="收藏">
+                <StarIcon class="w-6 h-6" />
+              </button>
+              <button class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-full transition-colors" title="添加到合集">
+                <PlusCircleIcon class="w-6 h-6" />
+              </button>
+              
+              <div class="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-2"></div>
+
+              <button 
+                @click="downloadImage(displayedImage)"
+                class="flex items-center gap-2 px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-colors shadow-lg"
+              >
+                <span>免费下载</span>
+                <ArrowDownTrayIcon class="w-5 h-5" />
+              </button>
+              
+              <button 
+                @click="handleClose"
+                class="ml-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors"
+              >
+                <XMarkIcon class="w-6 h-6" />
+              </button>
+            </div>
+          </div>
+
+          <!-- Modal Body -->
+          <div class="flex-1 overflow-hidden flex flex-col lg:flex-row min-h-0">
+            <!-- Image Area -->
+            <div class="flex-1 relative flex items-center justify-center p-4 lg:p-10 bg-slate-100 dark:bg-slate-900 overflow-auto group">
+              <!-- Navigation Buttons -->
+              <button
+                v-if="hasPrevImage"
+                class="absolute left-4 z-10 p-3 rounded-full bg-white/20 hover:bg-white/40 text-white backdrop-blur-md transition-all opacity-0 group-hover:opacity-100"
+                @click="goToPrevImage"
+              >
+                <ChevronLeftIcon class="w-6 h-6" />
+              </button>
+
+              <img 
+                :src="minioBaseUrl + (displayedImage.watermarkMinioUrl || displayedImage.minioUrl)" 
+                :alt="displayedImage.fileName" 
+                class="max-w-full max-h-full object-contain shadow-2xl rounded-lg"
+              >
+
+              <button
+                v-if="hasNextImage"
+                class="absolute right-4 z-10 p-3 rounded-full bg-white/20 hover:bg-white/40 text-white backdrop-blur-md transition-all opacity-0 group-hover:opacity-100"
+                @click="goToNextImage"
+              >
+                <ChevronRightIcon class="w-6 h-6" />
+              </button>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="w-full lg:w-96 bg-white dark:bg-slate-800 border-t lg:border-t-0 lg:border-l border-slate-100 dark:border-slate-700 p-6 overflow-y-auto shrink-0">
+              <div class="space-y-8">
+                <!-- License Info -->
+                <div class="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-900/30">
+                  <div class="flex items-start gap-3">
+                    <InformationCircleIcon class="w-5 h-5 text-indigo-600 dark:text-indigo-400 mt-0.5 shrink-0" />
+                    <div>
+                      <h4 class="font-bold text-indigo-900 dark:text-indigo-300 text-sm">商业授权许可</h4>
+                      <p class="text-xs text-indigo-700 dark:text-indigo-400 mt-1">此图片为水印预览图，如需原图请前往市场。</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Details -->
+                <div>
+                  <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4">详细信息</h3>
+                  <div class="space-y-3">
+                    <div class="flex justify-between text-sm">
+                      <span class="text-slate-500 dark:text-slate-400">分辨率</span>
+                      <span class="font-medium text-slate-900 dark:text-slate-200">
+                        {{ displayedImage.width && displayedImage.height ? `${displayedImage.width} x ${displayedImage.height}` : 'Watermark' }}
+                      </span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                      <span class="text-slate-500 dark:text-slate-400">文件大小</span>
+                      <span class="font-medium text-slate-900 dark:text-slate-200">{{ formatBytes(displayedImage.size) }}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                      <span class="text-slate-500 dark:text-slate-400">格式</span>
+                      <span class="font-medium text-slate-900 dark:text-slate-200">{{ displayedImage.contentType || 'JPG' }}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                      <span class="text-slate-500 dark:text-slate-400">上传时间</span>
+                      <span class="font-medium text-slate-900 dark:text-slate-200">{{ formatDate(displayedImage.createTime || displayedImage.uploadTime) }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Description -->
+                <div v-if="displayedImage.description">
+                  <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4">描述</h3>
+                  <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{{ displayedImage.description }}</p>
+                </div>
+
+                <!-- Tags -->
+                <div v-if="displayedImage.description">
+                  <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4">标签</h3>
+                  <div class="flex flex-wrap gap-2">
+                    <span 
+                      v-for="tag in getTags(displayedImage.description)" 
+                      :key="tag"
+                      class="px-3 py-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs rounded-full cursor-pointer transition-colors"
+                    >
+                      {{ tag }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="pt-6 border-t border-slate-100 dark:border-slate-700 flex gap-4">
+                  <button @click="handleShare" class="flex-1 flex items-center justify-center gap-2 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white transition-colors">
+                    <ShareIcon class="w-4 h-4" />
+                    分享
+                  </button>
+                  <button @click="handleReport" class="flex-1 flex items-center justify-center gap-2 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white transition-colors">
+                    <FlagIcon class="w-4 h-4" />
+                    举报
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-        <div class="header-right">
-          <el-button link class="action-btn">
-            <el-icon><Star /></el-icon> 收藏
-          </el-button>
-          <el-button link class="action-btn">
-            <el-icon><MagicStick /></el-icon> 在Canvas中编辑
-          </el-button>
-          <el-button type="success" @click="downloadImage(displayedImage)" class="download-button">
-            免费下载 <el-icon><ArrowDownBold /></el-icon>
-          </el-button>
-        </div>
       </div>
-    </template>
-
-    <div class="dialog-content">
-      <div class="image-display-area">
-        <el-button
-          v-if="hasPrevImage"
-          class="nav-button nav-left"
-          circle
-          @click="goToPrevImage"
-        >
-          <el-icon><ArrowLeftBold /></el-icon>
-        </el-button>
-
-        <div class="main-image-container">
-          <img :src="minioBaseUrl + displayedImage.minioUrl" :alt="displayedImage.fileName" class="main-image">
-        </div>
-
-        <el-button
-          v-if="hasNextImage"
-          class="nav-button nav-right"
-          circle
-          @click="goToNextImage"
-        >
-          <el-icon><ArrowRightBold /></el-icon>
-        </el-button>
-      </div>
-    </div>
-
-    <template #footer>
-      <div class="dialog-footer">
-        <div class="footer-left">
-          <div class="meta-item-group"> <div class="meta-item">
-              <strong>信息</strong>
-              <p>上传时间: {{ formatDate(displayedImage?.createTime) }}</p>
-              <p>图片尺寸: {{ displayedImage?.width || 'N/A' }}x{{ displayedImage?.height || 'N/A' }}</p>
-              <p>图片类型: {{ displayedImage?.contentType || 'N/A' }}</p>
-              <p>文件大小: {{ formatBytes(displayedImage?.size) }}</p>
-            </div>
-            <div class="meta-item">
-              <strong>地点</strong>
-              <p>{{ displayedImage?.description || '未知地点' }}</p>
-            </div>
-            <div class="meta-item">
-              <strong>浏览量 & 下载量</strong>
-              <p>浏览量: 0</p>
-              <p>下载量: 0</p>
-            </div>
-          </div>
-        </div>
-        <div class="footer-right">
-          <el-button link class="action-btn" @click="handleMoreOptions">
-            <el-icon><MoreFilled /></el-icon>
-          </el-button>
-          <el-button link class="action-btn" @click="handleShare">
-            <el-icon><Share /></el-icon> 分享
-          </el-button>
-          <el-button link class="action-btn" @click="handleReport">
-            <el-icon><WarningFilled /></el-icon> 举报
-          </el-button>
-        </div>
-      </div>
-    </template>
-  </el-dialog>
+    </Transition>
+  </Teleport>
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
+import axios from 'axios';
 import { MINIO_SERVER_PORT } from '@/config/index';
-import { ElDialog, ElButton, ElIcon, ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import {
-  CloseBold, Star, MagicStick, ArrowDownBold, ArrowLeftBold, ArrowRightBold, MoreFilled, Share, WarningFilled
-} from '@element-plus/icons-vue';
+  XMarkIcon,
+  ArrowDownTrayIcon,
+  StarIcon,
+  PlusCircleIcon,
+  InformationCircleIcon,
+  FlagIcon,
+  ShareIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon
+} from '@heroicons/vue/24/outline';
 
-// Interfaces (Should be consistent across components)
+// Interfaces
 interface Image {
   imageId: string;
   minioUrl: string;
+  watermarkMinioUrl: string | null;
+  thumbnailMinioUrl: string | null;
   fileName: string;
   userId: string;
   contentType: string;
@@ -121,8 +203,15 @@ interface Image {
   uploadTime?: string;
   createTime?: string;
   authorName?: string;
-  width?: number; // Add width and height for image info
+  width?: number;
   height?: number;
+}
+
+interface UserInfo {
+  userId: string;
+  userName: string;
+  userEmail: string;
+  userRole: string;
 }
 
 // Props definition
@@ -136,8 +225,12 @@ const props = defineProps<{
 // Emits definition
 const emit = defineEmits(['update:modelValue', 'close', 'navigate']);
 
-const API_BASE_URL = 'http://localhost:8080'; // 后端API基础URL
-const minioBaseUrl = MINIO_SERVER_PORT; // MinIO服务器基础URL
+const API_BASE_URL = 'http://localhost:8080';
+const minioBaseUrl = MINIO_SERVER_PORT;
+const router = useRouter();
+
+// Cache for user info
+const userCache = new Map<string, UserInfo>();
 
 // Reactive state for dialog visibility
 const dialogVisible = computed({
@@ -153,13 +246,65 @@ const displayedImage = computed<Image | null>(() => {
   if (props.images && props.images.length > 0 && currentImageIndex.value >= 0 && currentImageIndex.value < props.images.length) {
     return props.images[currentImageIndex.value];
   }
-  return props.image; // Fallback to initial image if images array is not available or index is off
+  return props.image;
 });
+
+// Local author name to handle async fetching
+const currentAuthorName = ref('未知作者');
+
+const fetchUserInfo = async (userId: string): Promise<UserInfo | null> => {
+  if (userCache.has(userId)) return userCache.get(userId)!;
+
+  try {
+    const response = await axios.get(`${API_BASE_URL}/api/user/getUserById`, {
+      params: { userId }
+    });
+    if (response.data?.code === 200 && response.data.data) {
+      const userInfo: UserInfo = response.data.data;
+      userCache.set(userId, userInfo);
+      return userInfo;
+    }
+    return null;
+  } catch (err) {
+    console.error(`Error fetching user info:`, err);
+    return null;
+  }
+};
+
+// Watch for image changes to sync author name
+watch(() => displayedImage.value, async (newImg) => {
+  if (newImg) {
+    if (newImg.authorName) {
+      currentAuthorName.value = newImg.authorName;
+    } else {
+      currentAuthorName.value = '加载中...';
+      const userInfo = await fetchUserInfo(newImg.userId);
+      if (userInfo) {
+        currentAuthorName.value = userInfo.userName;
+      } else {
+        currentAuthorName.value = '未知作者';
+      }
+    }
+  }
+}, { immediate: true });
 
 // Watch for changes in initialIndex to update currentImageIndex
 watch(() => props.initialIndex, (newIndex) => {
   currentImageIndex.value = newIndex;
 }, { immediate: true });
+
+// Handle body scroll lock
+watch(dialogVisible, (visible) => {
+  if (visible) {
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.body.style.overflow = '';
+  }
+});
+
+onUnmounted(() => {
+  document.body.style.overflow = '';
+});
 
 // Navigation controls
 const hasPrevImage = computed(() => currentImageIndex.value > 0);
@@ -185,33 +330,43 @@ const handleClose = () => {
   emit('close');
 };
 
+const goToUserProfile = (userId: string | undefined) => {
+  if (userId) {
+    handleClose();
+    router.push(`/user/${userId}`);
+  }
+};
+
+const getTags = (description: string | null) => {
+  if (!description) return [];
+  return description.split(' ').filter(tag => tag.length > 0);
+};
+
 // Function to generate a random color for the avatar background
 const getRandomColor = () => {
-  const letters = '0123456789ABCDEF';
-  let color = '#';
-  for (let i = 0; i < 6; i++) {
-    color += letters[Math.floor(Math.random() * 16)];
-  }
-  return color;
+  const colors = [
+    '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', 
+    '#f59e0b', '#10b981', '#06b6d4', '#3b82f6'
+  ];
+  return colors[Math.floor(Math.random() * colors.length)];
 };
 
 // Utility functions for metadata display
 const formatDate = (dateString?: string) => {
-  if (!dateString) return 'N/A';
+  if (!dateString) return '未知';
   try {
     const date = new Date(dateString);
-    if (isNaN(date.getTime())) return 'N/A'; // Check for invalid date
+    if (isNaN(date.getTime())) return '未知';
     return date.toLocaleDateString('zh-CN', {
       year: 'numeric', month: 'long', day: 'numeric'
     });
   } catch (e) {
-    return 'N/A';
+    return '未知';
   }
 };
 
-
 const formatBytes = (bytes?: number) => {
-  if (bytes === undefined || bytes === null || bytes < 0) return 'N/A';
+  if (bytes === undefined || bytes === null || bytes < 0) return '未知';
   if (bytes === 0) return '0 Bytes';
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
@@ -220,288 +375,53 @@ const formatBytes = (bytes?: number) => {
 };
 
 // Action handlers
-// Updated download function
 const downloadImage = (image: Image | null) => {
-  if (!image || !image.imageId || !image.fileName) {
+  if (!image || !image.imageId) {
     ElMessage.warning('图片信息不完整，无法下载。');
     return;
   }
 
-  const downloadUrl = `${API_BASE_URL}/api/images/minio/${image.imageId}`;
+  const downloadUrl = `${API_BASE_URL}/api/images/watermark/${image.imageId}`;
 
   const link = document.createElement('a');
   link.href = downloadUrl;
-  link.setAttribute('download', image.fileName); // 使用 image.fileName 作为下载文件名
+  link.setAttribute('download', image.fileName || 'image.jpg');
 
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  ElMessage.success('图片已开始下载！'); // 添加下载成功的提示
+  ElMessage.success('图片已开始下载！');
 };
 
 const handleShare = () => {
-  ElMessageBox.alert('分享功能正在开发中...', '分享图片', {
-    confirmButtonText: '好的'
-  });
+  ElMessage.info('分享功能正在开发中...');
 };
 
 const handleReport = () => {
-  ElMessageBox.alert('举报功能正在开发中...', '举报图片', {
-    confirmButtonText: '好的'
-  });
-};
-
-const handleMoreOptions = () => {
-  ElMessage.info('更多选项功能正在开发中...');
+  ElMessage.info('举报功能正在开发中...');
 };
 </script>
 
-<style>
-/* El-Dialog overrides for fullscreen and background */
-.image-detail-dialog.el-dialog {
-  --el-dialog-bg-color: rgba(0, 0, 0, 0.9); /* Dark overlay background */
-  --el-dialog-box-shadow: none;
-  --el-dialog-border-radius: 0;
-  --el-dialog-padding-primary: 0; /* Remove default padding */
-  overflow: hidden; /* Prevent internal scrollbar */
-  display: flex; /* Flex container for custom layout */
-  flex-direction: column;
+<style scoped>
+/* Modal Transition */
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.3s ease;
 }
 
-.image-detail-dialog .el-dialog__header {
-  padding: 0; /* Custom header padding */
-  margin-right: 0; /* Remove default right margin from close button */
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  z-index: 10; /* Ensure header is on top */
-  /* 修改这里：替换为白色半透明和模糊效果 */
-  background-color: rgba(255, 255, 255, 0.6); /* 白色背景，20% 不透明度 */
-  backdrop-filter: blur(5px); /* 模糊效果 */
-  -webkit-backdrop-filter: blur(5px); /* Safari 兼容性 */
+.modal-enter-active .relative,
+.modal-leave-active .relative {
+  transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
-.image-detail-dialog .el-dialog__body {
-  flex-grow: 1; /* Allow content to take available space */
-  padding: 0; /* Custom body padding */
-  display: flex;
-  align-items: center; /* Center image vertically */
-  justify-content: center; /* Center image horizontally */
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
 }
 
-.image-detail-dialog .el-dialog__footer {
-  padding: 0; /* Custom footer padding */
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  z-index: 10; /* Ensure footer is on top */
-  background: linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0)); /* Gradient background for visibility */
+.modal-enter-from .relative,
+.modal-leave-to .relative {
+  transform: scale(0.95);
+  opacity: 0;
 }
-
-/* Custom styles for the dialog content */
-.dialog-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px 25px;
-  color: #fff;
-  width: 100%;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.close-button {
-  font-size: 24px;
-  color: #fff;
-}
-.close-button:hover {
-  color: #ddd;
-}
-
-.author-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.author-avatar-circle {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 18px;
-  font-weight: bold;
-  color: #fff;
-  border: 2px solid rgba(255, 255, 255, 0.5);
-  flex-shrink: 0; /* Prevent shrinking */
-}
-
-.author-text {
-  display: flex;
-  flex-direction: column;
-}
-
-.author-name {
-  font-weight: bold;
-  font-size: 16px;
-  white-space: nowrap; /* Prevent line break */
-}
-
-.follow-button {
-  background-color: #00b05b;
-  color: #fff;
-  border: none;
-  padding: 2px 8px;
-  height: auto; /* Allow auto height */
-  font-size: 12px;
-  line-height: 1; /* Adjust line height for better alignment */
-  align-self: flex-start; /* Align to the start of the flex container (column) */
-  margin-top: 2px;
-}
-.follow-button:hover {
-  background-color: #009e52;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.action-btn {
-  color: #fff;
-  font-size: 16px;
-  padding: 8px 12px;
-}
-.action-btn:hover {
-  color: #ddd;
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-.download-button {
-  background-color: #00b05b;
-  color: #fff;
-  border: none;
-  padding: 10px 20px;
-  font-weight: bold;
-  font-size: 16px;
-}
-.download-button:hover {
-  background-color: #009e52;
-}
-
-.dialog-content {
-  flex-grow: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden; /* Ensure image doesn't overflow */
-  position: relative; /* For navigation buttons */
-  width: 100%;
-  height: 100%;
-}
-
-.image-display-area {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  position: relative;
-}
-
-.main-image-container {
-  max-width: 90%; /* Limit image size within dialog */
-  max-height: 90vh; /* Limit image height to viewport */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.main-image {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain; /* Ensure entire image is visible */
-  border-radius: 8px;
-}
-
-.nav-button {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  background-color: rgba(255, 255, 255, 0.2);
-  color: #fff;
-  border: none;
-  width: 50px;
-  height: 50px;
-  font-size: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 5; /* Above the image */
-}
-.nav-button:hover {
-  background-color: rgba(255, 255, 255, 0.4);
-}
-.nav-left {
-  left: 20px;
-}
-.nav-right {
-  right: 20px;
-}
-
-.dialog-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end; /* Align items to the bottom */
-  padding: 15px 25px;
-  color: #fff;
-  width: 100%;
-}
-
-/* New styles for footer-left content */
-.footer-left {
-  display: flex;
-  flex-direction: column; /* Changed to column to stack meta-item-group */
-  gap: 15px; /* Space between meta-item-group and other potential footer-left items */
-}
-
-.meta-item-group { /* New class for the backgrounded group */
-  background-color: rgba(255, 255, 255, 0.2); /* White background with 20% opacity */
-  border-radius: 8px; /* Rounded corners */
-  padding: 15px 20px; /* Padding inside the box */
-  backdrop-filter: blur(5px); /* Optional: add a slight blur to the background */
-  -webkit-backdrop-filter: blur(5px); /* For Safari */
-  display: flex;
-  gap: 40px; /* Space between metadata columns */
-}
-
-.meta-item {
-  display: flex;
-  flex-direction: column;
-}
-.meta-item strong {
-  font-size: 16px;
-  margin-bottom: 5px;
-}
-.meta-item p {
-  font-size: 14px;
-  margin: 2px 0;
-}
-
-.footer-right {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
 </style>

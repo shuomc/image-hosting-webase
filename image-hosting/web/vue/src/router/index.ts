@@ -201,13 +201,108 @@ const router = createRouter({
       name: 'UserLicence',
       component: () => import('@/views/userui/SjyUserLicence.vue'),
       meta: { title: 'User' }
+    },
+    {
+      path: '/design/userhome',
+      name: 'DesignUserHome',
+      component: () => import('@/views/design/DesignUserHome.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/upload-image',
+      name: 'DesignUploadImage',
+      component: () => import('@/views/design/DesignUploadImage.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/workplace',
+      name: 'DesignWorkplace',
+      component: () => import('@/views/design/DesignWorkplace.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/my-images',
+      name: 'DesignMyImages',
+      component: () => import('@/views/design/DesignMyImages.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/image-detail',
+      name: 'DesignImageDetail',
+      component: () => import('@/views/design/DesignImageDetail.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/my-nft',
+      name: 'DesignMyNFT',
+      component: () => import('@/views/design/DesignMyNFTView.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/nft-detail',
+      name: 'DesignMyNFTDetail',
+      component: () => import('@/views/design/DesignMyNFTDetail.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/nft-market',
+      name: 'DesignNFTMarket',
+      component: () => import('@/views/design/DesignNFTMarket.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/buy-nft-detail',
+      name: 'DesignBuyNFTDetail',
+      component: () => import('@/views/design/DesignBuyNFTDetail.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/nft-trans',
+      name: 'DesignNFTTrans',
+      component: () => import('@/views/design/DesignNFTTrans.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/my-wallet',
+      name: 'DesignMyWallet',
+      component: () => import('@/views/design/DesignMyWallet.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/profile',
+      name: 'DesignProfile',
+      component: () => import('@/views/design/DesignProfile.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/admin-dashboard',
+      name: 'DesignAdminDashboard',
+      component: () => import('@/views/design/DesignAdminDashboard.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/admin-user',
+      name: 'DesignAdminUser',
+      component: () => import('@/views/design/DesignAdminUser.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/admin-image',
+      name: 'DesignAdminImage',
+      component: () => import('@/views/design/DesignAdminImage.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/admin-setting',
+      name: 'DesingAdminSetting',
+      component: () => import('@/views/design/DesingAdminSetting.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/:pathMatch(.*)*', // 匹配所有未匹配到的路径
+      name: 'NotFound',
+      component: NotFound
     }
-    ,
-     {
-    path: '/:pathMatch(.*)*', // 匹配所有未匹配到的路径
-    name: 'NotFound',
-    component: NotFound
-  }
   ]
 })
 

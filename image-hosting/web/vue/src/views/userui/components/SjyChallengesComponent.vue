@@ -1,185 +1,246 @@
-<template>
-  <div class="challenges-page">
-    <h1 class="page-title">过去趋势的挑战赛</h1>
-
-    <div class="challenges-list">
-      <el-card v-for="challenge in challenges" :key="challenge.id" class="challenge-card">
-        <el-row :gutter="20">
-          <el-col :span="12" class="challenge-media">
-            <div class="media-grid">
-              <div v-for="media in challenge.previewMedia" :key="media.id" class="media-item">
-                <img :src="minioBaseUrl + media.minioUrl" :alt="media.alt" class="media-thumbnail">
-              </div>
-            </div>
-          </el-col>
-          <el-col :span="12" class="challenge-details">
-            <h2 class="challenge-name">{{ challenge.name }}</h2>
-            <p class="challenge-description">{{ challenge.description }}</p>
-            <div class="challenge-participants" v-if="challenge.participants.length > 0">
-              <div class="participant-avatars">
-                <img v-for="(participant, pIndex) in challenge.participants.slice(0, 4)"
-                     :key="pIndex"
-                     :src="participant.avatar"
-                     alt="参与者头像"
-                     class="participant-avatar"
-                     :style="{ zIndex: challenge.participants.length - pIndex }"
-                >
-                <span v-if="challenge.participants.length > 4" class="more-participants">
-                  +{{ challenge.participants.length - 4 }}
-                </span>
-              </div>
-              <span class="participant-count">{{ challenge.participants.length }} 名成员已加入</span>
-            </div>
-            <el-button type="primary" class="learn-more-button">了解更多</el-button>
-          </el-col>
-        </el-row>
-      </el-card>
+﻿<template>
+  <div class="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto transition-colors duration-300">
+    <!-- Header Section -->
+    <div class="text-center mb-16">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-900/30 border border-amber-100 dark:border-amber-800 text-amber-600 dark:text-amber-400 text-xs font-semibold mb-4">
+        <TrophyIcon class="w-4 h-4" />
+        社区挑战赛
+      </div>
+      <h1 class="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-4 tracking-tight">
+        探索热门挑战
+      </h1>
+      <p class="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
+        参与社区发起的各类主题挑战，展示您的创意，赢取专属勋章与奖励。
+      </p>
     </div>
 
-    <p v-if="challenges.length === 0 && !isLoadingChallenges" class="no-challenges">暂无挑战赛数据。</p>
-    <p v-if="isLoadingChallenges" class="loading-message">加载挑战赛...</p>
-    <p v-if="errorChallenges" class="error-message">{{ errorChallenges }}</p>
+    <!-- Challenges List -->
+    <div v-if="challenges.length > 0" class="grid grid-cols-1 gap-12">
+      <div 
+        v-for="challenge in challenges" 
+        :key="challenge.id" 
+        class="bg-white dark:bg-slate-800 rounded-3xl overflow-hidden border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-xl transition-all duration-300 group"
+      >
+        <div class="flex flex-col lg:flex-row">
+          <!-- Left: Media Grid -->
+          <div class="lg:w-1/2 p-6">
+            <div class="grid grid-cols-2 grid-rows-2 gap-3 h-[300px] md:h-[400px]">
+              <div 
+                v-if="challenge.previewMedia[0]"
+                class="col-span-2 row-span-1 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-900"
+              >
+                <img 
+                  :src="challenge.previewMedia[0].minioUrl" 
+                  :alt="challenge.previewMedia[0].alt" 
+                  class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                >
+              </div>
+              <div 
+                v-if="challenge.previewMedia[1]"
+                class="col-span-1 row-span-1 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-900"
+              >
+                <img 
+                  :src="challenge.previewMedia[1].minioUrl" 
+                  :alt="challenge.previewMedia[1].alt" 
+                  class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                >
+              </div>
+              <div 
+                v-if="challenge.previewMedia[2]"
+                class="col-span-1 row-span-1 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-900"
+              >
+                <img 
+                  :src="challenge.previewMedia[2].minioUrl" 
+                  :alt="challenge.previewMedia[2].alt" 
+                  class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                >
+              </div>
+              <!-- Placeholder if less than 3 images -->
+              <div 
+                v-if="challenge.previewMedia.length < 3"
+                class="col-span-1 row-span-1 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border-2 border-dashed border-slate-200 dark:border-slate-700 flex items-center justify-center"
+              >
+                <PhotoIcon class="w-8 h-8 text-slate-300 dark:text-slate-600" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Details -->
+          <div class="lg:w-1/2 p-8 md:p-12 flex flex-col justify-center">
+            <div class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 text-sm font-bold mb-4 uppercase tracking-widest">
+              <span class="w-8 h-px bg-indigo-600 dark:bg-indigo-400"></span>
+              进行中
+            </div>
+            <h2 class="text-3xl font-bold text-slate-900 dark:text-white mb-4 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+              {{ challenge.name }}
+            </h2>
+            <p class="text-slate-600 dark:text-slate-400 text-lg leading-relaxed mb-8">
+              {{ challenge.description }}
+            </p>
+
+            <!-- Participants -->
+            <div v-if="challenge.participants.length > 0" class="flex items-center gap-4 mb-10">
+              <div class="flex -space-x-3 overflow-hidden">
+                <div 
+                  v-for="(participant, pIndex) in challenge.participants.slice(0, 4)"
+                  :key="pIndex"
+                  class="inline-flex items-center justify-center h-10 w-10 rounded-full ring-2 ring-white dark:ring-slate-800 text-white text-xs font-bold uppercase"
+                  :class="getAvatarBg(participant.name)"
+                  :title="participant.name"
+                >
+                  {{ participant.name.charAt(0) }}
+                </div>
+                <div 
+                  v-if="challenge.participants.length > 4"
+                  class="flex items-center justify-center h-10 w-10 rounded-full bg-slate-100 dark:bg-slate-700 ring-2 ring-white dark:ring-slate-800 text-xs font-bold text-slate-600 dark:text-slate-300"
+                >
+                  +{{ challenge.participants.length - 4 }}
+                </div>
+              </div>
+              <div class="text-sm text-slate-500 dark:text-slate-400">
+                <span class="font-bold text-slate-900 dark:text-white">{{ challenge.participants.length }}</span> 名成员已加入
+              </div>
+            </div>
+
+            <div class="flex flex-wrap gap-4">
+              <button class="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/25 flex items-center gap-2">
+                立即参加
+                <ArrowRightIcon class="w-5 h-5" />
+              </button>
+              <button class="px-8 py-3 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-600 transition-all">
+                了解更多
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- States -->
+    <div v-if="isLoadingChallenges" class="py-32 flex flex-col items-center justify-center">
+      <div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-100 border-t-indigo-600 mb-4"></div>
+      <p class="text-slate-500 dark:text-slate-400 animate-pulse">加载挑战赛数据...</p>
+    </div>
+
+    <div v-else-if="errorChallenges" class="py-20 text-center">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-50 dark:bg-red-900/20 text-red-500 mb-4">
+        <InformationCircleIcon class="w-8 h-8" />
+      </div>
+      <h3 class="text-lg font-bold text-slate-900 dark:text-white">出错了</h3>
+      <p class="text-slate-500 dark:text-slate-400 mt-2">{{ errorChallenges }}</p>
+      <button @click="fetchChallenges" class="mt-6 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">重试</button>
+    </div>
+
+    <div v-else-if="challenges.length === 0" class="py-32 text-center">
+      <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-800 mb-6">
+        <TrophyIcon class="w-10 h-10 text-slate-400" />
+      </div>
+      <h3 class="text-xl font-bold text-slate-900 dark:text-white">暂无挑战赛</h3>
+      <p class="text-slate-500 dark:text-slate-400 mt-2">新的挑战即将开启，敬请期待！</p>
+    </div>
   </div>
 </template>
 
-<script lang="ts" setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { ElCard, ElRow, ElCol, ElButton, ElMessage } from 'element-plus';
-import axios from 'axios'; // Import axios
-
-// Interfaces for data structure
-interface MediaItem {
-  id: string; // Used as key in v-for
-  src?: string; // Original src, kept for clarity but minioUrl is used
-  alt: string;
-  minioUrl: string; // MinIO URL for the image
-  imageId: string; // The ID of the image for unique identification
-}
+import axios from 'axios';
+import { 
+  TrophyIcon, 
+  PhotoIcon, 
+  ArrowRightIcon, 
+  InformationCircleIcon 
+} from '@heroicons/vue/24/outline';
 
 interface Participant {
-  id: string;
-  avatar: string;
   name: string;
+}
+
+interface PreviewMedia {
+  id: string;
+  minioUrl: string;
+  alt: string;
 }
 
 interface Challenge {
   id: string;
   name: string;
   description: string;
-  previewMedia: MediaItem[];
   participants: Participant[];
+  previewMedia: PreviewMedia[];
 }
 
-interface ImageData { // Interface matching your backend's ImageData structure
-  imageId: string;
-  minioUrl: string;
-  fileName: string;
-  userId: string;
-  contentType: string;
-  size: number;
-  isPublic: boolean;
-  description: string | null;
-  uploadTime?: string;
-  createTime?: string;
-}
-
-const API_BASE_URL = 'http://localhost:8080';
-const minioBaseUrl = 'http://localhost:9000'; // Base URL for MinIO images
-
-// Reactive data
 const challenges = ref<Challenge[]>([]);
-const isLoadingChallenges = ref(false);
+const isLoadingChallenges = ref(true);
 const errorChallenges = ref<string | null>(null);
-const publicImages = ref<ImageData[]>([]); // To store all public images from API
 
-// Function to fetch all public images
-const fetchPublicImages = async (): Promise<ImageData[]> => {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/api/images/public`);
-    if (response.data && response.data.code === 200 && Array.isArray(response.data.data)) {
-      return response.data.data;
-    } else {
-      console.warn('Failed to fetch public images:', response.data.msg);
-      ElMessage.warning('未能获取公共图片数据。');
-      return [];
-    }
-  } catch (err) {
-    console.error('Error fetching public images:', err);
-    ElMessage.error('获取公共图片失败，请检查后端服务。');
-    return [];
-  }
+const avatarBgs = [
+  'bg-pink-500', 'bg-purple-500', 'bg-indigo-500', 
+  'bg-blue-500', 'bg-cyan-500', 'bg-teal-500', 
+  'bg-emerald-500', 'bg-amber-500', 'bg-orange-500'
+];
+
+const getAvatarBg = (name: string) => {
+  const index = name.length % avatarBgs.length;
+  return avatarBgs[index];
 };
 
-// Simulate fetching challenge data and integrate real images
 const fetchChallenges = async () => {
   isLoadingChallenges.value = true;
   errorChallenges.value = null;
+  
   try {
-    // First, fetch all public images
-    publicImages.value = await fetchPublicImages();
+    // Fetch public images to use as preview media for challenges
+    const response = await axios.get('http://localhost:8080/api/images/public');
+    const publicImages = response.data.data || [];
 
-    // Create mock challenge data, picking random images from publicImages
+    // Mock challenges using real image data
     const mockChallenges: Challenge[] = [
       {
         id: 'challenge-1',
-        name: '视频挑战赛：动态影像', // Translated
-        description: '提交您最精彩的动态视频！', // Translated
-        previewMedia: [], // Will be populated with random images
-        participants: [],
+        name: "城市光影：夜色中的霓虹",
+        description: "捕捉城市夜晚最迷人的瞬间。无论是繁华商业街的霓虹灯火，还是寂静小巷的昏黄路灯，分享你眼中的城市夜色。",
+        participants: [
+          { name: "Alex" }, { name: "Sarah" }, { name: "Mike" }, 
+          { name: "Elena" }, { name: "David" }, { name: "Luna" }
+        ],
+        previewMedia: publicImages.slice(0, 3).map((img: any) => ({
+          id: img.imageId,
+          minioUrl: img.watermarkMinioUrl || img.minioUrl,
+          alt: img.description || img.fileName
+        }))
       },
       {
         id: 'challenge-2',
-        name: '粉色主页挑战赛', // Translated
-        description: '提交您最棒的粉色主题照片和视频！', // Translated
-        previewMedia: [], // Will be populated with random images
+        name: "极简主义：少即是多",
+        description: "通过构图、线条和色彩的极致简化，表达深刻的意境。挑战用最简单的元素讲述最动人的故事。",
         participants: [
-          { id: 'p1', avatar: 'https://randomuser.me/api/portraits/thumb/men/1.jpg', name: 'User 1' },
-          { id: 'p2', avatar: 'https://randomuser.me/api/portraits/thumb/women/2.jpg', name: 'User 2' },
-          { id: 'p3', avatar: 'https://randomuser.me/api/portraits/thumb/men/3.jpg', name: 'User 3' },
-          { id: 'p4', avatar: 'https://randomuser.me/api/portraits/thumb/women/4.jpg', name: 'User 4' },
-          { id: 'p5', avatar: 'https://randomuser.me/api/portraits/thumb/men/5.jpg', name: 'User 5' },
+          { name: "Kevin" }, { name: "Julia" }, { name: "Tom" }, { name: "Anna" }
         ],
+        previewMedia: publicImages.slice(3, 6).map((img: any) => ({
+          id: img.imageId,
+          minioUrl: img.watermarkMinioUrl || img.minioUrl,
+          alt: img.description || img.fileName
+        }))
       },
       {
         id: 'challenge-3',
-        name: '城市风光与都市景观', // Translated
-        description: '捕捉城市生活的精髓，从熙熙攘攘的街道到宁静的天际线。', // Translated
-        previewMedia: [],
+        name: "自然微距：微观世界",
+        description: "探索大自然中那些容易被忽视的细节。从花瓣的纹理到昆虫的复眼，带我们进入奇妙的微观世界。",
         participants: [
-            { id: 'p6', avatar: 'https://randomuser.me/api/portraits/thumb/men/6.jpg', name: 'User 6' },
-            { id: 'p7', avatar: 'https://randomuser.me/api/portraits/thumb/women/7.jpg', name: 'User 7' },
+          { name: "Sophie" }, { name: "Ryan" }, { name: "Chloe" }
         ],
-      },
-      {
-        id: 'challenge-4',
-        name: '近距离欣赏大自然之美', // Translated
-        description: '花卉、昆虫或自然纹理的微距或特写镜头。', // Translated
-        previewMedia: [],
-        participants: [],
+        previewMedia: publicImages.slice(6, 9).map((img: any) => ({
+          id: img.imageId,
+          minioUrl: img.watermarkMinioUrl || img.minioUrl,
+          alt: img.description || img.fileName
+        }))
       }
     ];
 
-    // Populate previewMedia with random images
-    mockChallenges.forEach(challenge => {
-      // Shuffle the public images to get random ones
-      const shuffledImages = [...publicImages.value].sort(() => 0.5 - Math.random());
-
-      // Get up to 3 random images for preview
-      for (let i = 0; i < 3 && i < shuffledImages.length; i++) {
-        const imgData = shuffledImages[i];
-        challenge.previewMedia.push({
-          id: imgData.imageId,
-          minioUrl: imgData.minioUrl,
-          alt: imgData.description || imgData.fileName,
-        });
-      }
-    });
-
     challenges.value = mockChallenges;
-
   } catch (err) {
-    errorChallenges.value = '加载挑战赛失败。';
-    console.error('Error fetching challenges:', err);
+    console.error('Failed to fetch challenges:', err);
+    errorChallenges.value = '无法加载挑战赛数据，请稍后再试。';
   } finally {
     isLoadingChallenges.value = false;
   }
@@ -191,195 +252,5 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.challenges-page {
-  padding: 40px 20px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.page-title {
-  font-size: 32px;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 30px;
-  text-align: center;
-}
-
-.challenges-list {
-  display: flex;
-  flex-direction: column;
-  gap: 30px;
-}
-
-.challenge-card {
-  background-color: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-  padding: 20px;
-}
-
-.challenge-media {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.media-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr); /* 2 columns for images */
-  gap: 10px;
-  max-width: 400px; /* Limit the max width of the media grid */
-  width: 100%;
-}
-
-.media-item {
-  aspect-ratio: 1 / 1; /* Keep images square */
-  overflow: hidden;
-  border-radius: 8px;
-}
-
-.media-item:first-child {
-  grid-column: span 2; /* First image spans two columns */
-  height: 200px; /* Adjust height for the larger image */
-}
-
-.media-thumbnail {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.challenge-details {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding-left: 20px;
-}
-
-.challenge-name {
-  font-size: 24px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 10px;
-}
-
-.challenge-description {
-  font-size: 16px;
-  color: #666;
-  margin-bottom: 15px;
-  line-height: 1.5;
-}
-
-.challenge-participants {
-  display: flex;
-  align-items: center;
-  margin-top: 15px;
-  margin-bottom: 20px;
-}
-
-.participant-avatars {
-  display: flex;
-  position: relative;
-  margin-right: 10px;
-}
-
-.participant-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 2px solid #fff;
-  margin-left: -10px; /* Overlap avatars */
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  background-color: #eee; /* Placeholder background */
-}
-
-.participant-avatar:first-child {
-  margin-left: 0;
-}
-
-.more-participants {
-  background-color: #00b05b;
-  color: #fff;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 14px;
-  font-weight: bold;
-  margin-left: -10px;
-  border: 2px solid #fff;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-.participant-count {
-  font-size: 14px;
-  color: #909399;
-}
-
-.learn-more-button {
-  background-color: #00b05b;
-  color: #fff;
-  border: none;
-  padding: 10px 25px;
-  border-radius: 5px;
-  font-weight: bold;
-  align-self: flex-start;
-  margin-top: 10px;
-}
-
-.learn-more-button:hover {
-  background-color: #009e52;
-}
-
-.loading-message, .error-message, .no-challenges {
-  text-align: center;
-  color: #606266;
-  margin-top: 20px;
-}
-
-.error-message {
-  color: #f56c6c;
-}
-
-/* Responsive adjustments */
-@media (max-width: 992px) {
-  .challenge-card .el-row {
-    flex-direction: column;
-  }
-  .challenge-media, .challenge-details {
-    width: 100%;
-    padding-left: 0;
-  }
-  .challenge-media {
-    margin-bottom: 20px;
-  }
-  .challenge-details {
-    align-items: center;
-    text-align: center;
-  }
-  .learn-more-button {
-    align-self: center;
-  }
-  .media-grid {
-    max-width: none;
-  }
-}
-
-@media (max-width: 768px) {
-  .page-title {
-    font-size: 28px;
-  }
-  .challenge-name {
-    font-size: 20px;
-  }
-  .challenge-description {
-    font-size: 14px;
-  }
-  .media-item:first-child {
-    height: 150px;
-  }
-}
+/* No extra styles needed as we use Tailwind */
 </style>

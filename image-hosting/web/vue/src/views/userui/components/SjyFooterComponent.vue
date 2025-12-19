@@ -1,327 +1,143 @@
 <template>
-  <el-footer class="app-footer">
-    <div class="footer-top-buttons pt-10">
-      <el-button type="success" size="large">上传自己的图片</el-button>
-      <el-button size="large">帮助中心</el-button>
-    </div>
-
-    <div class="footer-main-content">
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <div class="footer-section story-hub">
-            <h3>故事聚集地。</h3>
-            <div class="app-downloads">
-              <el-button size="medium">下载iOS版</el-button>
-              <el-button size="medium">下载Android版</el-button>
-            </div>
-          </div>
-        </el-col>
-
-        <el-col :span="6">
-          <div class="footer-section">
-            <h4>PEXELS</h4>
-            <ul>
-              <li><a href="#">免费素材图片</a></li>
-              <li><a href="#">免费视频</a></li>
-              <li><a href="#">热门搜索</a></li>
-              <li><a href="#">收藏夹</a></li>
-              <li><a href="#">挑战赛</a></li>
-              <li><a href="#">热门作者排行榜</a></li>
-              <li><a href="#">其他插件和应用</a></li>
-            </ul>
-          </div>
-        </el-col>
-
-        <el-col :span="6">
-          <div class="footer-section">
-            <h4>企业</h4>
-            <ul>
-              <li><a href="#">关于</a></li>
-              <li><a href="#">博客</a></li>
-              <li><a href="#">帮助中心</a></li>
-              <li><a href="#">举报内容</a></li>
-              <li><a href="#">成为英雄</a></li>
-              <li><a href="#">与 Pexels 合作</a></li>
-              <li><a href="#">图片和视频 API</a></li>
-              <li><a href="#">注册</a></li>
-            </ul>
-          </div>
-        </el-col>
-
-        <el-col :span="6">
-          <div class="footer-section">
-            <h4>免费素材图片</h4>
-            <div class="tag-list">
-              <a href="#" class="tag-button">黑白摄影</a>
-              <a href="#" class="tag-button">生日快乐图片</a>
-              <a href="#" class="tag-button">免费商业视频</a>
-              <a href="#" class="tag-button">新年快乐图片</a>
-              <a href="#" class="tag-button">精美高清壁纸</a>
-              <a href="#" class="tag-button">银河壁纸</a>
-              <a href="#" class="tag-button">锁屏壁纸</a>
-              <a href="#" class="tag-button">iPhone 壁纸</a>
-              <a href="#" class="tag-button">4K 壁纸</a>
-              <a href="#" class="tag-button">大自然壁纸</a>
-              <a href="#" class="tag-button">爱情壁纸</a>
-              <a href="#" class="tag-button">手机壁纸</a>
-            </div>
-          </div>
-        </el-col>
-      </el-row>
-    </div>
-
-    <div class="footer-bottom">
-      <div class="copyright">
-        © 2025 Pexels
+  <footer class="bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 pt-16 pb-8 transition-colors duration-300">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <!-- Top Section: CTA Buttons -->
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+        <button class="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full transition-all shadow-lg shadow-indigo-500/25 flex items-center gap-2">
+          <span>上传自己的图片</span>
+        </button>
+        <button class="px-8 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-full hover:border-indigo-600 dark:hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all">
+          帮助中心
+        </button>
       </div>
-      <div class="legal-links">
-        <a href="#">使用条款</a>
-        <a href="#">隐私政策</a>
-        <a href="#">许可证</a>
-        <a href="#">Cookie政策</a>
+
+      <!-- Main Content Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+        <!-- Brand Section -->
+        <div class="space-y-6">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-indigo-500/30">
+              IH
+            </div>
+            <span class="text-xl font-bold text-slate-900 dark:text-white">
+              Image-Hosting<span class="text-indigo-600 dark:text-indigo-400">.NFT</span>
+            </span>
+          </div>
+          <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
+            下一代去中心化数字资产平台。发现、存储并铸造属于你的独一无二的数字艺术品。
+          </p>
+          <div class="flex flex-col gap-3">
+            <button class="flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
+              下载 iOS 版
+            </button>
+            <button class="flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
+              下载 Android 版
+            </button>
+          </div>
+        </div>
+
+        <!-- Links Column 1 -->
+        <div>
+          <h4 class="text-slate-900 dark:text-white font-bold mb-6 uppercase tracking-wider text-xs">平台服务</h4>
+          <ul class="space-y-4">
+            <li v-for="link in platformLinks" :key="link.text">
+              <a href="#" class="text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 text-sm transition-colors">{{ link.text }}</a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Links Column 2 -->
+        <div>
+          <h4 class="text-slate-900 dark:text-white font-bold mb-6 uppercase tracking-wider text-xs">关于企业</h4>
+          <ul class="space-y-4">
+            <li v-for="link in companyLinks" :key="link.text">
+              <a href="#" class="text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 text-sm transition-colors">{{ link.text }}</a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Tags Section -->
+        <div>
+          <h4 class="text-slate-900 dark:text-white font-bold mb-6 uppercase tracking-wider text-xs">热门分类</h4>
+          <div class="flex flex-wrap gap-2">
+            <a v-for="tag in tags" :key="tag" href="#" class="px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-xs text-slate-600 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-600 transition-all">
+              {{ tag }}
+            </a>
+          </div>
+        </div>
       </div>
-      <div class="language-selector">
-        <el-dropdown trigger="click">
-          <span class="el-dropdown-link">
-            <el-icon><Orange /></el-icon> 简体中文 <el-icon class="el-icon--right"><arrow-up /></el-icon>
-          </span>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item>English</el-dropdown-item>
-              <el-dropdown-item>繁體中文</el-dropdown-item>
-              <el-dropdown-item>日本語</el-dropdown-item>
+
+      <!-- Bottom Section -->
+      <div class="pt-8 border-t border-slate-100 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-6">
+        <div class="flex flex-col md:flex-row items-center gap-4 md:gap-8">
+          <span class="text-slate-400 dark:text-slate-500 text-sm">© 2025 Image-Hosting.NFT</span>
+          <div class="flex gap-6">
+            <a href="#" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 text-sm transition-colors">使用条款</a>
+            <a href="#" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 text-sm transition-colors">隐私政策</a>
+            <a href="#" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 text-sm transition-colors">许可证</a>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <el-dropdown trigger="click">
+            <span class="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-indigo-600 cursor-pointer text-sm font-medium">
+              <el-icon><Orange /></el-icon>
+              简体中文
+              <el-icon class="text-xs"><ArrowUp /></el-icon>
+            </span>
+            <template #dropdown>
+              <el-dropdown-menu class="dark:bg-slate-800 dark:border-slate-700">
+                <el-dropdown-item class="dark:text-slate-300 dark:hover:bg-slate-700">English</el-dropdown-item>
+                <el-dropdown-item class="dark:text-slate-300 dark:hover:bg-slate-700">繁體中文</el-dropdown-item>
+                <el-dropdown-item class="dark:text-slate-300 dark:hover:bg-slate-700">日本語</el-dropdown-item>
               </el-dropdown-menu>
-          </template>
-        </el-dropdown>
+            </template>
+          </el-dropdown>
+        </div>
       </div>
     </div>
-  </el-footer>
+  </footer>
 </template>
 
 <script setup lang="ts">
 import {
-  Orange, // For language icon
-  ArrowUp // For dropdown arrow
+  Orange,
+  ArrowUp
 } from '@element-plus/icons-vue';
+
+const platformLinks = [
+  { text: '免费素材图片' },
+  { text: '免费视频' },
+  { text: '热门搜索' },
+  { text: '挑战赛' },
+  { text: '热门作者排行榜' },
+  { text: '其他插件和应用' }
+];
+
+const companyLinks = [
+  { text: '关于' },
+  { text: '博客' },
+  { text: '帮助中心' },
+  { text: '举报内容' },
+  { text: '图片和视频 API' },
+  { text: '注册' }
+];
+
+const tags = [
+  '黑白摄影', '生日快乐图片', '免费商业视频', '新年快乐图片', 
+  '精美高清壁纸', '银河壁纸', '锁屏壁纸', 'iPhone 壁纸', 
+  '4K 壁纸', '大自然壁纸', '爱情壁纸', '手机壁纸'
+];
 </script>
 
 <style scoped>
-.app-footer {
-  background-color: #f8f8f8; /* Light grey background */
-  padding: 40px 20px 20px; /* Padding top, sides, bottom */
-  border-top: 1px solid #eee;
-  color: #606266;
-  font-size: 14px;
+/* 移除大部分旧样式，仅保留必要的 Element Plus 覆盖 */
+:deep(.el-dropdown-menu) {
+  @apply dark:bg-slate-800 dark:border-slate-700;
 }
 
-/* Top buttons section */
-.footer-top-buttons {
-  text-align: center;
-  margin-bottom: 50px; /* Space between buttons and main content */
-}
-
-.footer-top-buttons .el-button {
-  margin: 0 10px;
-  padding: 12px 25px; /* Adjust button padding */
-  border-radius: 5px;
-  font-size: 16px;
-}
-
-.footer-top-buttons .el-button--success {
-  background-color: #00b07e;
-  border-color: #00b07e;
-  color: #fff;
-}
-
-.footer-top-buttons .el-button--success:hover {
-  background-color: #00996c;
-  border-color: #00996c;
-}
-
-/* Main footer content grid */
-.footer-main-content {
-  max-width: 1200px; /* Match main content width */
-  margin: 0 auto;
-  margin-bottom: 50px; /* Space between main content and bottom section */
-}
-
-.footer-section h3 {
-  font-size: 24px;
-  font-weight: bold;
-  margin-bottom: 20px;
-  color: #333;
-}
-
-.footer-section h4 {
-  font-size: 16px;
-  font-weight: bold;
-  margin-bottom: 15px;
-  color: #333;
-}
-
-.footer-section ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.footer-section ul li {
-  margin-bottom: 10px;
-}
-
-.footer-section ul li a {
-  color: #606266;
-  text-decoration: none;
-}
-
-.footer-section ul li a:hover {
-  color: #409eff; /* Element Plus primary color */
-}
-
-/* Social Icons */
-.social-icons {
-  margin-top: 20px;
-  margin-bottom: 20px;
-}
-
-.social-icons a {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  margin-right: 15px;
-  color: #606266;
-  text-decoration: none;
-  font-size: 22px; /* Adjust icon size */
-  border-radius: 50%;
-  transition: color 0.3s;
-}
-
-.social-icons a:hover {
-  color: #409eff; /* Element Plus primary color */
-}
-
-/* App Download Buttons */
-.app-downloads .el-button {
-  margin-right: 10px;
-  margin-bottom: 10px;
-  font-size: 14px;
-  padding: 8px 15px;
-}
-
-/* Tag List (Free Stock Photos Categories) */
-.tag-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px; /* Space between tags */
-}
-
-.tag-button {
-  display: inline-block;
-  padding: 8px 15px;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-  text-decoration: none;
-  color: #606266;
-  background-color: #fff;
-  transition: all 0.2s ease-in-out;
-  white-space: nowrap; /* Prevent tags from breaking text */
-}
-
-.tag-button:hover {
-  border-color: #409eff;
-  color: #409eff;
-}
-
-/* Bottom footer section */
-.footer-bottom {
-  border-top: 1px solid #eee;
-  padding-top: 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap; /* Allow wrapping on smaller screens */
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.footer-bottom .copyright {
-  margin-right: 20px;
-  margin-bottom: 10px;
-}
-
-.footer-bottom .legal-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 20px; /* Horizontal gap, no vertical gap */
-  margin-bottom: 10px;
-}
-
-.footer-bottom .legal-links a {
-  color: #606266;
-  text-decoration: none;
-  white-space: nowrap; /* Keep links from breaking */
-}
-
-.footer-bottom .legal-links a:hover {
-  color: #409eff;
-}
-
-.language-selector .el-dropdown-link {
-  cursor: pointer;
-  color: #606266;
-  display: flex;
-  align-items: center;
-  font-size: 14px;
-  margin-bottom: 10px;
-}
-
-.language-selector .el-dropdown-link .el-icon {
-  margin-right: 5px;
-}
-
-/* Responsive adjustments (basic) */
-@media (max-width: 768px) {
-  .footer-main-content .el-col {
-    flex: 0 0 100%; /* Stack columns on small screens */
-    max-width: 100%;
-    margin-bottom: 30px; /* Add space between stacked columns */
-    text-align: center; /* Center content in stacked columns */
-  }
-
-  .footer-main-content .footer-section h4 {
-      text-align: center;
-  }
-
-  .footer-main-content .footer-section ul {
-      text-align: center; /* Center list items as well */
-  }
-
-  .social-icons {
-    justify-content: center; /* Center social icons */
-  }
-
-  .app-downloads {
-    display: flex;
-    justify-content: center; /* Center app download buttons */
-    flex-wrap: wrap;
-  }
-
-  .footer-bottom {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-
-  .footer-bottom .copyright,
-  .footer-bottom .legal-links,
-  .footer-bottom .language-selector {
-    margin-bottom: 15px;
-  }
-
-  .footer-bottom .legal-links {
-    justify-content: center;
-  }
+:deep(.el-dropdown-menu__item) {
+  @apply dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-indigo-400;
 }
 </style>
