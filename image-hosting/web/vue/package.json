@@ -14,6 +14,8 @@
   "dependencies": {
     "@heroicons/vue": "^2.2.0",
     "axios": "^1.8.4",
+    "baseline-browser-mapping": "^2.10.0",
+    "caniuse-lite": "^1.0.30001774",
     "echarts": "^5.6.0",
     "element-plus": "^2.9.6",
     "pinia": "^3.0.2",

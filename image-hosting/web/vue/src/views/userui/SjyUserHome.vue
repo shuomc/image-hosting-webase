@@ -57,6 +57,7 @@
 
             <!-- Desktop Menu -->
             <div class="hidden md:flex items-center space-x-8">
+              <router-link to="/notices" class="text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">公告</router-link>
               <a href="#" class="text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">探索</a>
               <router-link to="/licence" class="text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">许可证</router-link>
               
@@ -420,6 +421,57 @@
                       举报
                     </button>
                   </div>
+
+                  <!-- Comments Section -->
+                  <div class="pt-6 border-t border-slate-100 dark:border-slate-700">
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4">评论</h3>
+                    
+                    <!-- Comment Input -->
+                    <div class="mb-6">
+                      <textarea
+                        v-model="newCommentContent"
+                        rows="3"
+                        class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:text-white resize-none"
+                        placeholder="写下你的评论..."
+                      ></textarea>
+                      <div class="mt-2 flex justify-end">
+                        <button
+                          @click="submitComment"
+                          :disabled="submittingComment || !newCommentContent.trim()"
+                          class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {{ submittingComment ? '发送中...' : '发表评论' }}
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Comments List -->
+                    <div class="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                      <div v-if="comments.length === 0" class="text-center py-4 text-slate-500 dark:text-slate-400 text-sm">
+                        暂无评论，快来抢沙发吧！
+                      </div>
+                      <div v-else v-for="comment in comments" :key="comment.id" class="flex gap-3">
+                        <div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300 shrink-0">
+                          {{ comment.userName ? comment.userName.charAt(0).toUpperCase() : 'U' }}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <div class="flex items-center justify-between mb-1">
+                            <span class="text-sm font-medium text-slate-900 dark:text-white truncate">{{ comment.userName || '未知用户' }}</span>
+                            <span class="text-xs text-slate-500 dark:text-slate-400">{{ comment.createTime ? new Date(comment.createTime).toLocaleDateString() : '' }}</span>
+                          </div>
+                          <p class="text-sm text-slate-600 dark:text-slate-300 break-words">{{ comment.content }}</p>
+                          <div v-if="loginUserId && (String(loginUserId) === String(comment.userId) || String(loginUserId) === String(selectedImage?.userId))" class="mt-1 flex justify-end">
+                             <button 
+                                @click="deleteComment(comment.id)"
+                                class="text-xs text-red-500 hover:text-red-600 transition-colors"
+                             >
+                               删除
+                             </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -434,6 +486,7 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import FooterComponent from '@/views/userui/components/SjyFooterComponent.vue';
 import TopAuthors from '@/views/userui/components/SjyTopAuthorsComponent.vue';
 import ChallengesPage from '@/views/userui/components/SjyChallengesComponent.vue';
@@ -473,6 +526,15 @@ interface UserInfo {
   userRole: string;
 }
 
+interface Comment {
+  id: number;
+  imageId: number;
+  userId: number;
+  userName?: string;
+  content: string;
+  createTime: string;
+}
+
 // Config
 const API_BASE_URL = 'http://localhost:8080';
 const router = useRouter();
@@ -484,6 +546,12 @@ const isScrolled = ref(false);
 const images = ref<Image[]>([]);
 const isLoading = ref(false);
 const error = ref<string | null>(null);
+
+// Comments State
+const comments = ref<Comment[]>([]);
+const newCommentContent = ref('');
+const submittingComment = ref(false);
+const loginUserId = ref<string | null>(localStorage.getItem('loginUserId'));
 
 // Dialog State
 const imageDialogVisible = ref(false);
@@ -565,6 +633,7 @@ const fetchImages = async () => {
 const openImageDialog = (image: Image) => {
   selectedImage.value = image;
   imageDialogVisible.value = true;
+  fetchComments(image.imageId);
 };
 
 const closeImageDialog = () => {
@@ -584,6 +653,15 @@ const getTags = (description: string | null) => {
 const downloadImage = (image: Image | null) => {
   if (!image?.imageId) return;
 
+  // Record download
+  axios.post(`${API_BASE_URL}/api/downloads/record`, {
+    imageId: image.imageId
+  }, {
+      headers: {
+          'satoken': localStorage.getItem('satoken')
+      }
+  }).catch(err => console.error('Failed to record download', err));
+
   // 通过后端接口下载水印图，触发浏览器文件下载
   const downloadUrl = `${API_BASE_URL}/api/images/watermark/${image.imageId}`;
   
@@ -599,10 +677,85 @@ const goToUserProfile = (userId: string | undefined) => {
   if (userId) router.push(`/user/${userId}`);
 };
 
+const fetchComments = async (imageId: string) => {
+  try {
+    const res = await axios.get(`${API_BASE_URL}/api/comments/list/${imageId}`);
+    if (res.data.code === 200) {
+      comments.value = res.data.data;
+    } else {
+      comments.value = [];
+    }
+  } catch (e) {
+    console.error('Error fetching comments:', e);
+    comments.value = [];
+  }
+};
+
+const submitComment = async () => {
+  if (!selectedImage.value) return;
+  if (!loginUserId.value) {
+    ElMessage.warning('请先登录');
+    router.push('/auth/login');
+    return;
+  }
+  
+  submittingComment.value = true;
+  try {
+    const res = await axios.post(`${API_BASE_URL}/api/comments/add`, {
+      imageId: selectedImage.value.imageId,
+      content: newCommentContent.value
+    }, {
+        headers: {
+            'satoken': localStorage.getItem('satoken')
+        }
+    });
+    
+    if (res.data.code === 200) {
+      ElMessage.success('评论成功');
+      newCommentContent.value = '';
+      fetchComments(selectedImage.value.imageId);
+    } else {
+      ElMessage.error(res.data.msg || '评论失败');
+    }
+  } catch (e) {
+    console.error(e);
+    ElMessage.error('评论失败');
+  } finally {
+    submittingComment.value = false;
+  }
+};
+
+const deleteComment = async (commentId: number) => {
+    try {
+        await ElMessageBox.confirm('确定删除这条评论吗？', '提示', {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+        });
+        
+        const res = await axios.delete(`${API_BASE_URL}/api/comments/delete/${commentId}`, {
+             headers: {
+                'satoken': localStorage.getItem('satoken')
+            }
+        });
+        if (res.data.code === 200) {
+            ElMessage.success('删除成功');
+            if (selectedImage.value) {
+                fetchComments(selectedImage.value.imageId);
+            }
+        } else {
+            ElMessage.error(res.data.msg || '删除失败');
+        }
+    } catch (e) {
+        // cancel or error
+    }
+};
+
 // Lifecycle
 onMounted(() => {
   fetchImages();
   window.addEventListener('scroll', handleScroll);
+  loginUserId.value = localStorage.getItem('loginUserId');
 });
 
 onUnmounted(() => {

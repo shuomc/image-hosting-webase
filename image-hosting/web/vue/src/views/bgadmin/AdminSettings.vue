@@ -110,8 +110,8 @@ import { ElMessage } from 'element-plus';
 const loading = ref(false);
 
 const settings = ref({
-  siteName: 'ImageHost Pro',
-  siteDesc: 'Secure & Fast Image Hosting with Blockchain',
+  siteName: 'ImageHosting',
+  siteDesc: '基于区块链的原创图片保护与分享网站',
   allowRegister: true,
   storage: {
     endpoint: 'http://localhost:19000',

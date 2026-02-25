@@ -14,6 +14,7 @@ import UploadFileView from '@/views/workplace/SjyUploadFileView.vue';
 import UploadImageView from '@/views/workplace/SjyUploadImageView.vue';
 import MyImagesView from '@/views/workplace/SjyMyImagesView.vue';
 import MyFilesView from '@/views/workplace/SjyMyFilesView.vue';
+import FavoritesView from '@/views/workplace/Favorite.vue';
 import ImagesDetailView from '@/views/workplace/SjyImagesDetailView.vue';
 import UserProfile from '@/views/userui/SjyUserProfile.vue';
 import NotFound from '@/views/SjyNotFoundView.vue'
@@ -48,6 +49,11 @@ const router = createRouter({
           path: 'images',
           name: 'AdminImages',
           component: () => import('@/views/bgadmin/AdminImageList.vue')
+        },
+        {
+          path: 'notices',
+          name: 'AdminNotices',
+          component: () => import('@/views/bgadmin/AdminNoties.vue')
         },
         {
           path: 'settings',
@@ -93,6 +99,12 @@ const router = createRouter({
       component: WorkplaceView,
       meta: { requiresAuth: true },
       children: [
+        {
+          path: 'notices',
+          name: 'notices',
+          component: () => import('@/views/userui/UserNotices.vue'),
+          meta: { requiresAuth: true }
+        },
         {
           path: 'recommended',
           name: 'Recommended',
@@ -141,9 +153,9 @@ const router = createRouter({
           component: AboutView,
         },
         {
-          path: 'my-files',
-          name: 'MyFiles',
-          component: MyFilesView,
+          path: 'favorites',
+          name: 'Favorites',
+          component: FavoritesView,
           meta: { requiresAuth: true }
         },
         {

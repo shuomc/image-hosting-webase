@@ -37,8 +37,13 @@
             </div>
 
             <div class="flex items-center gap-3">
-              <button class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors" title="收藏">
-                <StarIcon class="w-6 h-6" />
+              <button 
+                @click="toggleFavorite"
+                class="p-2 rounded-full transition-colors"
+                :class="isFavorited ? 'text-yellow-500 bg-yellow-50 dark:bg-yellow-900/20' : 'text-slate-400 hover:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/20'"
+                title="收藏"
+              >
+                <component :is="isFavorited ? StarIconSolid : StarIcon" class="w-6 h-6" />
               </button>
               <button class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-full transition-colors" title="添加到合集">
                 <PlusCircleIcon class="w-6 h-6" />
@@ -77,7 +82,7 @@
               </button>
 
               <img 
-                :src="minioBaseUrl + (displayedImage.watermarkMinioUrl || displayedImage.minioUrl)" 
+                :src="(displayedImage.watermarkMinioUrl || displayedImage.thumbnailMinioUrl) ? ((displayedImage.watermarkMinioUrl || displayedImage.thumbnailMinioUrl)) : ''" 
                 :alt="displayedImage.fileName" 
                 class="max-w-full max-h-full object-contain shadow-2xl rounded-lg"
               >
@@ -161,6 +166,59 @@
                     举报
                   </button>
                 </div>
+
+                <!-- Comments Section -->
+                <div class="pt-6 border-t border-slate-100 dark:border-slate-700">
+                  <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4">评论</h3>
+                  
+                  <!-- Comment Input -->
+                  <div class="mb-6">
+                    <textarea 
+                      v-model="newComment" 
+                      placeholder="写下你的评论..." 
+                      class="w-full p-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all resize-none"
+                      rows="3"
+                    ></textarea>
+                    <div class="flex justify-end mt-2">
+                      <button 
+                        @click="submitComment" 
+                        :disabled="!newComment.trim()"
+                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors"
+                      >
+                        发布
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Comments List -->
+                  <div class="space-y-4">
+                    <div v-if="comments.length === 0" class="text-center text-slate-500 dark:text-slate-400 text-sm py-4">
+                      暂无评论，快来抢沙发吧！
+                    </div>
+                    <div v-for="comment in comments" :key="comment.commentId" class="flex gap-3">
+                      <div 
+                        class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                        :style="{ backgroundColor: getRandomColor() }"
+                      >
+                        {{ comment.userName ? comment.userName.charAt(0).toUpperCase() : '?' }}
+                      </div>
+                      <div class="flex-1">
+                        <div class="flex justify-between items-start">
+                          <span class="text-sm font-medium text-slate-900 dark:text-white">{{ comment.userName }}</span>
+                          <span class="text-xs text-slate-400">{{ formatDate(comment.createTime) }}</span>
+                        </div>
+                        <p class="text-sm text-slate-600 dark:text-slate-300 mt-1">{{ comment.content }}</p>
+                        <button 
+                          v-if="canDeleteComment(comment)"
+                          @click="deleteComment(comment.commentId)"
+                          class="text-xs text-red-500 hover:text-red-600 mt-1"
+                        >
+                          删除
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -173,8 +231,7 @@
 <script lang="ts" setup>
 import { ref, computed, watch, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
-import axios from 'axios';
-import { MINIO_SERVER_PORT } from '@/config/index';
+import request from '@/utils/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   XMarkIcon,
@@ -187,6 +244,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon
 } from '@heroicons/vue/24/outline';
+import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid';
 
 // Interfaces
 interface Image {
@@ -226,7 +284,6 @@ const props = defineProps<{
 const emit = defineEmits(['update:modelValue', 'close', 'navigate']);
 
 const API_BASE_URL = 'http://localhost:8080';
-const minioBaseUrl = MINIO_SERVER_PORT;
 const router = useRouter();
 
 // Cache for user info
@@ -251,16 +308,48 @@ const displayedImage = computed<Image | null>(() => {
 
 // Local author name to handle async fetching
 const currentAuthorName = ref('未知作者');
+const isFavorited = ref(false);
+
+const checkFavoriteStatus = async () => {
+  if (!displayedImage.value?.imageId) return;
+  try {
+    const response = await request.get(`/api/favorites/check/${displayedImage.value.imageId}`);
+    const res = response as any;
+    if (res.code === 200) {
+      isFavorited.value = res.data;
+    }
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+const toggleFavorite = async () => {
+  if (!displayedImage.value?.imageId) return;
+  try {
+    if (isFavorited.value) {
+      await request.delete(`/api/favorites/${displayedImage.value.imageId}`);
+      isFavorited.value = false;
+      ElMessage.success('已取消收藏');
+    } else {
+      await request.post(`/api/favorites/${displayedImage.value.imageId}`);
+      isFavorited.value = true;
+      ElMessage.success('已收藏');
+    }
+  } catch (e) {
+    ElMessage.error('操作失败');
+  }
+};
 
 const fetchUserInfo = async (userId: string): Promise<UserInfo | null> => {
   if (userCache.has(userId)) return userCache.get(userId)!;
 
   try {
-    const response = await axios.get(`${API_BASE_URL}/api/user/getUserById`, {
+    const response = await request.get(`/api/user/getUserById`, {
       params: { userId }
     });
-    if (response.data?.code === 200 && response.data.data) {
-      const userInfo: UserInfo = response.data.data;
+    const res = response as any;
+    if (res.code === 200 && res.data) {
+      const userInfo: UserInfo = res.data;
       userCache.set(userId, userInfo);
       return userInfo;
     }
@@ -274,6 +363,7 @@ const fetchUserInfo = async (userId: string): Promise<UserInfo | null> => {
 // Watch for image changes to sync author name
 watch(() => displayedImage.value, async (newImg) => {
   if (newImg) {
+    checkFavoriteStatus();
     if (newImg.authorName) {
       currentAuthorName.value = newImg.authorName;
     } else {
@@ -400,6 +490,114 @@ const handleShare = () => {
 const handleReport = () => {
   ElMessage.info('举报功能正在开发中...');
 };
+
+// Comments Logic
+interface Comment {
+  commentId: string;
+  imageId: string;
+  userId: string;
+  userName: string;
+  content: string;
+  createTime: string;
+}
+
+const comments = ref<Comment[]>([]);
+const newComment = ref('');
+const currentUser = ref<UserInfo | null>(null); // Need to know current user for delete permission
+
+// Fetch current user info (simplified, ideally from store)
+const fetchCurrentUser = async () => {
+  // This is a placeholder. In a real app, you'd get this from a Pinia store or a dedicated API
+  // For now, we rely on the backend to handle auth, but we need userId for UI logic (e.g. show delete button)
+  // Let's try to get it from a profile endpoint if available, or parse token if we had one accessible here easily.
+  // Assuming we have a user store:
+  // const userStore = useUserStore();
+  // currentUser.value = userStore.userInfo;
+  
+  // Or fetch from an endpoint that returns "me"
+  try {
+      const response = await request.get('/api/user/current');
+      const res = response as any;
+      if (res.code === 200) {
+          currentUser.value = res.data;
+      }
+  } catch (e) {
+      // Not logged in or error
+  }
+};
+
+const fetchComments = async () => {
+  if (!displayedImage.value?.imageId) return;
+  try {
+    const response = await request.get(`/api/comments/list/${displayedImage.value.imageId}`);
+    const res = response as any;
+    if (res.code === 200) {
+      comments.value = res.data;
+    }
+  } catch (e) {
+    console.error('Failed to fetch comments', e);
+  }
+};
+
+const submitComment = async () => {
+  if (!newComment.value.trim()) return;
+  if (!displayedImage.value?.imageId) return;
+
+  try {
+    const response = await request.post('/api/comments/add', {
+      imageId: displayedImage.value.imageId,
+      content: newComment.value,
+      // userName is optional, backend handles it or we send it if we know it
+      userName: currentUser.value?.userName || 'User' 
+    });
+    const res = response as any;
+    if (res.code === 200) {
+      ElMessage.success('评论发布成功');
+      newComment.value = '';
+      fetchComments();
+    } else {
+      ElMessage.error(res.msg || '发布失败');
+    }
+  } catch (e) {
+    ElMessage.error('发布失败，请先登录');
+  }
+};
+
+const canDeleteComment = (comment: Comment) => {
+  // Allow if current user is the comment author or admin (admin check logic might need more info)
+  return currentUser.value && (currentUser.value.userId === comment.userId || currentUser.value.userRole === 'admin');
+};
+
+const deleteComment = async (commentId: string) => {
+  ElMessageBox.confirm('确定要删除这条评论吗？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning',
+  }).then(async () => {
+    try {
+      const response = await request.delete(`/api/comments/delete/${commentId}`);
+      const res = response as any;
+      if (res.code === 200) {
+        ElMessage.success('删除成功');
+        fetchComments();
+      } else {
+        ElMessage.error(res.msg || '删除失败');
+      }
+    } catch (e) {
+      ElMessage.error('删除失败');
+    }
+  });
+};
+
+// Watch displayedImage to fetch comments
+watch(() => displayedImage.value, (newImg) => {
+  if (newImg) {
+    fetchComments();
+  }
+}, { immediate: true });
+
+// Init
+fetchCurrentUser();
 </script>
 
 <style scoped>

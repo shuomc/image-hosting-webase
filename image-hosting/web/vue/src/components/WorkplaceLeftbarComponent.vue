@@ -61,9 +61,11 @@ import {
   FolderIcon,
   CubeIcon, // 用于 NFT
   UserCircleIcon,
+  BellIcon, // 用于公告
   Cog6ToothIcon,
   InformationCircleIcon,
-  CreditCardIcon, // 用于余额/交易等
+  CreditCardIcon,
+  StarIcon, // 用于余额/交易等
 } from '@heroicons/vue/24/outline'; // 导入 outline 风格的图标
 
 const route = useRoute();
@@ -76,7 +78,7 @@ const menuItems = [
   { name: 'Recommended', label: '推荐', icon: HomeIcon },
   { name: 'MyImages', label: '我的图片', icon: PhotoIcon },
   { name: 'UploadImage', label: '图片上传', icon: ArrowUpTrayIcon },
-  { name: 'MyFiles', label: '我的文件', icon: FolderIcon },
+  { name: 'Favorites', label: '我的收藏', icon: StarIcon },
   { name: 'UploadFile', label: '文件上传', icon: ArrowUpTrayIcon },
   { name: 'NFTMarket', label: 'NFT市场', icon: CubeIcon },
   { name: 'MyNFT', label: '我的NFT', icon: CubeIcon },
@@ -86,6 +88,7 @@ const menuItems = [
 
 const systemItems = [
   { name: 'Profile', label: '个人中心', icon: UserCircleIcon },
+  { name: 'notices', label: '系统公告', icon: BellIcon },
   { name: 'Settings', label: '设置', icon: Cog6ToothIcon },
   { name: 'About', label: '关于', icon: InformationCircleIcon },
 ];

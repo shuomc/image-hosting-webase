@@ -68,7 +68,8 @@ import {
   UsersIcon, 
   PhotoIcon, 
   Cog6ToothIcon, 
-  CubeTransparentIcon 
+  CubeTransparentIcon,
+  BellIcon
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps<{
@@ -82,6 +83,7 @@ const menuItems = [
   { name: '仪表盘', path: '/admin/dashboard', icon: HomeIcon },
   { name: '用户管理', path: '/admin/users', icon: UsersIcon },
   { name: '图片管理', path: '/admin/images', icon: PhotoIcon },
+  { name: '公告管理', path: '/admin/notices', icon: BellIcon },
   { name: '系统设置', path: '/admin/settings', icon: Cog6ToothIcon },
 ];
 
