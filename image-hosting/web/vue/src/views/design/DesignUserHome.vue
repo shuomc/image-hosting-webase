@@ -495,8 +495,9 @@ const getTags = (description: string | null) => {
 const downloadImage = (image: Image | null) => {
   if (!image?.imageId) return;
 
+  const token = localStorage.getItem('token');
   // 通过后端接口下载水印图，触发浏览器文件下载
-  const downloadUrl = `${API_BASE_URL}/api/images/watermark/${image.imageId}`;
+  const downloadUrl = `${API_BASE_URL}/api/images/watermark/${image.imageId}${token ? `?Authorization=${token}` : ''}`;
   
   const link = document.createElement('a');
   link.href = downloadUrl;

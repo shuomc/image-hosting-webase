@@ -450,7 +450,7 @@
                       <div v-if="comments.length === 0" class="text-center py-4 text-slate-500 dark:text-slate-400 text-sm">
                         暂无评论，快来抢沙发吧！
                       </div>
-                      <div v-else v-for="comment in comments" :key="comment.id" class="flex gap-3">
+                      <div v-else v-for="comment in comments" :key="comment.commentId" class="flex gap-3">
                         <div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300 shrink-0">
                           {{ comment.userName ? comment.userName.charAt(0).toUpperCase() : 'U' }}
                         </div>
@@ -462,7 +462,7 @@
                           <p class="text-sm text-slate-600 dark:text-slate-300 break-words">{{ comment.content }}</p>
                           <div v-if="loginUserId && (String(loginUserId) === String(comment.userId) || String(loginUserId) === String(selectedImage?.userId))" class="mt-1 flex justify-end">
                              <button 
-                                @click="deleteComment(comment.id)"
+                                @click="deleteComment(comment.commentId)"
                                 class="text-xs text-red-500 hover:text-red-600 transition-colors"
                              >
                                删除
@@ -527,9 +527,9 @@ interface UserInfo {
 }
 
 interface Comment {
-  id: number;
-  imageId: number;
-  userId: number;
+  commentId: string;
+  imageId: string;
+  userId: string;
   userName?: string;
   content: string;
   createTime: string;
@@ -653,17 +653,12 @@ const getTags = (description: string | null) => {
 const downloadImage = (image: Image | null) => {
   if (!image?.imageId) return;
 
-  // Record download
-  axios.post(`${API_BASE_URL}/api/downloads/record`, {
-    imageId: image.imageId
-  }, {
-      headers: {
-          'satoken': localStorage.getItem('satoken')
-      }
-  }).catch(err => console.error('Failed to record download', err));
-
+  // 获取 token 用于后端身份识别
+  const token = localStorage.getItem('token');
+  
   // 通过后端接口下载水印图，触发浏览器文件下载
-  const downloadUrl = `${API_BASE_URL}/api/images/watermark/${image.imageId}`;
+  // 将 token 作为参数传递，以便后端 recordDownload 能识别用户身份
+  const downloadUrl = `${API_BASE_URL}/api/images/watermark/${image.imageId}${token ? `?Authorization=${token}` : ''}`;
   
   const link = document.createElement('a');
   link.href = downloadUrl;
@@ -706,7 +701,7 @@ const submitComment = async () => {
       content: newCommentContent.value
     }, {
         headers: {
-            'satoken': localStorage.getItem('satoken')
+            'Authorization': localStorage.getItem('token')
         }
     });
     
@@ -725,7 +720,7 @@ const submitComment = async () => {
   }
 };
 
-const deleteComment = async (commentId: number) => {
+const deleteComment = async (commentId: string) => {
     try {
         await ElMessageBox.confirm('确定删除这条评论吗？', '提示', {
             confirmButtonText: '确定',
@@ -735,7 +730,7 @@ const deleteComment = async (commentId: number) => {
         
         const res = await axios.delete(`${API_BASE_URL}/api/comments/delete/${commentId}`, {
              headers: {
-                'satoken': localStorage.getItem('satoken')
+                'Authorization': localStorage.getItem('token')
             }
         });
         if (res.data.code === 200) {

@@ -31,9 +31,11 @@ import moe.imtop1.imagehosting.images.domain.dto.BatchUploadResult;
 import moe.imtop1.imagehosting.images.domain.dto.ImageStreamData;
 import moe.imtop1.imagehosting.images.domain.vo.ImagePresignedUrlData;
 import moe.imtop1.imagehosting.images.domain.vo.ImageUrlData;
+import moe.imtop1.imagehosting.images.entity.Download;
 import moe.imtop1.imagehosting.images.mapper.ImageDataMapper;
 //import moe.imtop1.imagehosting.images.mapper.ImageMapper;
 import moe.imtop1.imagehosting.images.mapper.ImageMapper;
+import moe.imtop1.imagehosting.images.service.IDownloadService;
 import moe.imtop1.imagehosting.images.service.ImageService;
 import net.coobird.thumbnailator.Thumbnails;
 import net.coobird.thumbnailator.geometry.Positions;
@@ -94,6 +96,7 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
 
     private final RedisCache redisCache; // 注入 RedisCache
     private final RestTemplate restTemplate; // 注入 RestTemplate
+    private final IDownloadService downloadService; // 注入下载服务
 
     @Value("${blockchain.api-url}")
     private String blockchainApiUrl;
@@ -682,6 +685,9 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
             imagePresignedUrlData.setPresignedUrl(url);
             imagePresignedUrlData.setImageId(imageId);
 
+            // 记录下载
+            recordDownload(imageId);
+
             return imagePresignedUrlData;
 
         } catch (Exception e) {
@@ -820,7 +826,10 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
                             .build());
             log.info("成功从 MinIO 取得对象流，Key: {}", imageData.getOriginMinioKey());
 
-            // 5. 创建并返回 ImageStreamData DTO
+            // 5. 记录下载
+            recordDownload(imageId);
+
+            // 6. 创建并返回 ImageStreamData DTO
             return new ImageStreamData(
                     inputStream,                // MinIO 的输入流
                     imageData.getContentType(), // 从数据库读取的 ContentType
@@ -870,7 +879,10 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
                             .build());
             log.info("成功从 MinIO 取得水印图对象流，Key: {}", imageData.getWatermarkMinioKey());
 
-            // 5. 创建并返回 ImageStreamData DTO
+            // 5. 记录下载
+            recordDownload(imageId);
+
+            // 6. 创建并返回 ImageStreamData DTO
             return new ImageStreamData(
                     inputStream,
                     "image/jpeg",  // 水印图固定为 JPEG 格式
@@ -979,7 +991,8 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
                     imageData.getContentType(),
                     imageData.getSize(),
                     imageData.getIsPublic(),
-                    imageData.getDescription()
+                    imageData.getDescription(),
+                    imageData.getCreateTime()
             ));
             log.info("成功从 MinIO 取得用户 {} 的对象Url_json，Key: {}", userId, imageData.getThumbnailMinioKey());
         }
@@ -1163,5 +1176,24 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
         }
 
         return result;
+    }
+
+    private void recordDownload(String imageId) {
+        try {
+            Download download = new Download();
+            download.setImageId(imageId);
+            if (StpUtil.isLogin()) {
+                download.setUserId(StpUtil.getLoginIdAsString());
+            } else {
+                download.setUserId("anonymous");
+            }
+            downloadService.save(download);
+            this.update(new UpdateWrapper<ImageData>()
+                    .setSql("download_count = download_count + 1")
+                    .eq("image_id", imageId));
+            log.info("Recorded download, imageId: {}, userId: {}", imageId, download.getUserId());
+        } catch (Exception e) {
+            log.error("Failed to record download: {}", e.getMessage());
+        }
     }
 }

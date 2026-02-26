@@ -238,12 +238,12 @@ const handleTogglePublicStatus = async (image: Image, newStatus: boolean) => {
 
 // 业务逻辑：下载
 const downloadImage = (image: Image) => {
-// ... 保持不变 ...
   if (!image || !image.imageId || !image.fileName) {
     ElMessage.warning('无法下载：信息不完整');
     return;
   }
-  const downloadUrl = `${API_BASE_URL}/api/images/minio/${image.imageId}`;
+  const token = localStorage.getItem('token');
+  const downloadUrl = `${API_BASE_URL}/api/images/minio/${image.imageId}${token ? `?Authorization=${token}` : ''}`;
   const link = document.createElement('a');
   link.href = downloadUrl;
   link.setAttribute('download', image.fileName);

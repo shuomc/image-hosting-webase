@@ -1,6 +1,7 @@
 package moe.imtop1.imagehosting.images.domain.vo;
 
 import lombok.*;
+import java.time.LocalDateTime;
 
 /**
  * @author shuomc
@@ -22,4 +23,5 @@ public class ImageUrlData {
     private Long size;
     private Boolean isPublic;
     private String description;
+    private LocalDateTime createTime;
 }

@@ -471,7 +471,8 @@ const downloadImage = (image: Image | null) => {
     return;
   }
 
-  const downloadUrl = `${API_BASE_URL}/api/images/watermark/${image.imageId}`;
+  const token = localStorage.getItem('token');
+  const downloadUrl = `${API_BASE_URL}/api/images/watermark/${image.imageId}${token ? `?Authorization=${token}` : ''}`;
 
   const link = document.createElement('a');
   link.href = downloadUrl;

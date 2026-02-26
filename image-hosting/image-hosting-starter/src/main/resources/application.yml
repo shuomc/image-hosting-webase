@@ -49,6 +49,8 @@ sa-token:
   active-timeout: -1
   is-concurrent: true
   is-share: true
+  is-read-header: true
+  is-read-param: true
   is-log: true
   jwt-secret-key: 3fc0449993ee6dc5e66ccd9658d3c33a
 

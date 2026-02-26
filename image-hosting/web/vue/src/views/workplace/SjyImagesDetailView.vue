@@ -595,7 +595,8 @@ const downloadImage = (image: Image) => {
     ElMessage.warning('图片信息不完整，无法下载。');
     return;
   }
-  const downloadUrl = `${API_BASE_URL}/api/images/minio/${image.imageId}`;
+  const token = localStorage.getItem('token');
+  const downloadUrl = `${API_BASE_URL}/api/images/minio/${image.imageId}${token ? `?Authorization=${token}` : ''}`;
   const link = document.createElement('a');
   link.href = downloadUrl;
   link.setAttribute('download', image.fileName);
