@@ -286,6 +286,24 @@ public class INFTServiceImpl implements INFTService {
     @Override
     public AjaxResult registerUser(String userId, String userName, String userEmail, String passwordHash, String avatarUrl, String bio) {
 
+        // 1. 检查是否存在该用户且是否为注销后的重注册
+        UserInfo existUser = userInfoService.getById(userId);
+        if (existUser != null && StringUtils.hasText(existUser.getBlockchainAddress()) 
+                && (existUser.getBlockchainStatus() != null && existUser.getBlockchainStatus() == 0)) {
+            // 仅仅将状态改回 1 (Active)
+            existUser.setBlockchainStatus(1);
+            boolean updateResult = userInfoService.updateById(existUser);
+            if (updateResult) {
+                log.info("用户[{}]区块链账户成功重新激活", userId);
+                return AjaxResult.success("区块链账户一键激活成功", Map.of(
+                        "success", true,
+                        "blockchainAddress", existUser.getBlockchainAddress()
+                ));
+            } else {
+                return AjaxResult.error("数据库更新激活状态失败");
+            }
+        }
+
         String url = blockchainApiUrl + "/api/v1/users/register";
 
         // 构造请求体
@@ -330,6 +348,7 @@ public class INFTServiceImpl implements INFTService {
                         UserInfo userInfo = userInfoService.getById(userId);
                         if (userInfo != null) {
                             userInfo.setBlockchainAddress(blockchainAddress);
+                            userInfo.setBlockchainStatus(1); // 成功注册为 1
                             boolean updateResult = userInfoService.updateById(userInfo);
                             // 将区块链地址写入数据库
                             if(!updateResult) {
@@ -370,7 +389,7 @@ public class INFTServiceImpl implements INFTService {
 
     /**
      * 检查用户是否已注册区块链账户
-     * 逻辑：查询本地数据库是否有 blockchainAddress
+     * 逻辑：查询本地数据库是否有 blockchainAddress 且 blockchainStatus 不为 0
      */
     @Override
     public AjaxResult checkUserRegistration(String userId) {
@@ -385,14 +404,41 @@ public class INFTServiceImpl implements INFTService {
             return AjaxResult.error("用户不存在");
         }
 
-        // 2. 判断是否有区块链地址
-        boolean isRegistered = StringUtils.hasText(userInfo.getBlockchainAddress());
+        // 2. 判断状态：地址不为空且状态不为 0 (0 表示已注销)
+        boolean isRegistered = StringUtils.hasText(userInfo.getBlockchainAddress()) 
+                && (userInfo.getBlockchainStatus() == null || userInfo.getBlockchainStatus() == 1);
 
         Map<String, Object> data = new HashMap<>();
         data.put("isRegistered", isRegistered);
         data.put("blockchainAddress", userInfo.getBlockchainAddress()); // 如果有，顺便返回地址
+        data.put("blockchainStatus", userInfo.getBlockchainStatus());
 
         return AjaxResult.success(data);
+    }
+
+    /**
+     * 注销区块链账户 (仅数据库标记同步状态)
+     */
+    @Override
+    public AjaxResult deregisterUser(String userId) {
+        if (!StringUtils.hasText(userId)) {
+            return AjaxResult.error("用户ID不能为空");
+        }
+
+        UserInfo userInfo = userInfoService.getById(userId);
+        if (userInfo == null) {
+            return AjaxResult.error("用户不存在");
+        }
+
+        // 标记为已注销 (0)
+        userInfo.setBlockchainStatus(0);
+        boolean updateResult = userInfoService.updateById(userInfo);
+        
+        if (updateResult) {
+            return AjaxResult.success("注销成功");
+        } else {
+            return AjaxResult.error("数据库更新失败，注销失败");
+        }
     }
 
     // ==========================================

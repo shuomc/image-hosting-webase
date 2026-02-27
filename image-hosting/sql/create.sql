@@ -234,11 +234,12 @@ CREATE TABLE "public"."user_info" (
     -- 业务限制与统计 (Business Logic)
                                       "user_role" varchar(20) DEFAULT 'user',   -- 角色: admin, user, vip
                                       "status" int2 DEFAULT 1,                  -- 状态: 1-正常, 0-禁用/封禁, 2-未激活
-                                      "storage_limit" int8 DEFAULT 1073741824,  -- 存储配额 (单位: 字节, 默认1GB)
-                                      "storage_used" int8 DEFAULT 0,            -- 已用存储 (单位: 字节)
+--                                       "storage_limit" int8 DEFAULT 1073741824,  -- 存储配额 (单位: 字节, 默认1GB)
+--                                       "storage_used" int8 DEFAULT 0,            -- 已用存储 (单位: 字节)
 
     -- Web3 关联
                                       "blockchain_address" varchar(255) UNIQUE, -- 关联的钱包地址
+                                      "blockchain_status" int2 DEFAULT 0,       -- 区块链注册状态: 1-Active, 0-Deregistered
 
     -- 系统审计
                                       "last_login_time" timestamp(6),           -- 最后登录时间
@@ -272,16 +273,18 @@ CREATE INDEX "user_info_email_idx" ON "public"."user_info"("user_email");
 CREATE INDEX "user_info_status_idx" ON "public"."user_info"("status");
 CREATE INDEX "user_info_isdelete_idx" ON "public"."user_info"("is_delete");
 
--- --------------------------------------------------------
+-- ------------------------------------------------
 -- 5. 用户统计表 (User Stats)
--- --------------------------------------------------------
+-- ------------------------------------------------
 DROP TABLE IF EXISTS "public"."user_stats";
 CREATE TABLE "public"."user_stats" (
                                        "user_id" varchar(100) NOT NULL,
-                                       "total_uploads" int4 DEFAULT 0,     -- 总上传图片数
-                                       "total_views" int8 DEFAULT 0,       -- 图片总浏览量
-                                       "total_likes" int8 DEFAULT 0,       -- 图片总获赞数
-                                       "used_storage" int8 DEFAULT 0,      -- 已用存储空间 (Bytes)
+                                       "total_uploads" int4 DEFAULT 0,            -- 总上传图片数
+                                       "total_views" int8 DEFAULT 0,              -- 图片总浏览量
+                                       "total_downloads" int8 DEFAULT 0,          -- 图片总点击下载量 (新增)
+                                       "total_likes" int8 DEFAULT 0,              -- 图片总获赞数
+                                       "storage_limit" int8 DEFAULT 1073741824,   -- 存储配额 (字节, 默认1GB)
+                                       "storage_used" int8 DEFAULT 0,             -- 已用存储 (字节)
                                        "update_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
                                        CONSTRAINT "user_stats_pkey" PRIMARY KEY ("user_id")
 );
@@ -291,14 +294,127 @@ COMMENT ON TABLE "public"."user_stats" IS '图床侧用户数据统计和成就�
 COMMENT ON COLUMN "public"."user_stats"."user_id" IS '用户唯一ID (主键)';
 COMMENT ON COLUMN "public"."user_stats"."total_uploads" IS '累计上传图片数量';
 COMMENT ON COLUMN "public"."user_stats"."total_views" IS '所有图片的累计浏览量';
+COMMENT ON COLUMN "public"."user_stats"."total_downloads" IS '所有图片的累计下载量';
 COMMENT ON COLUMN "public"."user_stats"."total_likes" IS '所有图片的累计点赞数';
-COMMENT ON COLUMN "public"."user_stats"."used_storage" IS '已使用的存储空间 (Bytes)';
+COMMENT ON COLUMN "public"."user_stats"."storage_limit" IS '存储空间配额 (Bytes)';
+COMMENT ON COLUMN "public"."user_stats"."storage_used" IS '已使用的存储空间 (Bytes)';
 COMMENT ON COLUMN "public"."user_stats"."update_time" IS '统计数据更新时间';
 
--- 索引
+-- 索引 (用于排行或高性能审计)
 CREATE INDEX "user_stats_total_views_index" ON "public"."user_stats"("total_views" DESC);
 CREATE INDEX "user_stats_total_uploads_index" ON "public"."user_stats"("total_uploads" DESC);
+CREATE INDEX "user_stats_total_likes_index" ON "public"."user_stats"("total_likes" DESC);
 
+
+-- --------------------------------------------------------
+-- 6. 收藏表
+-- --------------------------------------------------------
+
+DROP TABLE IF EXISTS "public"."favorites";
+CREATE TABLE "public"."favorites" (
+                                      "favorite_id" varchar(100) NOT NULL,
+                                      "user_id" varchar(100) NOT NULL,
+                                      "image_id" varchar(100) NOT NULL,
+                                      "create_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
+                                      "update_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
+                                      "is_delete" bool NOT NULL DEFAULT false,
+                                      CONSTRAINT "favorites_pkey" PRIMARY KEY ("favorite_id")
+);
+
+-- 注释
+COMMENT ON TABLE "public"."favorites" IS '用户收藏表';
+COMMENT ON COLUMN "public"."favorites"."favorite_id" IS '收藏ID (主键)';
+COMMENT ON COLUMN "public"."favorites"."user_id" IS '用户ID';
+COMMENT ON COLUMN "public"."favorites"."image_id" IS '图片ID';
+COMMENT ON COLUMN "public"."favorites"."create_time" IS '收藏时间';
+COMMENT ON COLUMN "public"."favorites"."update_time" IS '更新时间';
+COMMENT ON COLUMN "public"."favorites"."is_delete" IS '是否删除';
+
+-- 索引
+CREATE UNIQUE INDEX "favorites_user_image_unique" ON "public"."favorites"("user_id", "image_id");
+CREATE INDEX "favorites_user_id_index" ON "public"."favorites"("user_id");
+CREATE INDEX "favorites_create_time_index" ON "public"."favorites"("create_time" DESC);
+CREATE INDEX favorites_is_delete_index ON public.favorites(is_delete);
+
+
+-- --------------------------------------------------------
+-- Notices Table
+-- --------------------------------------------------------
+DROP TABLE IF EXISTS "public"."notices";
+CREATE TABLE "public"."notices" (
+                                    "notice_id" varchar(100) NOT NULL,
+                                    "title" varchar(255) NOT NULL,
+                                    "content" text NOT NULL,
+                                    "publisher_id" varchar(100) NOT NULL,
+                                    "create_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
+                                    "update_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
+                                    "is_delete" boolean DEFAULT false,
+                                    CONSTRAINT "notices_pkey" PRIMARY KEY ("notice_id")
+);
+
+COMMENT ON TABLE "public"."notices" IS 'System notices and announcements';
+COMMENT ON COLUMN "public"."notices"."notice_id" IS 'Notice ID (Primary Key)';
+COMMENT ON COLUMN "public"."notices"."title" IS 'Notice Title';
+COMMENT ON COLUMN "public"."notices"."content" IS 'Notice Content';
+COMMENT ON COLUMN "public"."notices"."publisher_id" IS 'ID of the user who published the notice';
+COMMENT ON COLUMN "public"."notices"."create_time" IS 'Creation time';
+COMMENT ON COLUMN "public"."notices"."update_time" IS 'Update time';
+COMMENT ON COLUMN "public"."notices"."is_delete" IS 'Soft delete flag';
+
+-- Indexes
+CREATE INDEX "notices_create_time_index" ON "public"."notices"("create_time" DESC);
+CREATE INDEX "notices_is_delete_index" ON "public"."notices"("is_delete");
+
+
+-- --------------------------------------------------------
+-- Comments Table
+-- --------------------------------------------------------
+DROP TABLE IF EXISTS "public"."comments";
+CREATE TABLE "public"."comments" (
+                                     "comment_id" varchar(100) NOT NULL,
+                                     "image_id" varchar(100) NOT NULL,
+                                     "user_id" varchar(100) NOT NULL,
+                                     "user_name" varchar(100) NOT NULL,
+                                     "content" text NOT NULL,
+                                     "create_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
+                                     "update_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
+                                     "is_delete" boolean DEFAULT false,
+                                     CONSTRAINT "comments_pkey" PRIMARY KEY ("comment_id")
+);
+
+COMMENT ON TABLE "public"."comments" IS 'Image comments table';
+COMMENT ON COLUMN "public"."comments"."comment_id" IS 'Comment ID (Primary Key)';
+COMMENT ON COLUMN "public"."comments"."image_id" IS 'Image ID';
+COMMENT ON COLUMN "public"."comments"."user_id" IS 'User ID';
+COMMENT ON COLUMN "public"."comments"."user_name" IS 'User Name';
+COMMENT ON COLUMN "public"."comments"."content" IS 'Comment Content';
+COMMENT ON COLUMN "public"."comments"."create_time" IS 'Creation time';
+COMMENT ON COLUMN "public"."comments"."update_time" IS 'Update time';
+COMMENT ON COLUMN "public"."comments"."is_delete" IS 'Soft delete flag';
+
+-- Indexes
+CREATE INDEX "comments_image_id_index" ON "public"."comments"("image_id");
+CREATE INDEX "comments_user_id_index" ON "public"."comments"("user_id");
+CREATE INDEX "comments_create_time_index" ON "public"."comments"("create_time" DESC);
+CREATE INDEX "comments_is_delete_index" ON "public"."comments"("is_delete");
+
+-- --------------------------------------------------------
+-- Downloads Table
+-- --------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS downloads (
+                                         download_id VARCHAR(64) PRIMARY KEY,
+                                         user_id VARCHAR(64),
+                                         image_id VARCHAR(64) NOT NULL,
+                                         create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                         update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                         is_deleted INT DEFAULT 0
+);
+
+COMMENT ON TABLE downloads IS '图片下载记录表';
+COMMENT ON COLUMN downloads.download_id IS '下载ID';
+COMMENT ON COLUMN downloads.user_id IS '用户ID';
+COMMENT ON COLUMN downloads.image_id IS '图片ID';
 
 -- --------------------------------------------------------
 -- 6. 触发器机制 (Triggers for automatic update_time)
@@ -347,5 +463,26 @@ EXECUTE FUNCTION update_modified_column();
 DROP TRIGGER IF EXISTS trg_user_stats_update_time ON "public"."user_stats";
 CREATE TRIGGER trg_user_stats_update_time
     BEFORE UPDATE ON "public"."user_stats"
+    FOR EACH ROW
+EXECUTE FUNCTION update_modified_column();
+
+-- 应用于 favorites 表
+DROP TRIGGER IF EXISTS trg_favorites_update_time ON "public"."favorites";
+CREATE TRIGGER trg_favorites_update_time
+    BEFORE UPDATE ON "public"."favorites"
+    FOR EACH ROW
+EXECUTE FUNCTION update_modified_column();
+
+-- 应用于 notices 表
+DROP TRIGGER IF EXISTS trg_notices_update_time ON "public"."notices";
+CREATE TRIGGER trg_notices_update_time
+    BEFORE UPDATE ON "public"."notices"
+    FOR EACH ROW
+EXECUTE FUNCTION update_modified_column();
+
+-- 应用于 comments 表
+DROP TRIGGER IF EXISTS trg_comments_update_time ON "public"."comments";
+CREATE TRIGGER trg_comments_update_time
+    BEFORE UPDATE ON "public"."comments"
     FOR EACH ROW
 EXECUTE FUNCTION update_modified_column();

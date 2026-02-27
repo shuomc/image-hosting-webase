@@ -42,6 +42,11 @@ public class UserInfo extends BaseEntity {
     private String blockchainAddress;
 
     /**
+     * 区块链注册状态: 1-正常, 0-注销
+     */
+    private Integer blockchainStatus;
+
+    /**
      * 用户昵称
      */
     private String nickname;

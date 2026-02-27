@@ -61,6 +61,15 @@ public class NFTController {
         return nftService.checkUserRegistration(userId);
     }
 
+    /**
+     * 注销区块链账户 (数据库标记)
+     */
+    @PostMapping("/user/deregister")
+    public AjaxResult deregisterBlockchainAccount() {
+        String userId = StpUtil.getLoginIdAsString();
+        return nftService.deregisterUser(userId);
+    }
+
 
     // ==========================================
     // 1. 浏览与查询

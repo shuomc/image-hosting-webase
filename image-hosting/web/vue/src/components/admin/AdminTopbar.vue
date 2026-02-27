@@ -57,6 +57,8 @@ const currentRouteName = computed(() => {
     'AdminDashboard': '仪表盘',
     'AdminUsers': '用户管理',
     'AdminImages': '图片管理',
+    'AdminNotices': '公告管理',
+    'AdminNFTTransactions': 'NFT交易',
     'AdminSettings': '系统设置'
   };
   return nameMap[route.name as string] || 'Admin Panel';

@@ -1,21 +1,30 @@
 <template>
-  <div class="min-h-screen bg-slate-50 dark:bg-slate-900 flex">
+  <div class="h-screen bg-slate-50 dark:bg-slate-950 flex overflow-hidden">
     <!-- Sidebar -->
-    <AdminSidebar :is-collapsed="isSidebarCollapsed" @toggle="toggleSidebar" />
+    <AdminSidebar 
+      class="flex-shrink-0" 
+      :collapsed="isSidebarCollapsed" 
+      @toggle-collapse="toggleSidebar" 
+    />
 
     <!-- Main Content Wrapper -->
-    <div class="flex-1 flex flex-col min-w-0 transition-all duration-300" :class="{ 'lg:ml-64': !isSidebarCollapsed, 'lg:ml-20': isSidebarCollapsed , 'lg:mr-64': !isSidebarCollapsed, 'lg:mr-20': isSidebarCollapsed }">
+    <div class="flex-1 flex flex-col min-w-0 h-full overflow-hidden transition-all duration-300">
       
       <!-- Topbar -->
-      <AdminTopbar @toggle-sidebar="toggleSidebar" />
+      <AdminTopbar 
+        class="flex-shrink-0" 
+        @toggle-sidebar="toggleSidebar" 
+      />
 
       <!-- Page Content -->
-      <main class="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto overflow-x-hidden">
-        <router-view v-slot="{ Component }">
-          <transition name="fade-slide" mode="out-in">
-            <component :is="Component" />
-          </transition>
-        </router-view>
+      <main class="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 lg:p-10 bg-slate-50 dark:bg-slate-950">
+        <div class="max-w-[1600px] mx-auto">
+          <router-view v-slot="{ Component }">
+            <transition name="fade-slide" mode="out-in">
+              <component :is="Component" />
+            </transition>
+          </router-view>
+        </div>
       </main>
 
     </div>

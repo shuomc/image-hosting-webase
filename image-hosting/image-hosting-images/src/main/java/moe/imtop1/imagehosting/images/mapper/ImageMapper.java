@@ -29,4 +29,13 @@ public interface ImageMapper extends MPJBaseMapper<ImageData> {
 
     @Select("SELECT COUNT(*) FROM image_data WHERE is_delete = false AND is_public = false")
     Long countPrivate();
+
+    @Select("SELECT COUNT(*) FROM image_data WHERE is_delete = false AND nft_id IS NOT NULL AND user_id = #{userId}")
+    Long countMintedByUserId(String userId);
+
+    @Select("SELECT COUNT(*) FROM image_data WHERE is_delete = false AND is_public = true AND user_id = #{userId}")
+    Long countPublicByUserId(String userId);
+
+    @Select("SELECT COUNT(*) FROM image_data WHERE is_delete = false AND is_public = false AND user_id = #{userId}")
+    Long countPrivateByUserId(String userId);
 }

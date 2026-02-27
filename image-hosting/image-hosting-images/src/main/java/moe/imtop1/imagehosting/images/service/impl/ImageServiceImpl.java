@@ -630,7 +630,9 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
             return null; // 如果已删除，视为找不到
         }
         assert imageData != null;
-        // imageData.setMinioUrl("localhost:19000" + imageData.getMinioUrl()); //测试用
+
+        // 异步记录浏览量 (或直接更新)
+        // recordView(imageId); // TODO: Implement view recording logic
 
         // 拼接配置文件中的minio服务url：确保 minioExternalUrl 不以斜杠结尾，MinioUrl 以斜杠开头
         String url = minioExternalUrl.endsWith("/") ? minioExternalUrl.substring(0, minioExternalUrl.length() - 1) : minioExternalUrl;
@@ -1080,6 +1082,21 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
     @Override
     public Long getPrivateCount() {
         return baseMapper.countPrivate();
+    }
+
+    @Override
+    public Long getMintedCountByUserId(String userId) {
+        return baseMapper.countMintedByUserId(userId);
+    }
+
+    @Override
+    public Long getPublicCountByUserId(String userId) {
+        return baseMapper.countPublicByUserId(userId);
+    }
+
+    @Override
+    public Long getPrivateCountByUserId(String userId) {
+        return baseMapper.countPrivateByUserId(userId);
     }
 
     @Override

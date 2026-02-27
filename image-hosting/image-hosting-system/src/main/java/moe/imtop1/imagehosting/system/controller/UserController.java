@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import moe.imtop1.imagehosting.common.dto.AjaxResult;
 import moe.imtop1.imagehosting.system.domain.UserInfo;
 import moe.imtop1.imagehosting.system.service.IUserInfoService;
+import moe.imtop1.imagehosting.system.service.IUserStatsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,6 +14,9 @@ public class UserController {
 
     @Autowired
     private IUserInfoService userInfoService;
+
+    @Autowired
+    private IUserStatsService userStatsService;
 
     @GetMapping("/current")
     public AjaxResult getCurrentUser() {
@@ -41,4 +45,10 @@ public class UserController {
     public AjaxResult getUserList() {
         return AjaxResult.success(userInfoService.selectUserInfoList());
     }
-} 
+
+    @GetMapping("/dashboard/stats")
+    public AjaxResult getUserDashboardStats() {
+        String userId = StpUtil.getLoginIdAsString();
+        return AjaxResult.success(userStatsService.getUserDashboardStats(userId));
+    }
+}

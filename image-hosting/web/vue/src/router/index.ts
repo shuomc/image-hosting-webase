@@ -56,6 +56,11 @@ const router = createRouter({
           component: () => import('@/views/bgadmin/AdminNoties.vue')
         },
         {
+          path: 'nft-transactions',
+          name: 'AdminNFTTransactions',
+          component: () => import('@/views/nft/NFTTransactions.vue')
+        },
+        {
           path: 'settings',
           name: 'AdminSettings',
           component: () => import('@/views/bgadmin/AdminSettings.vue')
@@ -99,6 +104,12 @@ const router = createRouter({
       component: WorkplaceView,
       meta: { requiresAuth: true },
       children: [
+        {
+          path: 'dashboard',
+          name: 'UserDashboard',
+          component: () => import('@/views/workplace/UserDashboard.vue'),
+          meta: { requiresAuth: true }
+        },
         {
           path: 'notices',
           name: 'notices',

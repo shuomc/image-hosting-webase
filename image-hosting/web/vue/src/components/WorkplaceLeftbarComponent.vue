@@ -56,6 +56,7 @@ import { useRoute } from 'vue-router';
 import { computed, ref, onMounted } from 'vue';
 import {
   HomeIcon,
+  ChartBarIcon, // For Dashboard
   PhotoIcon,
   ArrowUpTrayIcon,
   FolderIcon,
@@ -75,11 +76,11 @@ const isActive = (menuItemName: string) => {
 };
 // 菜单数据
 const menuItems = [
+  { name: 'UserDashboard', label: '数据总览', icon: ChartBarIcon },
   { name: 'Recommended', label: '推荐', icon: HomeIcon },
   { name: 'MyImages', label: '我的图片', icon: PhotoIcon },
   { name: 'UploadImage', label: '图片上传', icon: ArrowUpTrayIcon },
   { name: 'Favorites', label: '我的收藏', icon: StarIcon },
-  { name: 'UploadFile', label: '文件上传', icon: ArrowUpTrayIcon },
   { name: 'NFTMarket', label: 'NFT市场', icon: CubeIcon },
   { name: 'MyNFT', label: '我的NFT', icon: CubeIcon },
   { name: 'NFTTransactions', label: 'NFT交易', icon: CreditCardIcon },

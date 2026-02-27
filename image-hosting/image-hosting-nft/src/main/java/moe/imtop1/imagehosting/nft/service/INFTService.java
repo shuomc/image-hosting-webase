@@ -120,4 +120,6 @@ public interface INFTService {
 
     // 检查用户是否已注册区块链账户 (返回 boolean 或具体地址)
     AjaxResult checkUserRegistration(String userId);
+
+    AjaxResult deregisterUser(String userId);
 }

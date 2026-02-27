@@ -82,16 +82,29 @@
       <div class="container mx-auto px-4 max-w-7xl mt-8">
         
         <!-- 标题区 -->
-        <div class="mb-10">
-          <h1 class="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">
-            我的数字资产
-          </h1>
-          <p class="text-sm mt-2 text-slate-500 dark:text-slate-400 flex items-center gap-2">
-            <span>钱包地址:</span>
-            <span class="font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-600 dark:text-slate-300 select-all">
-              {{ blockchainAddress }}
-            </span>
-          </p>
+        <div class="mb-10 flex justify-between items-end">
+          <div>
+            <h1 class="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">
+              我的数字资产
+            </h1>
+            <p class="text-sm mt-2 text-slate-500 dark:text-slate-400 flex items-center gap-2">
+              <span>钱包地址:</span>
+              <span class="font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-600 dark:text-slate-300 select-all">
+                {{ blockchainAddress }}
+              </span>
+            </p>
+          </div>
+
+          <!-- 注销按钮 -->
+          <button 
+            @click="handleDeregister" 
+            class="text-xs text-slate-400 hover:text-red-500 transition-colors flex items-center gap-1 group"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            <span class="opacity-0 group-hover:opacity-100 transition-opacity">注销区块链账户</span>
+          </button>
         </div>
 
         <!-- 列表加载中 -->
@@ -436,7 +449,41 @@ const handleRegister = async () => {
   }
 }
 
-// 3. 获取 NFT 列表
+// 3. 注销区块链账户
+const handleDeregister = async () => {
+  try {
+    await ElMessageBox.confirm(
+      '确定要注销区块链账户吗？注销后您将无法查看和交易您的数字资产，直到重新激活。',
+      '注销确认',
+      {
+        confirmButtonText: '确认注销',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    )
+
+    const res = await request({
+      url: '/nft/user/deregister',
+      method: 'post'
+    })
+
+    if (res.code === 200) {
+      ElMessage.success('注销成功')
+      isRegistered.value = false
+      blockchainAddress.value = ''
+      nftList.value = []
+    } else {
+      ElMessage.error(res.msg || '注销失败')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error(error)
+      ElMessage.error('注销操作异常')
+    }
+  }
+}
+
+// 4. 获取 NFT 列表
 const fetchNFTList = async () => {
   loading.value = true
   try {
