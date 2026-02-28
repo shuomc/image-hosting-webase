@@ -10,25 +10,25 @@ import moe.imtop1.imagehosting.framework.base.BaseEntity;
  */
 @TableName("roles")
 public class Roles extends BaseEntity {
-    @TableId(type = IdType.ASSIGN_ID)
-    private String rolesId;
+    @TableId(type = IdType.AUTO)
+    private Integer rolesId;
 
     private String rolesName;
     private String description;
 
     public Roles() {}
 
-    public Roles(String rolesId, String rolesName, String description) {
+    public Roles(Integer rolesId, String rolesName, String description) {
         this.rolesId = rolesId;
         this.rolesName = rolesName;
         this.description = description;
     }
 
-    public String getRolesId() {
+    public Integer getRolesId() {
         return rolesId;
     }
 
-    public void setRolesId(String rolesId) {
+    public void setRolesId(Integer rolesId) {
         this.rolesId = rolesId;
     }
 

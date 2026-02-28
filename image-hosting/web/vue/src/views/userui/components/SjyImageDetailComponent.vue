@@ -52,6 +52,21 @@
               <div class="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-2"></div>
 
               <button 
+                @click="handleLike"
+                :class="[
+                  'p-2 rounded-lg border transition-all flex items-center gap-1.5 px-4',
+                  isLiked 
+                    ? 'bg-rose-50 border-rose-200 text-rose-500 dark:bg-rose-900/20 dark:border-rose-800' 
+                    : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700'
+                ]"
+              >
+                <HeartIcon :class="['w-5 h-5', isLiked ? 'fill-current' : '']" />
+                <span class="text-sm font-bold">{{ displayedImage.likeCount || 0 }}</span>
+              </button>
+              
+              <div class="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-2"></div>
+
+              <button 
                 @click="downloadImage(displayedImage)"
                 class="flex items-center gap-2 px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-colors shadow-lg"
               >
@@ -127,6 +142,16 @@
                     <div class="flex justify-between text-sm">
                       <span class="text-slate-500 dark:text-slate-400">格式</span>
                       <span class="font-medium text-slate-900 dark:text-slate-200">{{ displayedImage.contentType || 'JPG' }}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                      <span class="text-slate-500 dark:text-slate-400">分类</span>
+                      <span class="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800">
+                        {{ displayedImage.category || '未分类' }}
+                      </span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                      <span class="text-slate-500 dark:text-slate-400">浏览量</span>
+                      <span class="font-medium text-slate-900 dark:text-slate-200">{{ displayedImage.viewCount || 0 }}</span>
                     </div>
                     <div class="flex justify-between text-sm">
                       <span class="text-slate-500 dark:text-slate-400">上传时间</span>
@@ -241,9 +266,11 @@ import {
   InformationCircleIcon,
   FlagIcon,
   ShareIcon,
+  HeartIcon,
   ChevronLeftIcon,
   ChevronRightIcon
 } from '@heroicons/vue/24/outline';
+import { HeartIcon as HeartIconSolid } from '@heroicons/vue/24/solid';
 import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid';
 
 // Interfaces
@@ -261,8 +288,11 @@ interface Image {
   uploadTime?: string;
   createTime?: string;
   authorName?: string;
+  category?: string | null;
   width?: number;
   height?: number;
+  viewCount?: number;
+  likeCount?: number;
 }
 
 interface UserInfo {
@@ -309,6 +339,35 @@ const displayedImage = computed<Image | null>(() => {
 // Local author name to handle async fetching
 const currentAuthorName = ref('未知作者');
 const isFavorited = ref(false);
+const isLiked = ref(false);
+
+const plusViewCount = async () => {
+  if (!displayedImage.value?.imageId) return;
+  try {
+    await request.post(`/api/images/${displayedImage.value.imageId}/view`);
+    if (displayedImage.value.viewCount !== undefined) {
+      displayedImage.value.viewCount++;
+    }
+  } catch (e) {
+    console.error('Failed to increase view count', e);
+  }
+};
+
+const handleLike = async () => {
+  if (!displayedImage.value?.imageId || isLiked.value) return;
+  try {
+    await request.post(`/api/images/${displayedImage.value.imageId}/like`);
+    isLiked.value = true;
+    if (displayedImage.value.likeCount !== undefined) {
+      displayedImage.value.likeCount++;
+    } else {
+      displayedImage.value.likeCount = 1;
+    }
+    ElMessage.success('点赞成功！');
+  } catch (e) {
+    ElMessage.error('点赞失败');
+  }
+};
 
 const checkFavoriteStatus = async () => {
   if (!displayedImage.value?.imageId) return;
@@ -364,6 +423,8 @@ const fetchUserInfo = async (userId: string): Promise<UserInfo | null> => {
 watch(() => displayedImage.value, async (newImg) => {
   if (newImg) {
     checkFavoriteStatus();
+    plusViewCount(); // 开启模态框时记录浏览量
+    isLiked.value = false; // Reset like status for the new image
     if (newImg.authorName) {
       currentAuthorName.value = newImg.authorName;
     } else {

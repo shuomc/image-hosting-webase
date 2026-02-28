@@ -65,4 +65,8 @@ public interface ImageService extends IService<ImageData> {
     void deleteImage(String imageId);
 
     com.baomidou.mybatisplus.extension.plugins.pagination.Page<ImageData> getImageList(Integer page, Integer size, String keyword, String type);
+
+    void plusViewCount(String imageId);
+
+    void plusLikeCount(String imageId);
 }

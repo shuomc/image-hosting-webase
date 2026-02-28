@@ -235,6 +235,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
+import request from '@/utils/request'
 import { getUserInfo, updateUserInfo } from '@/api/user'
 
 const loading = ref(false)
@@ -288,6 +289,13 @@ const fetchUser = async () => {
     const res = await getUserInfo()
     if (res.data) {
       form.value = { ...res.data }
+    }
+    
+    // 关键修复：从统计接口补充存储用量数据
+    const statsRes = await request.get('/api/user/dashboard/stats');
+    if (statsRes.code === 200 && statsRes.data.userStats) {
+      form.value.storageUsed = statsRes.data.userStats.storageUsed || 0;
+      form.value.storageLimit = statsRes.data.userStats.storageLimit || 1073741824;
     }
   } catch (e) {
     console.error(e)

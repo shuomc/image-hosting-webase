@@ -423,4 +423,22 @@ public class ImageController {
         imageCacheService.getMinioObjectDataFromRedis(imageKey);
         return AjaxResult.success("成功");
     }
+
+    /**
+     * 增加图片浏览量
+     */
+    @PostMapping("/{imageId}/view")
+    public AjaxResult plusViewCount(@PathVariable String imageId) {
+        imageService.plusViewCount(imageId);
+        return AjaxResult.success();
+    }
+
+    /**
+     * 图片点赞
+     */
+    @PostMapping("/{imageId}/like")
+    public AjaxResult plusLikeCount(@PathVariable String imageId) {
+        imageService.plusLikeCount(imageId);
+        return AjaxResult.success();
+    }
 }

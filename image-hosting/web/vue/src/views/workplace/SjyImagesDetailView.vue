@@ -80,6 +80,31 @@
                   </div>
                   <span v-else class="ml-1">{{ imageDetail.isPublic ? '是' : '否' }}</span>
                 </div>
+
+                <div class="flex items-center">
+                  <span class="font-medium text-slate-700 dark:text-slate-200 mr-2">分类:</span>
+                  <div v-if="isEditing" class="flex-grow">
+                    <el-select 
+                      v-model="editForm.category" 
+                      placeholder="输入或选择分类" 
+                      size="small" 
+                      class="w-full"
+                      filterable
+                      allow-create
+                      default-first-option
+                      :reserve-keyword="false"
+                    >
+                      <el-option label="风景" value="风景" />
+                      <el-option label="人像" value="人像" />
+                      <el-option label="二次元" value="二次元" />
+                      <el-option label="极简" value="极简" />
+                      <el-option label="赛博朋克" value="赛博朋克" />
+                    </el-select>
+                  </div>
+                  <span v-else class="ml-1 px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-xs font-medium text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800">
+                    {{ imageDetail.category || '未分类' }}
+                  </span>
+                </div>
               </div>
               
               <div v-if="imageDetail.uploadTime"><span class="font-medium text-slate-700 dark:text-slate-200">上传时间:</span> {{ formatTimestamp(imageDetail.uploadTime) }}</div>
@@ -532,7 +557,7 @@ const isPreviewSample = ref(false); // 新增：是否为样例预览
 
 const isEditing = ref(false);
 const isUpdating = ref(false); 
-const editForm = reactive({ fileName: '', description: '', isPublic: false });
+const editForm = reactive({ fileName: '', description: '', isPublic: false, category: '' });
 const activeTab = ref('EXIF/相机');
 
 // Mint 相关状态
@@ -554,6 +579,7 @@ const toggleEditMode = async () => {
             editForm.fileName = imageDetail.value.fileName;
             editForm.description = imageDetail.value.description || '';
             editForm.isPublic = imageDetail.value.isPublic;
+            editForm.category = imageDetail.value.category || '';
         }
         isEditing.value = true;
     }
@@ -572,6 +598,7 @@ const handleUpdateImage = async () => {
         formData.append('fileName', editForm.fileName);
         formData.append('description', editForm.description);
         formData.append('isPublic', editForm.isPublic.toString());
+        formData.append('category', editForm.category);
         const updateUrl = `${API_BASE_URL}/api/images/update`;
         const responseData = await service.post(updateUrl, formData);
         if (responseData.code === 200) {
@@ -579,6 +606,7 @@ const handleUpdateImage = async () => {
             imageDetail.value.fileName = editForm.fileName;
             imageDetail.value.description = editForm.description;
             imageDetail.value.isPublic = editForm.isPublic;
+            imageDetail.value.category = editForm.category;
             isEditing.value = false;
         } else {
             ElMessage.error(responseData.msg || '修改失败');

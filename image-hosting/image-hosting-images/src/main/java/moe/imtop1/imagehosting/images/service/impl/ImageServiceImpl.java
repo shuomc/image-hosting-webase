@@ -1015,6 +1015,7 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
         updateWrapper.set(imageData.getFileName() != null, "file_name", imageData.getFileName());
         updateWrapper.set(imageData.getIsPublic() != null, "is_public", imageData.getIsPublic());
         updateWrapper.set(imageData.getDescription() != null, "description", imageData.getDescription());
+        updateWrapper.set(imageData.getCategory() != null, "category", imageData.getCategory());
 
         int rowsAffected = imageDataMapper.update(null, updateWrapper);
 
@@ -1212,5 +1213,19 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, ImageData> implem
         } catch (Exception e) {
             log.error("Failed to record download: {}", e.getMessage());
         }
+    }
+
+    @Override
+    public void plusViewCount(String imageId) {
+        this.update(new UpdateWrapper<ImageData>()
+                .setSql("view_count = view_count + 1")
+                .eq("image_id", imageId));
+    }
+
+    @Override
+    public void plusLikeCount(String imageId) {
+        this.update(new UpdateWrapper<ImageData>()
+                .setSql("like_count = like_count + 1")
+                .eq("image_id", imageId));
     }
 }

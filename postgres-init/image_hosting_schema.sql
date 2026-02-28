@@ -133,6 +133,50 @@ COMMENT ON COLUMN "public"."user_info"."update_time" IS '更新时间';
 COMMENT ON COLUMN "public"."user_info"."user_role" IS '用户角色';
 COMMENT ON COLUMN "public"."user_info"."is_delete" IS '是否删除';
 
+-- 索引
+CREATE INDEX "user_info_is_delete_index" ON "public"."user_info" ("is_delete");
+CREATE INDEX "user_info_user_role_index" ON "public"."user_info" ("user_role");
+
+-- ----------------------------
+-- Table structure for roles
+-- ----------------------------
+DROP TABLE IF EXISTS "public"."roles";
+CREATE TABLE "public"."roles" (
+                                  "roles_id" varchar(100) NOT NULL,
+                                  "roles_name" varchar(50) NOT NULL,
+                                  "description" varchar(255),
+                                  "is_delete" bool NOT NULL DEFAULT false,
+                                  "create_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
+-- ----------------------------
+-- Table structure for roles
+-- ----------------------------
+DROP TABLE IF EXISTS "public"."roles";
+CREATE TABLE "public"."roles" (
+                                  "roles_id" SERIAL,
+                                  "roles_name" varchar(50) NOT NULL,
+                                  "description" varchar(255),
+                                  "is_delete" bool NOT NULL DEFAULT false,
+                                  "create_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
+                                  "update_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
+                                  CONSTRAINT "roles_pkey" PRIMARY KEY ("roles_id")
+);
+
+-- 注释
+COMMENT ON TABLE "public"."roles" IS '系统角色表';
+COMMENT ON COLUMN "public"."roles"."roles_id" IS '角色ID (主键)';
+COMMENT ON COLUMN "public"."roles"."roles_name" IS '角色标识';
+COMMENT ON COLUMN "public"."roles"."description" IS '描述';
+COMMENT ON COLUMN "public"."roles"."is_delete" IS '是否删除 (软删除)';
+COMMENT ON COLUMN "public"."roles"."create_time" IS '创建时间';
+COMMENT ON COLUMN "public"."roles"."update_time" IS '更新时间';
+
+-- 索引
+CREATE INDEX "idx_roles_is_delete" ON "public"."roles"("is_delete");
+CREATE UNIQUE INDEX "idx_roles_name" ON "public"."roles"("roles_name");
+
+INSERT INTO "public"."roles" ("roles_name", "description", "is_delete", "create_time", "update_time") VALUES ('admin', '系统管理员', 'f', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+INSERT INTO "public"."roles" ("roles_name", "description", "is_delete", "create_time", "update_time") VALUES ('user', '普通用户', 'f', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
 ALTER TABLE "public"."user_info" ADD COLUMN "blockchain_address" VARCHAR(255) NULL;
 COMMENT ON COLUMN "public"."user_info"."blockchain_address" IS '区块链地址';
 

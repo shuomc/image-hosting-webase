@@ -272,6 +272,35 @@ CREATE UNIQUE INDEX "user_info_blockchain_address_idx" ON "public"."user_info"("
 CREATE INDEX "user_info_email_idx" ON "public"."user_info"("user_email");
 CREATE INDEX "user_info_status_idx" ON "public"."user_info"("status");
 CREATE INDEX "user_info_isdelete_idx" ON "public"."user_info"("is_delete");
+CREATE INDEX "idx_user_info_is_delete" ON "public"."user_info"("is_delete");
+CREATE INDEX "idx_user_info_user_role" ON "public"."user_info" ("user_role");
+
+-- --------------------------------------------------------
+-- 5. 角色表 (Roles)
+-- --------------------------------------------------------
+DROP TABLE IF EXISTS "public"."roles";
+CREATE TABLE "public"."roles" (
+                                  "roles_id" SERIAL,
+                                  "roles_name" varchar(50) NOT NULL,
+                                  "description" varchar(255),
+                                  "is_delete" bool NOT NULL DEFAULT false,
+                                  "create_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
+                                  "update_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
+                                  CONSTRAINT "roles_pkey" PRIMARY KEY ("roles_id")
+);
+
+-- 注释
+COMMENT ON TABLE "public"."roles" IS '系统角色表';
+COMMENT ON COLUMN "public"."roles"."roles_id" IS '角色ID (主键)';
+COMMENT ON COLUMN "public"."roles"."roles_name" IS '角色标识';
+COMMENT ON COLUMN "public"."roles"."description" IS '描述';
+COMMENT ON COLUMN "public"."roles"."is_delete" IS '是否删除 (软删除)';
+COMMENT ON COLUMN "public"."roles"."create_time" IS '创建时间';
+COMMENT ON COLUMN "public"."roles"."update_time" IS '更新时间';
+
+-- 索引
+CREATE INDEX "idx_roles_is_delete" ON "public"."roles"("is_delete");
+CREATE UNIQUE INDEX "idx_roles_name" ON "public"."roles"("roles_name");
 
 -- ------------------------------------------------
 -- 5. 用户统计表 (User Stats)
@@ -484,5 +513,12 @@ EXECUTE FUNCTION update_modified_column();
 DROP TRIGGER IF EXISTS trg_comments_update_time ON "public"."comments";
 CREATE TRIGGER trg_comments_update_time
     BEFORE UPDATE ON "public"."comments"
+    FOR EACH ROW
+EXECUTE FUNCTION update_modified_column();
+
+-- 应用于 roles 表
+DROP TRIGGER IF EXISTS trg_roles_update_time ON "public"."roles";
+CREATE TRIGGER trg_roles_update_time
+    BEFORE UPDATE ON "public"."roles"
     FOR EACH ROW
 EXECUTE FUNCTION update_modified_column();

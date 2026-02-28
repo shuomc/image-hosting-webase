@@ -25,11 +25,23 @@
           </svg>
           刷新统计
         </button>
-        <button class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors flex items-center">
+        <button 
+          @click="openCreateUser"
+          class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors flex items-center"
+        >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
           添加用户
+        </button>
+        <button 
+          @click="openManageRoles"
+          class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-medium transition-colors flex items-center"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+          </svg>
+          管理角色
         </button>
       </div>
     </div>
@@ -67,8 +79,12 @@
                 size="small"
                 class="w-24 custom-select"
               >
-                <el-option label="用户" value="user" />
-                <el-option label="管理员" value="admin" />
+                <el-option 
+                  v-for="role in roles" 
+                  :key="role.rolesId" 
+                  :label="role.rolesKey" 
+                  :value="role.rolesName" 
+                />
               </el-select>
             </td>
             <td class="px-6 py-4">
@@ -195,6 +211,104 @@
         </button>
       </div>
     </div>
+
+    <!-- Modals -->
+    <!-- Create User Dialog -->
+    <el-dialog
+      v-model="createDialogVisible"
+      title="创建新用户"
+      width="500px"
+      class="rounded-2xl"
+    >
+      <el-form :model="createForm" label-width="80px" class="mt-4">
+        <el-form-item label="用户名" required>
+          <el-input v-model="createForm.userName" placeholder="请输入用户名" />
+        </el-form-item>
+        <el-form-item label="邮箱" required>
+          <el-input v-model="createForm.userEmail" placeholder="请输入邮箱" />
+        </el-form-item>
+        <el-form-item label="密码" required>
+          <el-input v-model="createForm.password" type="password" show-password placeholder="请输入密码" />
+        </el-form-item>
+        <el-form-item label="角色">
+          <el-select v-model="createForm.userRole" class="w-full">
+            <el-option label="普通用户" value="user" />
+            <el-option label="管理员" value="admin" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <div class="flex justify-end gap-3 mt-4">
+          <button 
+            @click="createDialogVisible = false"
+            class="px-4 py-2 border border-slate-200 rounded-xl hover:bg-slate-50 text-sm transition-colors"
+          >
+            取消
+          </button>
+          <button 
+            @click="handleCreateUser"
+            :disabled="creating"
+            class="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 text-sm font-medium transition-colors disabled:opacity-50"
+          >
+            {{ creating ? '创建中...' : '确认创建' }}
+          </button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!-- Manage Roles Dialog -->
+    <el-dialog
+      v-model="roleDialogVisible"
+      title="管理系统角色"
+      width="600px"
+      class="rounded-2xl"
+    >
+      <div v-loading="roleLoading">
+        <div class="mb-4">
+          <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">已有角色</h4>
+          <el-table :data="roles" border stripe style="width: 100%" size="small">
+            <el-table-column prop="rolesName" label="角色标识" width="120" />
+            <el-table-column prop="description" label="描述" />
+            <el-table-column label="操作" width="80" align="center">
+              <template #default="{ row }">
+                <el-button 
+                  type="danger" 
+                  icon="Delete" 
+                  circle 
+                  size="small" 
+                  @click="handleDeleteRole(row)"
+                  :disabled="row.rolesName === 'admin'"
+                />
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+
+        <div class="pt-4 border-t border-slate-100 dark:border-slate-700">
+          <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">新增角色</h4>
+          <el-form :model="roleForm" layout="inline" class="flex gap-2">
+            <el-input 
+              v-model="roleForm.rolesName" 
+              placeholder="角色标识 (如: editor)"
+              class="flex-1"
+            />
+            <el-input 
+              v-model="roleForm.description" 
+              placeholder="描述 (如: 编辑人员)"
+              class="flex-1"
+            />
+            <button 
+              @click="handleCreateRole"
+              type="button"
+              :disabled="!roleForm.rolesName || !roleForm.description"
+              class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium transition-colors disabled:opacity-50"
+            >
+              添加
+            </button>
+          </el-form>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -203,13 +317,21 @@ import { ref, onMounted, reactive } from 'vue';
 import { 
   getUserList, 
   updateUser, 
+  createUser,
+  getRolesList,
+  createRole,
+  deleteRole,
   refreshAllUserStats, 
   getUserStats, 
   type UserVO, 
   type UserListQuery, 
   type UserUpdate,
+  type UserCreate,
+  type RoleCreate,
+  type RoleVO,
   type UserStatsVO 
 } from '@/api/admin/user';
+import { Delete } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 
 const users = ref<UserVO[]>([]);
@@ -226,6 +348,124 @@ const statsDialogVisible = ref(false);
 const loadingStats = ref(false);
 const userStats = ref<UserStatsVO | null>(null);
 const selectedUserName = ref('');
+
+// Create User State
+const createDialogVisible = ref(false);
+const creating = ref(false);
+const createForm = reactive<UserCreate>({
+  userName: '',
+  userEmail: '',
+  password: '',
+  userRole: 'user'
+});
+
+const openCreateUser = () => {
+  createForm.userName = '';
+  createForm.userEmail = '';
+  createForm.password = '';
+  createForm.userRole = 'user';
+  createDialogVisible.value = true;
+};
+
+// Roles Management State
+const roles = ref<RoleVO[]>([]);
+const roleLoading = ref(false);
+const roleDialogVisible = ref(false);
+const roleForm = reactive<RoleCreate>({
+  rolesName: '',
+  description: ''
+});
+
+const loadRoles = async () => {
+  try {
+    const res = await getRolesList();
+    if (res.code === 200) {
+      roles.value = res.data;
+    }
+  } catch (err) {
+    console.error('Failed to load roles');
+  }
+};
+
+const openManageRoles = async () => {
+  roleForm.rolesName = '';
+  roleForm.description = '';
+  roleDialogVisible.value = true;
+  roleLoading.value = true;
+  await loadRoles();
+  roleLoading.value = false;
+};
+
+const handleCreateUser = async () => {
+  if (!createForm.userName || !createForm.userEmail || !createForm.password) {
+    ElMessage.warning('请填写完整信息');
+    return;
+  }
+  creating.value = true;
+  try {
+    const res = await createUser(createForm);
+    if (res.code === 200) {
+      ElMessage.success('用户创建成功');
+      createDialogVisible.value = false;
+      loadData();
+    } else {
+      ElMessage.error(res.message || '创建失败');
+    }
+  } catch (error) {
+    ElMessage.error('请求失败');
+  } finally {
+    creating.value = false;
+  }
+};
+
+const handleCreateRole = async () => {
+  if (!roleForm.rolesName || !roleForm.description) {
+    ElMessage.warning('请填写角色标识和描述');
+    return;
+  }
+  roleLoading.value = true;
+  try {
+    const res = await createRole(roleForm);
+    if (res.code === 200) {
+      ElMessage.success('角色创建成功');
+      roleForm.rolesName = '';
+      roleForm.description = '';
+      await loadRoles();
+    } else {
+      ElMessage.error(res.message || '创建角色失败');
+    }
+  } catch (error) {
+    ElMessage.error('网络错误');
+  } finally {
+    roleLoading.value = false;
+  }
+};
+
+const handleDeleteRole = async (role: RoleVO) => {
+  try {
+    await ElMessageBox.confirm(`确定要删除角色 "${role.rolesKey}" 吗？删除后该操作不可恢复。`, '危险操作', {
+      type: 'error',
+      confirmButtonText: '确定删除',
+      cancelButtonText: '取消',
+      confirmButtonClass: 'el-button--danger'
+    });
+    
+    roleLoading.value = true;
+    const res = await deleteRole(role.rolesId);
+    if (res.code === 200) {
+      ElMessage.success('角色已删除');
+      await loadRoles();
+    } else {
+      ElMessage.error(res.message || '删除失败');
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error?.response?.data?.message || '操作失败');
+    }
+  } finally {
+    roleLoading.value = false;
+  }
+};
 
 const loadData = async () => {
   try {
@@ -313,8 +553,9 @@ const handleResetPassword = (user: UserVO) => {
   });
 };
 
-onMounted(() => {
+onMounted(async () => {
   loadData();
+  await loadRoles();
 });
 </script>
 

@@ -13,20 +13,8 @@
           </div>
         </div>
 
-        <!-- Quick Search -->
-        <div class="flex-1 max-w-md mx-4 hidden sm:block">
-          <div class="relative group">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <MagnifyingGlassIcon class="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-            </div>
-            <input 
-              type="text" 
-              class="block w-full pl-10 pr-3 py-2 border border-slate-200 dark:border-slate-700 rounded-full leading-5 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all sm:text-sm" 
-              placeholder="搜索灵感..." 
-              v-model="searchQuery"
-              @keyup.enter="handleSearch"
-            >
-          </div>
+        <!-- Quick Search (Removed from Header) -->
+        <div class="flex-1 max-w-md mx-4 hidden">
         </div>
 
         <div class="flex items-center gap-3">
@@ -47,19 +35,106 @@
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       
-      <!-- Filter Tags (Optional Quick Filters) -->
-      <div class="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide">
-        <button 
-          v-for="tag in ['全部', '风景', '人像', '二次元', '极简', '赛博朋克']" 
-          :key="tag"
-          class="px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all"
-          :class="activeTag === tag 
-            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30' 
-            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-indigo-500 hover:text-indigo-500'"
-          @click="activeTag = tag"
+      <!-- Hero Carousel -->
+      <div v-if="images.length > 0" class="mb-10 rounded-2xl overflow-hidden shadow-2xl relative group">
+        <el-carousel 
+          indicator-position="outside" 
+          height="400px" 
+          v-loading="isLoading"
+          class="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800"
         >
-          {{ tag }}
-        </button>
+          <el-carousel-item v-for="(image, index) in images.slice(0, 5)" :key="image.imageId">
+            <div 
+              class="relative w-full h-full cursor-pointer overflow-hidden"
+              @click="openImageDialog(image, index)"
+            >
+              <img 
+                :src="image.watermarkMinioUrl || image.minioUrl" 
+                class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                alt="Featured Image"
+              />
+              <!-- Carousel Overlay -->
+              <div class="absolute inset-x-0 bottom-0 bg-gradient-t from-black/80 via-black/40 to-transparent p-8">
+                <div class="flex flex-col gap-2">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-500 text-white w-fit mb-2">
+                    精选推荐
+                  </span>
+                  <h2 class="text-2xl font-bold text-white drop-shadow-md">{{ image.fileName }}</h2>
+                  <div class="flex items-center gap-3 mt-2">
+                    <div class="flex items-center gap-2">
+                      <div class="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-sm font-bold text-white border border-white/30">
+                        {{ image.authorName ? image.authorName.charAt(0).toUpperCase() : 'U' }}
+                      </div>
+                      <span class="text-white/90 font-medium">{{ image.authorName }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </el-carousel-item>
+        </el-carousel>
+      </div>
+
+      <!-- Main Search Area -->
+      <div class="max-w-2xl mx-auto mb-10">
+        <div class="relative group">
+          <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <MagnifyingGlassIcon class="h-6 w-6 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+          </div>
+          <input 
+            type="text" 
+            class="block w-full pl-12 pr-4 py-4 border border-slate-200 dark:border-slate-700 rounded-2xl leading-5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all text-lg shadow-sm group-hover:shadow-md" 
+            placeholder="搜索你想要的灵感..." 
+            v-model="searchQuery"
+            @keyup.enter="handleSearch"
+          >
+          <div class="absolute inset-y-0 right-0 py-2 pr-2 flex items-center">
+            <button 
+              @click="handleSearch"
+              class="px-6 h-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition-colors shadow-lg shadow-indigo-500/30 flex items-center gap-2"
+            >
+              <span>搜索</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter Tags (Optional Quick Filters) -->
+      <div class="flex items-center justify-center mb-10 flex-col gap-4">
+        <div class="flex gap-3 p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full shadow-sm overflow-x-auto no-scrollbar max-w-full">
+          <button 
+            v-for="tag in ['全部', '风景', '人像', '二次元', '极简', '赛博朋克']" 
+            :key="tag"
+            class="px-6 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-300 transform active:scale-95"
+            :class="activeTag === tag 
+              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/40' 
+              : 'text-slate-600 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-600 dark:hover:text-indigo-400'"
+            @click="activeTag = tag"
+          >
+            {{ tag }}
+          </button>
+        </div>
+        
+        <!-- Custom Category Input -->
+        <div class="flex items-center gap-2">
+          <div class="relative">
+            <input 
+              type="text" 
+              placeholder="输入自定义分类筛选..." 
+              v-model="customCategory"
+              @keyup.enter="activeTag = customCategory"
+              class="pl-9 pr-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all w-64 shadow-sm"
+            >
+            <TagIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          </div>
+          <button 
+            v-if="customCategory"
+            @click="activeTag = customCategory"
+            class="p-2 rounded-full bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"
+          >
+            <MagnifyingGlassIcon class="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       <!-- Loading State -->
@@ -82,35 +157,44 @@
       <!-- Masonry Grid -->
       <div v-else class="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
         <div 
-          v-for="(image, index) in images" 
+          v-for="(image, index) in filteredImages" 
           :key="image.imageId"
-          class="break-inside-avoid group relative rounded-xl overflow-hidden bg-white dark:bg-slate-800 shadow-sm hover:shadow-xl transition-all duration-300 cursor-zoom-in"
+          class="break-inside-avoid group relative rounded-xl overflow-hidden bg-white dark:bg-slate-800 shadow-sm hover:shadow-xl transition-all duration-300 cursor-zoom-in border border-slate-100 dark:border-slate-800"
           @click="openImageDialog(image, index)"
         >
           <!-- Image -->
           <img 
             :src="(image.watermarkMinioUrl || image.thumbnailMinioUrl)" 
             :alt="image.fileName"
-            class="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out"
+            class="w-full h-auto object-cover transform scale-100 group-hover:scale-105 transition-transform duration-700 ease-out"
             loading="lazy"
           >
           
-          <!-- Overlay -->
-          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
-            <div class="flex justify-between items-end">
-              <div class="text-white overflow-hidden">
-                <p class="font-medium truncate text-sm">{{ image.fileName }}</p>
-                <div class="flex items-center gap-1 mt-1">
-                  <div class="w-4 h-4 rounded-full bg-indigo-500 flex items-center justify-center text-[10px] font-bold text-white">
-                    {{ image.authorName ? image.authorName.charAt(0).toUpperCase() : 'U' }}
-                  </div>
-                  <p class="text-xs text-white/90 truncate">{{ image.authorName }}</p>
-                </div>
+          <!-- Info Overlay (Visible on Hover) -->
+          <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+            <div class="flex flex-col gap-2">
+              <div class="flex items-center gap-2">
+                <span v-if="image.category" class="px-2 py-0.5 rounded-md bg-white/20 backdrop-blur-md text-[10px] font-bold text-white border border-white/20">
+                  {{ image.category }}
+                </span>
               </div>
-              <div class="flex gap-2">
-                <button class="p-1.5 bg-white/20 hover:bg-white text-white hover:text-indigo-600 rounded-full backdrop-blur-sm transition-colors">
-                  <ArrowDownTrayIcon class="w-4 h-4" />
-                </button>
+              
+              <div class="flex justify-between items-end">
+                <div class="text-white overflow-hidden flex-1 mr-2">
+                  <p class="font-bold truncate text-sm drop-shadow-sm">{{ image.fileName }}</p>
+                  <p v-if="image.description" class="text-[11px] text-white/80 line-clamp-1 mt-0.5 leading-tight italic">"{{ image.description }}"</p>
+                  <div class="flex items-center gap-1.5 mt-2">
+                    <div class="w-5 h-5 rounded-full bg-indigo-500 border border-white/30 flex items-center justify-center text-[10px] font-black text-white">
+                      {{ image.authorName ? image.authorName.charAt(0).toUpperCase() : 'U' }}
+                    </div>
+                    <p class="text-xs text-white/90 font-medium tracking-wide truncate">{{ image.authorName }}</p>
+                  </div>
+                </div>
+                <div class="flex gap-2">
+                  <button @click.stop="downloadImage(image)" class="p-2 bg-white/20 hover:bg-white text-white hover:text-indigo-600 rounded-lg backdrop-blur-sm transition-all duration-200">
+                    <ArrowDownTrayIcon class="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -118,7 +202,7 @@
       </div>
 
       <!-- Load More Trigger -->
-      <div v-if="images.length > 0" class="mt-12 flex justify-center">
+      <div v-if="filteredImages.length > 0" class="mt-12 flex justify-center">
         <button class="px-6 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-sm font-medium rounded-full hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all shadow-sm hover:shadow-md flex items-center gap-2">
           <span>加载更多</span>
           <ChevronDownIcon class="w-4 h-4" />
@@ -146,7 +230,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import request from '@/utils/request';
 import FooterComponent from '@/views/userui/components/SjyFooterComponent.vue';
 import SjyImageDetailComponent from '@/views/userui/components/SjyImageDetailComponent.vue';
@@ -156,7 +240,8 @@ import {
   BellIcon,
   PhotoIcon,
   ArrowDownTrayIcon,
-  ChevronDownIcon
+  ChevronDownIcon,
+  TagIcon
 } from '@heroicons/vue/24/outline';
 
 // Interfaces
@@ -171,6 +256,7 @@ interface Image {
   size: number;
   isPublic: boolean;
   description: string | null;
+  category: string | null;
   uploadTime?: string;
   createTime?: string;
   authorName?: string;
@@ -191,16 +277,50 @@ const images = ref<Image[]>([]);
 const isLoading = ref(false);
 const searchQuery = ref('');
 const activeTag = ref('全部');
+const customCategory = ref('');
 
 // Dialog State
 const imageDialogVisible = ref(false);
 const selectedImage = ref<Image | null>(null);
 const selectedIndex = ref(0);
 
+// Computed for filtering
+const filteredImages = computed(() => {
+  let result = images.value;
+  
+  // 1. Tag/Category filtering
+  if (activeTag.value !== '全部') {
+    result = result.filter(img => img.category === activeTag.value);
+  }
+  
+  // 2. Search query filtering
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase();
+    result = result.filter(img => 
+      img.fileName.toLowerCase().includes(query) || 
+      (img.description && img.description.toLowerCase().includes(query)) ||
+      (img.authorName && img.authorName.toLowerCase().includes(query))
+    );
+  }
+  
+  return result;
+});
+
 // Cache
 const userCache = new Map<string, UserInfo>();
 
 // Methods
+const downloadImage = (image: Image) => {
+  const token = localStorage.getItem('token');
+  const downloadUrl = `${API_BASE_URL}/api/images/minio/${image.imageId}${token ? `?Authorization=${token}` : ''}`;
+  const link = document.createElement('a');
+  link.href = downloadUrl;
+  link.setAttribute('download', image.fileName);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
 const fetchUserInfo = async (userId: string): Promise<UserInfo | null> => {
   if (userCache.has(userId)) return userCache.get(userId)!;
 
@@ -270,7 +390,7 @@ const closeImageDialog = () => {
 
 const handleNavigate = (index: number) => {
   selectedIndex.value = index;
-  selectedImage.value = images.value[index];
+  selectedImage.value = filteredImages.value[index];
 };
 
 // Lifecycle
@@ -281,13 +401,25 @@ onMounted(() => {
 
 <style scoped>
 /* Hide scrollbar for chrome/safari/opera */
-.scrollbar-hide::-webkit-scrollbar {
+.no-scrollbar::-webkit-scrollbar {
   display: none;
 }
 
 /* Hide scrollbar for IE, Edge and Firefox */
-.scrollbar-hide {
+.no-scrollbar {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
+}
+
+/* Custom indicator style for el-carousel */
+:deep(.el-carousel__indicator--horizontal .el-carousel__button) {
+  width: 12px;
+  height: 4px;
+  border-radius: 2px;
+}
+
+:deep(.el-carousel__indicator.is-active .el-carousel__button) {
+  width: 24px;
+  background-color: #4f46e5; /* indigo-600 */
 }
 </style>

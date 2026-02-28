@@ -136,7 +136,7 @@
         <!-- Public Ratio -->
         <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-700">
           <div class="flex items-center gap-2 mb-4">
-            <div class="w-1.5 h-6 bg-emerald-500 rounded-full"></div>
+            <div class="w-1.5 h-6 bg-blue-500 rounded-full"></div>
             <h3 class="text-lg font-bold text-slate-800 dark:text-white">公开/私有比例</h3>
           </div>
           <div v-if="data.totalImages > 0" ref="publicChartRef" class="w-full h-64"></div>

@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import moe.imtop1.imagehosting.system.domain.UserInfo;
 import moe.imtop1.imagehosting.system.mapper.UserInfoMapper;
 import moe.imtop1.imagehosting.system.service.IUserInfoService;
+import moe.imtop1.imagehosting.framework.utils.EncryptUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,12 +14,17 @@ import java.util.List;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import moe.imtop1.imagehosting.system.domain.dto.AdminUserCreateDTO;
 import moe.imtop1.imagehosting.system.domain.dto.UserListQueryDTO;
 import moe.imtop1.imagehosting.system.domain.dto.UserUpdateDTO;
 import moe.imtop1.imagehosting.system.domain.vo.UserListVO;
 import moe.imtop1.imagehosting.system.domain.vo.UserPageVO;
 import org.springframework.beans.BeanUtils;
+
+import java.util.UUID;
 import java.util.stream.Collectors;
+
+import static moe.imtop1.imagehosting.framework.utils.EncryptUtil.hashWithArgon2id;
 
 /**
  * 用户信息服务实现
@@ -129,5 +135,17 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
         if (update.getStatus() != null) user.setStatus(update.getStatus());
         
         return this.updateById(user);
+    }
+
+    @Override
+    public boolean createUser(AdminUserCreateDTO create) {
+        UserInfo user = new UserInfo();
+        user.setUserName(create.getUserName());
+        user.setUserEmail(create.getUserEmail());
+        user.setUserRole(create.getUserRole());
+        // 注意：这里需要对密码进行加密，使用项目中已有的 EncryptUtil
+        user.setPassword(EncryptUtil.hashWithArgon2id(create.getPassword()));
+        user.setStatus(1); // 默认状态正常
+        return this.save(user);
     }
 }

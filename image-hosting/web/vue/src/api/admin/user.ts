@@ -12,6 +12,24 @@ export interface UserUpdate {
   status?: number;
 }
 
+export interface UserCreate {
+  userName: string;
+  password?: string;
+  userEmail: string;
+  userRole: string;
+}
+
+export interface RoleCreate {
+  rolesName: string;
+  description: string;
+}
+
+export interface RoleVO {
+  rolesId: number;
+  rolesName: string;
+  description: string;
+}
+
 export interface UserVO {
   userId: string;
   userName: string;
@@ -46,10 +64,35 @@ export function updateUser(data: UserUpdate) {
   return service.put('/api/admin/users', data);
 }
 
+export function createUser(data: UserCreate) {
+  return service.post('/api/admin/users', data);
+}
+
 export function refreshAllUserStats() {
   return service.post('/api/admin/users/stats/refresh');
 }
 
 export function getUserStats(userId: string) {
   return service.get(`/api/admin/users/${userId}/stats`);
+}
+
+/**
+ * 获取角色列表
+ */
+export function getRolesList() {
+  return service.get('/api/admin/roles/list');
+}
+
+/**
+ * 创建角色
+ */
+export function createRole(data: RoleCreate) {
+  return service.post('/api/admin/roles', data);
+}
+
+/**
+ * 删除角色
+ */
+export function deleteRole(rolesId: number) {
+  return service.delete(`/api/admin/roles/${rolesId}`);
 }

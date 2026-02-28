@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import moe.imtop1.imagehosting.system.domain.UserInfo;
 import java.util.List;
 
+import moe.imtop1.imagehosting.system.domain.dto.AdminUserCreateDTO;
 import moe.imtop1.imagehosting.system.domain.dto.UserListQueryDTO;
 import moe.imtop1.imagehosting.system.domain.dto.UserUpdateDTO;
 import moe.imtop1.imagehosting.system.domain.vo.UserPageVO;
@@ -33,4 +34,6 @@ public interface IUserInfoService extends IService<UserInfo> {
     UserPageVO getUserList(UserListQueryDTO query);
 
     boolean updateUserStatus(UserUpdateDTO update);
+
+    boolean createUser(AdminUserCreateDTO create);
 }
