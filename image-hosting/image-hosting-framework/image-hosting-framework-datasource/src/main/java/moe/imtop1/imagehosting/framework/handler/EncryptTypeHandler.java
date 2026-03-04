@@ -67,8 +67,8 @@ public class EncryptTypeHandler<T> extends BaseTypeHandler<T> {
             log.debug("Decrypted value: {} -> Original: {}", columnValue, decryptedValue);
             return (T) decryptedValue;
         } catch (Exception e) {
-            log.error("Decrypt failed for identifier: {} with value: {}", columnIdentifier, columnValue, e);
-            throw new SQLException("Decrypt failed", e);
+            log.warn("Decrypt failed for identifier: {} with value: {}. Returning original value.", columnIdentifier, columnValue);
+            return (T) columnValue;
         }
     }
 }

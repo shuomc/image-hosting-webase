@@ -1,6 +1,7 @@
 package moe.imtop1.imagehosting.images.domain.vo;
 
 import lombok.*;
+import java.time.LocalDateTime;
 
 /**
  * @author shuomc
@@ -14,11 +15,13 @@ import lombok.*;
 @NoArgsConstructor
 public class ImageUrlData {
     private String imageId;
-    private String minioUrl;
+    private String thumbnailMinioUrl;
+    private String watermarkMinioUrl;
     private String fileName;
     private String userId;
     private String contentType;
-    private Integer size;
+    private Long size;
     private Boolean isPublic;
     private String description;
+    private LocalDateTime createTime;
 }

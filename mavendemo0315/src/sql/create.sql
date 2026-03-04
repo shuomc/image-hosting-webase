@@ -1,127 +1,138 @@
--- 传统用户表 (Modified to include blockchain address and role linkage)
--- Adapting from your user_info table
-DROP TABLE IF EXISTS "public"."app_user";
-CREATE TABLE "public"."app_user" (
-                                     "user_id" VARCHAR(100) NOT NULL, -- Traditional application user ID (Primary Key)
-                                     "user_name" VARCHAR(50) NOT NULL UNIQUE, -- Username
-                                     "password_hash" VARCHAR(255) NOT NULL, -- Hashed password
-                                     "user_email" VARCHAR(100) NOT NULL UNIQUE, -- User email
-                                     "blockchain_address" VARCHAR(255) UNIQUE, -- !!! 新增字段: 用户对应的区块链地址 !!!
-                                     "encrypted_private_key" VARCHAR(255) UNIQUE,
-    -- Used to link user to on-chain ownership
-                                     "role_id" INT NOT NULL,             -- !!! 新增字段: 关联到权限表 !!!
-                                     "create_time" TIMESTAMP,
-                                     "update_time" TIMESTAMP,
-                                     "is_delete" BOOLEAN NOT NULL DEFAULT FALSE, -- Soft delete flag
-                                     PRIMARY KEY ("user_id")
-);
-COMMENT ON TABLE "public"."app_user" IS '应用用户表，关联区块链地址';
-COMMENT ON COLUMN "public"."app_user"."blockchain_address" IS '用户在区块链上的地址，用于链上所有权关联';
-COMMENT ON COLUMN "public"."app_user"."role_id" IS '关联到用户角色权限表';
+/*
+ Target Database: blockchain_db
+ Description: 专为 FISCO BCOS/Web3 优化的区块链业务数据库
+*/
 
--- 权限角色表 (新增)
+-- ----------------------------
+-- 1. 角色权限表 (App Role)
+-- ----------------------------
 DROP TABLE IF EXISTS "public"."app_role";
 CREATE TABLE "public"."app_role" (
-                                     "role_id" SERIAL PRIMARY KEY, -- Role ID (Primary Key)
-                                     "role_name" VARCHAR(50) NOT NULL UNIQUE, -- Role name (e.g., 'admin', 'user')
-                                     "description" VARCHAR(255) -- Role description
+                                     "role_id" SERIAL PRIMARY KEY,
+                                     "role_name" VARCHAR(50) NOT NULL UNIQUE,
+                                     "description" VARCHAR(255)
 );
 COMMENT ON TABLE "public"."app_role" IS '应用角色权限表';
 
-
 INSERT INTO app_role (role_name, description) VALUES
-    ('admin', 'Administrator role with full access and privileges'),
-    ('user', 'Default role for regular users');
+                                                  ('admin', '系统管理员'),
+                                                  ('user', '普通用户');
 
 -- ----------------------------
--- Table structure for nft_info
+-- 2. 用户表 (App User) - 增加 Web3 登录支持
+-- ----------------------------
+DROP TABLE IF EXISTS "public"."app_user";
+CREATE TABLE "public"."app_user" (
+                                     "user_id" VARCHAR(100) NOT NULL,
+                                     "user_name" VARCHAR(50) NOT NULL UNIQUE,
+                                     "password_hash" VARCHAR(255) NOT NULL,
+                                     "user_email" VARCHAR(100) NOT NULL UNIQUE,
+
+    -- 区块链身份核心字段
+                                     "blockchain_address" VARCHAR(255) UNIQUE, -- 用户的钱包地址 (0x...)
+                                     "nonce" VARCHAR(100),                     -- 随机数，用于由 WeBASE/MetaMask 签名的登录验证
+                                     "encrypted_private_key" VARCHAR(1000),    -- 托管钱包模式下，加密存储的用户私钥
+
+                                     "role_id" INT NOT NULL,
+                                     "avatar_url" VARCHAR(255),                -- !!! 新增: 头像
+                                     "bio" VARCHAR(500),                       -- !!! 新增: 简介
+
+                                     "create_time" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                     "update_time" TIMESTAMP,
+                                     "is_delete" BOOLEAN NOT NULL DEFAULT FALSE,
+                                     PRIMARY KEY ("user_id")
+);
+COMMENT ON TABLE "public"."app_user" IS '应用用户表';
+COMMENT ON COLUMN "public"."app_user"."nonce" IS 'Web3登录签名随机数，防止重放攻击';
+COMMENT ON COLUMN "public"."app_user"."blockchain_address" IS 'FISCO BCOS 外部账户地址';
+
+-- ----------------------------
+-- 3. NFT 合集/系列表 (NFT Collection)
+-- ----------------------------
+-- 用于管理不同的智能合约，例如 "创世系列"、"活动系列"
+DROP TABLE IF EXISTS "public"."nft_collection";
+CREATE TABLE "public"."nft_collection" (
+                                           "collection_id" SERIAL PRIMARY KEY,
+                                           "name" VARCHAR(100) NOT NULL,          -- 系列名称
+                                           "symbol" VARCHAR(20),                  -- 代币符号
+                                           "contract_address" VARCHAR(255) NOT NULL UNIQUE, -- 部署在 FISCO 上的合约地址
+                                           "cover_image" VARCHAR(255),            -- 系列封面图
+                                           "description" TEXT,
+                                           "creator_user_id" VARCHAR(100),        -- 创建者ID
+                                           "create_time" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+COMMENT ON TABLE "public"."nft_collection" IS 'NFT合约系列表';
+
+-- ----------------------------
+-- 4. NFT 信息表 (NFT Info)
 -- ----------------------------
 DROP TABLE IF EXISTS "public"."nft_info";
 CREATE TABLE "public"."nft_info" (
-    "nft_id" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
-    "image_id" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
-    "minio_url" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
-    "blockchain_address" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
-    "token_id" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
-    "contract_address" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
-    "price" decimal(20,8),
-    "description" TEXT,
-    "is_for_sale" bool NOT NULL DEFAULT true,
-    "create_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
-    "update_time" timestamp(6),
-    "is_delete" bool NOT NULL DEFAULT false,
-    CONSTRAINT "nft_info_pkey" PRIMARY KEY ("nft_id"),
-    CONSTRAINT "nft_info_owner_id_fkey" FOREIGN KEY ("blockchain_address") REFERENCES "public"."app_user" ("blockchain_address")
-);
+                                     "nft_id" varchar(255) NOT NULL,
 
-COMMENT ON COLUMN "public"."nft_info"."nft_id" IS 'NFT ID';
-COMMENT ON COLUMN "public"."nft_info"."image_id" IS '关联的图片ID';
-COMMENT ON COLUMN "public"."nft_info"."minio_url" IS '图片的MinIO URL';
-COMMENT ON COLUMN "public"."nft_info"."blockchain_address" IS '所有者Address';
-COMMENT ON COLUMN "public"."nft_info"."token_id" IS '区块链上的Token ID';
-COMMENT ON COLUMN "public"."nft_info"."contract_address" IS '智能合约地址';
-COMMENT ON COLUMN "public"."nft_info"."price" IS '售价';
-COMMENT ON COLUMN "public"."nft_info"."description" IS '描述';
-COMMENT ON COLUMN "public"."nft_info"."is_for_sale" IS '是否在售';
-COMMENT ON COLUMN "public"."nft_info"."create_time" IS '创建时间';
-COMMENT ON COLUMN "public"."nft_info"."update_time" IS '更新时间';
-COMMENT ON COLUMN "public"."nft_info"."is_delete" IS '是否删除';
+    -- 关联信息
+                                     "collection_id" INT,                   -- 归属哪个系列
+                                     "owner_address" varchar(255) NOT NULL, -- 当前持有者地址 (blockchain_address)
+                                     "creator_address" varchar(255),        -- 初始铸造者地址
+
+    -- 链上核心数据
+                                     "token_id" varchar(255) NOT NULL,      -- 链上 Token ID
+                                     "token_uri" varchar(500),              -- 链上 Metadata URI (IPFS/MinIO URL)
+                                     "contract_address" varchar(255) NOT NULL, -- 冗余字段，方便查询
+
+    -- 业务数据
+
+                                     "image_id" varchar(100) NOT NULL,
+                                     "image_url" varchar(255) NOT NULL,     -- 图片实际访问地址 (MinIO)
+                                     "file_hash" varchar(64) NOT NULL,      -- 文件SHA-256哈希
+                                     "price" decimal(20,8),
+                                     "name" varchar(100),                   -- NFT名称
+                                     "description" TEXT,
+                                     "is_for_sale" bool NOT NULL DEFAULT true,
+
+                                     "create_time" timestamp DEFAULT CURRENT_TIMESTAMP,
+                                     "update_time" timestamp,
+                                     "is_delete" bool NOT NULL DEFAULT false,
+
+                                     CONSTRAINT "nft_info_pkey" PRIMARY KEY ("nft_id"),
+                                     CONSTRAINT "fk_nft_collection" FOREIGN KEY ("collection_id") REFERENCES "public"."nft_collection" ("collection_id")
+);
+COMMENT ON TABLE "public"."nft_info" IS 'NFT资产详情表';
+CREATE INDEX idx_nft_image_id ON nft_info(image_id);
+CREATE INDEX uidx_nft_file_hash ON nft_info(file_hash);
 
 -- ----------------------------
--- Table structure for nft_transaction
+-- 5. NFT 交易记录表 (NFT Transaction)
 -- ----------------------------
 DROP TABLE IF EXISTS "public"."nft_transaction";
 CREATE TABLE "public"."nft_transaction" (
-    "transaction_id" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-    "nft_id" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-    "from_user_id" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-    "to_user_id" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-    "price" decimal(20,8) NOT NULL,
-    "transaction_hash" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-    "create_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
-    "update_time" timestamp(6),
-    "is_delete" bool NOT NULL DEFAULT false,
-    CONSTRAINT "nft_transaction_pkey" PRIMARY KEY ("transaction_id"),
-    CONSTRAINT "nft_transaction_nft_id_fkey" FOREIGN KEY ("nft_id") REFERENCES "public"."nft_info" ("nft_id"),
-    CONSTRAINT "nft_transaction_from_user_id_fkey" FOREIGN KEY ("from_user_id") REFERENCES "public"."app_user" ("user_id"),
-    CONSTRAINT "nft_transaction_to_user_id_fkey" FOREIGN KEY ("to_user_id") REFERENCES "public"."app_user" ("user_id")
-);
+                                            "transaction_id" varchar(100) NOT NULL,
+                                            "transaction_hash" varchar(100) NOT NULL, -- 链上交易哈希
 
-COMMENT ON COLUMN "public"."nft_transaction"."transaction_id" IS '交易ID';
-COMMENT ON COLUMN "public"."nft_transaction"."nft_id" IS 'NFT ID';
-COMMENT ON COLUMN "public"."nft_transaction"."from_user_id" IS '卖方ID';
-COMMENT ON COLUMN "public"."nft_transaction"."to_user_id" IS '买方ID';
-COMMENT ON COLUMN "public"."nft_transaction"."price" IS '交易价格';
-COMMENT ON COLUMN "public"."nft_transaction"."transaction_hash" IS '区块链交易哈希';
-COMMENT ON COLUMN "public"."nft_transaction"."create_time" IS '创建时间';
-COMMENT ON COLUMN "public"."nft_transaction"."update_time" IS '更新时间';
-COMMENT ON COLUMN "public"."nft_transaction"."is_delete" IS '是否删除';
+                                            "nft_id" varchar(100) NOT NULL,
+                                            "from_address" varchar(255) NOT NULL,     -- 发送方钱包地址
+                                            "to_address" varchar(255) NOT NULL,       -- 接收方钱包地址
+
+                                            "price" decimal(20,8),
+
+    -- 链上状态监控
+                                            "status" INT2 DEFAULT 0 NOT NULL,         -- 0-打包中, 1-成功, 2-失败
+                                            "type" VARCHAR(20),                       -- 交易类型: MINT, BUY, TRANSFER
+                                            "block_number" INT8,                      -- 区块高度
+                                            "group_id" INT4 DEFAULT 1,                -- FISCO BCOS 群组ID (默认1)
+
+                                            "create_time" timestamp DEFAULT CURRENT_TIMESTAMP,
+                                            "update_time" timestamp,
+                                            CONSTRAINT "nft_transaction_pkey" PRIMARY KEY ("transaction_id")
+);
+COMMENT ON COLUMN "public"."nft_transaction"."status" IS '交易状态: 0-Pending, 1-Success, 2-Fail';
+COMMENT ON COLUMN "public"."nft_transaction"."group_id" IS 'FISCO BCOS Group ID';
 
 -- ----------------------------
--- Indexes for nft_info
+-- 索引优化
 -- ----------------------------
-CREATE INDEX "nft_info_owner_id_index" ON "public"."nft_info" USING btree (
-    "blockchain_address" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
-);
-CREATE INDEX "nft_info_is_for_sale_index" ON "public"."nft_info" USING btree (
-    "is_for_sale" ASC NULLS LAST
-);
-CREATE INDEX "nft_info_is_delete_index" ON "public"."nft_info" USING btree (
-    "is_delete" ASC NULLS LAST
-);
-
--- ----------------------------
--- Indexes for nft_transaction
--- ----------------------------
-CREATE INDEX "nft_transaction_nft_id_index" ON "public"."nft_transaction" USING btree (
-    "nft_id" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
-);
-CREATE INDEX "nft_transaction_from_user_id_index" ON "public"."nft_transaction" USING btree (
-    "from_user_id" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
-);
-CREATE INDEX "nft_transaction_to_user_id_index" ON "public"."nft_transaction" USING btree (
-    "to_user_id" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
-);
-CREATE INDEX "nft_transaction_is_delete_index" ON "public"."nft_transaction" USING btree (
-    "is_delete" ASC NULLS LAST
-);
+CREATE INDEX "idx_nft_owner" ON "public"."nft_info" ("owner_address");
+CREATE INDEX "idx_nft_contract_token" ON "public"."nft_info" ("contract_address", "token_id");
+CREATE INDEX "idx_tx_hash" ON "public"."nft_transaction" ("transaction_hash");
+CREATE INDEX "idx_tx_status" ON "public"."nft_transaction" ("status");
+CREATE INDEX "idx_user_address" ON "public"."app_user" ("blockchain_address");

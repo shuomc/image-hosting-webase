@@ -6,13 +6,12 @@ import './assets/main.css'
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-// 导入 pinia-plugin-persistedstate
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate';
 
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
-// 不需要在这里useUserStore来手动恢复状态
+
 
 import App from './App.vue'
 import router from './router'

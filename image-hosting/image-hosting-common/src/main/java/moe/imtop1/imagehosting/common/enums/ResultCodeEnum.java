@@ -26,6 +26,8 @@ public enum ResultCodeEnum {
     IMAGE_METADATA_INCOMPLETE(1003, "图片元数据不完整"),
     IMAGE_STORAGE_ERROR(1004, "图片存储服务出错"),
     IMAGE_DELETE_FAILED(1005, "图片删除失败"),
+    IMAGE_SHA256_ERROR(1006,"图片哈希值获取失败"),
+    FILE_ALREADY_EXISTS(1007,"文件已存在"),
 
     // 用户相关 (2000-2999)
     USER_NOT_FOUND(2001, "用户不存在"),

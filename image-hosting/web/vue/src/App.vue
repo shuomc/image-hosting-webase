@@ -1,6 +1,3 @@
-/*
- * @Author: 思俊宇
- */
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
 </script>

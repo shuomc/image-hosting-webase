@@ -1,6 +1,7 @@
 package moe.imtop1.imagehosting.images.controller;
 
 import moe.imtop1.imagehosting.images.domain.dto.BatchUploadResult;
+import moe.imtop1.imagehosting.images.domain.vo.ImagePresignedUrlData;
 import moe.imtop1.imagehosting.images.domain.vo.ImageUrlData;
 import moe.imtop1.imagehosting.images.service.IMinioService;
 import moe.imtop1.imagehosting.images.service.ImageCacheService;
@@ -16,6 +17,7 @@ import moe.imtop1.imagehosting.common.dto.AjaxResult;
 import moe.imtop1.imagehosting.images.domain.ImageData;
 import moe.imtop1.imagehosting.images.domain.dto.ImageStreamData;
 import moe.imtop1.imagehosting.images.service.ImageService;
+import moe.imtop1.imagehosting.images.domain.vo.ImagePresignedUrlData;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -118,6 +120,27 @@ public class ImageController {
             log.error("处理批量图片上传请求时发生未预期错误: {}", e.getMessage(), e);
             // 返回通用的内部服务器错误信息
             return AjaxResult.error("批量上传过程中发生未预期错误: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 手动触发生成 NFT 水印图（通常由内部调用，但也暴露给前端以便调试）
+     */
+    @PostMapping("/generateNftWatermark")
+    public AjaxResult generateNftWatermark(@RequestBody Map<String, String> params) {
+        String imageId = params.get("imageId");
+        String nftId = params.get("nftId");
+        String walletAddress = params.get("walletAddress");
+
+        if (imageId == null || nftId == null) {
+            return AjaxResult.error("参数缺失");
+        }
+
+        try {
+            String url = imageService.generateNftWatermark(imageId, nftId, walletAddress);
+            return AjaxResult.success("生成成功", url);
+        } catch (IOException e) {
+            return AjaxResult.error("生成水印失败: " + e.getMessage());
         }
     }
 
@@ -253,6 +276,34 @@ public class ImageController {
     }
 
     /**
+     * 根据 ID 获取水印图的实际文件内容（流）用于下载。
+     *
+     * @param imageId 图片的唯一 ID (@PathVariable)
+     * @return ResponseEntity 包含水印图的 InputStreamResource，或标准的 HTTP 错误状态
+     */
+    @GetMapping("/watermark/{imageId}")
+    public ResponseEntity<InputStreamResource> getWatermarkImageById(@PathVariable String imageId) {
+        try {
+            // 1. 调用 Service 层获取包含流和元数据的 DTO
+            ImageStreamData streamData = imageService.getWatermarkImageById(imageId);
+
+            // 2. 检查 Service 层是否成功返回数据
+            if (streamData == null || streamData.getInputStream() == null) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "找不到指定的水印图文件。");
+            }
+
+            // 3. 使用 MinioService 处理流和生成 ResponseEntity
+            return minioService.createResponseEntity(streamData);
+
+        } catch (ResponseStatusException rse) {
+            throw rse;
+        } catch (Exception e) {
+            log.error("获取水印图内容时发生错误，imageId={}: {}", imageId, e.getMessage(), e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "无法获取水印图内容。", e);
+        }
+    }
+
+    /**
      * 获取所有公开图片的元数据列表。
      *
      * @return AjaxResult 包含公开图片元数据列表
@@ -317,6 +368,50 @@ public class ImageController {
         }
     }
 
+    @GetMapping("/minio/getPresignedUrl/{imageId}")
+    public AjaxResult getPresignedUrl(@PathVariable String imageId) {
+        // ----------------------------------------------------
+        // 1. 检查 Redis 缓存
+        // ----------------------------------------------------
+        try {
+            ImagePresignedUrlData cachedData = imageCacheService.getPresignUrlFromRedis(imageId);
+            if (cachedData != null) {
+                log.info("Hit Redis cache for imageId: {}", imageId);
+                return AjaxResult.success("获取预签名 URL 成功 (来自缓存)", cachedData);
+            }
+        } catch (Exception e) {
+            // 缓存读取失败是非致命错误，记录日志后继续执行主业务逻辑（从 MinIO 获取）
+            log.error("Failed to read presigned URL from Redis for imageId: {}", imageId, e);
+        }
+
+        ImagePresignedUrlData imagePresignedUrlData;
+
+        try {
+            // 2. 缓存未命中，调用 Service 层方法获取预签名 URL (e.g., 从 MinIO)
+            imagePresignedUrlData = imageService.getPresignedUrl(imageId);
+
+            // 3. 成功获取后，存入 Redis
+            if (imagePresignedUrlData != null) {
+                try {
+                    imageCacheService.setPresignUrlFromRedis(imagePresignedUrlData);
+                } catch (Exception e) {
+                    // 非致命错误，只记录日志，不影响主业务的成功返回
+                    log.error("Failed to set presigned URL to Redis for imageId: {}", imageId, e);
+                }
+            }
+
+            // 4. 返回主业务成功结果
+            return AjaxResult.success("获取预签名 URL 成功", imagePresignedUrlData);
+
+        } catch (Exception e) {
+            // 5. 捕获 Service 层抛出的主业务异常 (e.g., MinIO 异常, Image Not Found)
+            log.error("获取预签名url失败: {}. Error: {}", imageId, e.getMessage());
+
+            // 6. 返回失败信息
+            return AjaxResult.error(e.getMessage());
+        }
+    }
+
 //    @GetMapping("/content/user/{userId}")
 //    public AjaxResult getImageContentByUserId(@PathVariable String userId) {
 //
@@ -327,5 +422,23 @@ public class ImageController {
     public AjaxResult storeInRedis(@PathVariable String imageKey) {
         imageCacheService.getMinioObjectDataFromRedis(imageKey);
         return AjaxResult.success("成功");
+    }
+
+    /**
+     * 增加图片浏览量
+     */
+    @PostMapping("/{imageId}/view")
+    public AjaxResult plusViewCount(@PathVariable String imageId) {
+        imageService.plusViewCount(imageId);
+        return AjaxResult.success();
+    }
+
+    /**
+     * 图片点赞
+     */
+    @PostMapping("/{imageId}/like")
+    public AjaxResult plusLikeCount(@PathVariable String imageId) {
+        imageService.plusLikeCount(imageId);
+        return AjaxResult.success();
     }
 }

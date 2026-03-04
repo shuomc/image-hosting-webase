@@ -1,28 +1,79 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
-import HomeView from '../views/HomeView.vue'
-import RegisterView from '../views/register/RegisterView.vue';
-import LoginView from '../views/auth/LoginView.vue';
-import FindPasswordView from '../views/auth/FindPasswordView.vue';
-import WorkplaceView from '@/views/workplace/WorkplaceView.vue';
-import RecommendedView from '@/views/workplace/RecommendedView.vue';
-import AboutView from '../views/workplace/AboutView.vue';
-import SettingsView from '@/views/workplace/SettingsView.vue';
-import AccountSettingsView from '@/views/workplace/AccountSettingsView.vue';
-import UploadFileView from '@/views/workplace/UploadFileView.vue';
-import UploadImageView from '@/views/workplace/UploadImageView.vue';
-import MyImagesView from '@/views/workplace/MyImagesView.vue';
-import MyFilesView from '@/views/workplace/MyFilesView.vue';
-import ImagesDetailView from '@/views/workplace/ImagesDetailView.vue';
-import UserProfile from '@/views/userui/UserProfile.vue';
+import HomeView from '../views/SjyHomeView.vue'
+import RegisterView from '../views/register/SjyRegisterView.vue';
+import LoginView from '../views/auth/SjyLoginView.vue';
+import FindPasswordView from '../views/auth/SjyFindPasswordView.vue';
+import WorkplaceView from '@/views/workplace/SjyWorkplaceView.vue';
+import RecommendedView from '@/views/workplace/SjyRecommendedView.vue';
+import AboutView from '../views/workplace/SjyAboutView.vue';
+import SettingsView from '@/views/workplace/SjySettingsView.vue';
+import AccountSettingsView from '@/views/workplace/SjyAccountSettingsView.vue';
+import UploadFileView from '@/views/workplace/SjyUploadFileView.vue';
+import UploadImageView from '@/views/workplace/SjyUploadImageView.vue';
+import MyImagesView from '@/views/workplace/SjyMyImagesView.vue';
+import MyFilesView from '@/views/workplace/SjyMyFilesView.vue';
+import FavoritesView from '@/views/workplace/Favorite.vue';
+import ImagesDetailView from '@/views/workplace/SjyImagesDetailView.vue';
+import UserProfile from '@/views/userui/SjyUserProfile.vue';
+import NotFound from '@/views/SjyNotFoundView.vue'
+import Profile from '@/views/workplace/Profile.vue';
+import AdminLogin from '@/views/bgadmin/adminLogin.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
+      path: '/admin/login',
+      name: 'AdminLogin',
+      component: AdminLogin,
+      meta: { requiresAuth: false }
+    },
+    {
+      path: '/admin',
+      component: () => import('@/views/bgadmin/AdminLayout.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+      children: [
+        {
+          path: 'dashboard',
+          name: 'AdminDashboard',
+          component: () => import('@/views/bgadmin/AdminDashboard.vue')
+        },
+        {
+          path: 'users',
+          name: 'AdminUsers',
+          component: () => import('@/views/bgadmin/AdminUserList.vue')
+        },
+        {
+          path: 'images',
+          name: 'AdminImages',
+          component: () => import('@/views/bgadmin/AdminImageList.vue')
+        },
+        {
+          path: 'notices',
+          name: 'AdminNotices',
+          component: () => import('@/views/bgadmin/AdminNoties.vue')
+        },
+        {
+          path: 'nft-transactions',
+          name: 'AdminNFTTransactions',
+          component: () => import('@/views/nft/NFTTransactions.vue')
+        },
+        {
+          path: 'settings',
+          name: 'AdminSettings',
+          component: () => import('@/views/bgadmin/AdminSettings.vue')
+        },
+        {
+          path: '',
+          redirect: '/admin/dashboard'
+        }
+      ]
+    },
+    {
       path: '/',
-      redirect: '/workplace'
+      redirect: '/userhome'
     },
     {
       path: '/auth',
@@ -53,6 +104,18 @@ const router = createRouter({
       component: WorkplaceView,
       meta: { requiresAuth: true },
       children: [
+        {
+          path: 'dashboard',
+          name: 'UserDashboard',
+          component: () => import('@/views/workplace/UserDashboard.vue'),
+          meta: { requiresAuth: true }
+        },
+        {
+          path: 'notices',
+          name: 'notices',
+          component: () => import('@/views/userui/UserNotices.vue'),
+          meta: { requiresAuth: true }
+        },
         {
           path: 'recommended',
           name: 'Recommended',
@@ -101,15 +164,15 @@ const router = createRouter({
           component: AboutView,
         },
         {
-          path: 'my-files',
-          name: 'MyFiles',
-          component: MyFilesView,
+          path: 'favorites',
+          name: 'Favorites',
+          component: FavoritesView,
           meta: { requiresAuth: true }
         },
         {
-          path: '/nft-list-view',
-          name: 'NFTListView',
-          component: () => import('@/views/nft/NFTListView.vue'),
+          path: '/nft-market',
+          name: 'NFTMarket',
+          component: () => import('@/views/nft/NFTMarket.vue'),
           meta: { title: 'NFTMarket' }
         },
         {
@@ -136,12 +199,18 @@ const router = createRouter({
           component: () => import('@/views/nft/NFTBalance.vue'),
           meta: { title: 'NFTBalance' }
         },
+        {
+          path: 'profile',
+          name: 'Profile',
+          component: Profile,
+          meta: { requiresAuth: true }
+        },
       ],
     },
     {
       path: '/userhome',
       name: 'Userhome',
-      component: () => import('@/views/userui/UserHome.vue'),
+      component: () => import('@/views/userui/SjyUserHome.vue'),
       meta: { title: 'Home' }
     },
     {
@@ -153,50 +222,109 @@ const router = createRouter({
     {
       path: '/licence',
       name: 'UserLicence',
-      component: () => import('@/views/userui/UserLicence.vue'),
+      component: () => import('@/views/userui/SjyUserLicence.vue'),
       meta: { title: 'User' }
-    }
-    // {
-    //   path: '/nft',
-    //   redirect: '/nft/market',
-    //   name: 'NFT',
-    //   meta: { title: 'NFT市场', icon: 'nft' },
-    //   children: [
-    //     {
-    //       path: 'market',
-    //       name: 'NFTMarket',
-    //       component: () => import('@/views/nft/market/index.vue'),
-    //       meta: { title: 'NFT市场' }
-    //     },
-    //     {
-    //       path: 'my-nfts',
-    //       name: 'MyNFTs',
-    //       component: () => import('@/views/nft/my-nfts/index.vue'),
-    //       meta: { title: '我的NFT' }
-    //     },
-    //     {
-    //       path: 'mint',
-    //       name: 'MintNFT',
-    //       component: () => import('@/views/nft/mint/index.vue'),
-    //       meta: { title: '铸造NFT' }
-    //     }
-    //   ]
-    // },
-    ,
+    },
     {
-      path: '/:pathMatch(.*)*',
-      name: 'not-found',
-      component: {
-        template: `
-          <div class="flex flex-col items-center justify-center min-h-screen">
-            <h1 class="text-6xl font-bold text-indigo-500 mb-4">404</h1>
-            <p class="text-xl text-gray-600 mb-8">页面不存在</p>
-            <router-link to="/" class="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors">
-              返回首页
-            </router-link>
-          </div>
-        `
-      }
+      path: '/design/userhome',
+      name: 'DesignUserHome',
+      component: () => import('@/views/design/DesignUserHome.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/upload-image',
+      name: 'DesignUploadImage',
+      component: () => import('@/views/design/DesignUploadImage.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/workplace',
+      name: 'DesignWorkplace',
+      component: () => import('@/views/design/DesignWorkplace.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/my-images',
+      name: 'DesignMyImages',
+      component: () => import('@/views/design/DesignMyImages.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/image-detail',
+      name: 'DesignImageDetail',
+      component: () => import('@/views/design/DesignImageDetail.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/my-nft',
+      name: 'DesignMyNFT',
+      component: () => import('@/views/design/DesignMyNFTView.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/nft-detail',
+      name: 'DesignMyNFTDetail',
+      component: () => import('@/views/design/DesignMyNFTDetail.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/nft-market',
+      name: 'DesignNFTMarket',
+      component: () => import('@/views/design/DesignNFTMarket.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/buy-nft-detail',
+      name: 'DesignBuyNFTDetail',
+      component: () => import('@/views/design/DesignBuyNFTDetail.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/nft-trans',
+      name: 'DesignNFTTrans',
+      component: () => import('@/views/design/DesignNFTTrans.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/my-wallet',
+      name: 'DesignMyWallet',
+      component: () => import('@/views/design/DesignMyWallet.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/profile',
+      name: 'DesignProfile',
+      component: () => import('@/views/design/DesignProfile.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/admin-dashboard',
+      name: 'DesignAdminDashboard',
+      component: () => import('@/views/design/DesignAdminDashboard.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/admin-user',
+      name: 'DesignAdminUser',
+      component: () => import('@/views/design/DesignAdminUser.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/admin-image',
+      name: 'DesignAdminImage',
+      component: () => import('@/views/design/DesignAdminImage.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/design/admin-setting',
+      name: 'DesingAdminSetting',
+      component: () => import('@/views/design/DesingAdminSetting.vue'),
+      meta: { title: 'Design' }
+    },
+    {
+      path: '/:pathMatch(.*)*', // 匹配所有未匹配到的路径
+      name: 'NotFound',
+      component: NotFound
     }
   ]
 })
@@ -235,12 +363,23 @@ router.beforeEach(async (to, from, next) => {
       }
     }
 
+    // Check for admin requirement
+    if (to.meta.requiresAdmin && userStore.userInfo?.userRole !== 'admin') {
+      ElMessage.error('无权访问管理员区域')
+      next({ path: '/workplace' })
+      return
+    }
+
     // 已登录并且加载了用户信息，继续访问
     next()
   }
   // 如果是登录页，且已登录，则重定向到工作区
   else if ((to.name === 'login' || to.name === 'register') && userStore.isLoggedIn) {
     next({ path: '/workplace' })
+  }
+  // 如果是管理员登录页，且已登录为管理员，重定向到管理员工作区
+  else if (to.name === 'AdminLogin' && userStore.isLoggedIn && userStore.userInfo?.userRole === 'admin') {
+    next({ path: '/admin/dashboard' })
   }
   // 其他情况，允许访问
   else {

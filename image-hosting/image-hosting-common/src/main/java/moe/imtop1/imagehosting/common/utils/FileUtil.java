@@ -18,6 +18,30 @@ public class FileUtil {
     private static final String CHAR_LOWER = "abcdefghijklmnopqrstuvwxyz";
     private static final String CHAR_UPPER = CHAR_LOWER.toUpperCase();
     private static final String NUMBER = "0123456789";
+
+    public static String formatFileSize(long size) {
+        long limit = 10 * 1024;
+        if (size < limit) {
+            return size + " B";
+        } else {
+            size = size / 1024;
+        }
+        if (size < limit) {
+            return size + " KB";
+        } else {
+            size = size / 1024;
+        }
+        if (size < limit) {
+            return size + " MB";
+        } else {
+            size = size / 1024;
+        }
+        if (size < limit) {
+            return size + " GB";
+        } else {
+            return (size / 1024) + " TB";
+        }
+    }
     private static final String ALLOWED_CHARACTERS = CHAR_LOWER + CHAR_UPPER + NUMBER;
 
     private static final SecureRandom RANDOM = new SecureRandom();
@@ -37,6 +61,25 @@ public class FileUtil {
     public static String getFileExtension(String filename) {
         if (filename != null && filename.contains(".")) {
             return filename.substring(filename.lastIndexOf(".") + 1);
+        }
+        return "";
+    }
+
+    /**
+     * 从给定的文件名中提取文件扩展名（包含开头的点）。
+     *
+     * @param filename 要提取扩展名的文件名。
+     * @return 文件的扩展名（包含点），如果文件名为 null 或者不包含扩展名，则返回空字符串。
+     */
+    public static String getExtensionWithDotFromFilename(String filename) {
+        if (filename == null || filename.isEmpty()) {
+            return "";
+        }
+        int lastDotIndex = filename.lastIndexOf('.');
+
+        // 确保有点，且点不在开头或末尾（避免返回 "." 或 ".gitignore" 这种Key）
+        if (lastDotIndex > 0 && lastDotIndex < filename.length() - 1) {
+            return filename.substring(lastDotIndex); // 包含点
         }
         return "";
     }

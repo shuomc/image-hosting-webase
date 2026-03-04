@@ -14,14 +14,24 @@ public class LoginUser implements Serializable {
     private String userId;
     private String userName;
     private String userEmail;
+    private String userRole;
 
     public LoginUser() {
     }
 
-    public LoginUser(String userId, String userName, String userEmail) {
+    public LoginUser(String userId, String userName, String userEmail, String userRole) {
         this.userId = userId;
         this.userName = userName;
         this.userEmail = userEmail;
+        this.userRole = userRole;
+    }
+
+    public String getUserRole() {
+        return userRole;
+    }
+
+    public void setUserRole(String userRole) {
+        this.userRole = userRole;
     }
 
     public String getUserId() {

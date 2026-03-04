@@ -7,9 +7,9 @@ spring:
   application:
     name: image-chain
   datasource:
-    url: jdbc:postgresql://101.132.141.214:15432/postgres
-    username: shuomc
-    password: shuomc
+    url: jdbc:postgresql://localhost:15432/maven_demo
+    username: postgres
+    password: postgres
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10

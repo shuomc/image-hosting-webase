@@ -7,22 +7,16 @@ import lombok.*;
  * @Date 2025/5/14
  * @Description
  */
-
+@Data
+@NoArgsConstructor // 关键！Jackson 反序列化需要无参构造函数
+@AllArgsConstructor
 public class UserRegistrationRequest {
     private String userId;
     private String userName;
     private String userEmail;
     private String passwordHash;
+    private String avatarUrl;
 
-    public UserRegistrationRequest(String userId, String userName, String userEmail, String passwordHash) {
-        this.userId = userId;
-        this.userName = userName;
-        this.userEmail = userEmail;
-        this.passwordHash = passwordHash;
-    }
-
-    public UserRegistrationRequest() {
-    }
 
     public String getUserId() {
         return userId;
@@ -54,5 +48,13 @@ public class UserRegistrationRequest {
 
     public void setPasswordHash(String passwordHash) {
         this.passwordHash = passwordHash;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
     }
 }

@@ -4,12 +4,14 @@ import axios from 'axios'; // 导入 axios 用于判断 401 错误
 import { getCurrentUser } from '@/api/auth/login'; // 确保导入路径正确
 
 // ====================================================================
-// 定义用户信息接口 
+// 定义用户信息接口
 // ====================================================================
 export interface UserInfo {
   userId: string;
   userName: string;
   userEmail?: string | null;
+  userRole?: string;
+  avatar?: string;
 }
 
 // ====================================================================
@@ -85,9 +87,9 @@ export const useUserStore = defineStore('user', () => {
     userInfoLoaded.value = !!newUserInfo;
 
     if (newToken) {
-       localStorage.setItem('token', newToken);
+      localStorage.setItem('token', newToken);
     } else {
-       localStorage.removeItem('token');
+      localStorage.removeItem('token');
     }
 
     isLoadingUserInfo.value = false;

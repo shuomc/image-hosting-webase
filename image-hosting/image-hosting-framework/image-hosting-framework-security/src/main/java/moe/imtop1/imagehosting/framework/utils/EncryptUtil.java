@@ -81,7 +81,7 @@ public class EncryptUtil {
 
             return new String(valueByte, StandardCharsets.UTF_8);
         } catch (Exception e) {
-            log.error("Decrypt failed for content: {}", content, e);
+            log.warn("Decrypt failed for content: {}", content, e);
             throw new RuntimeException("Decrypt failed", e);
         }
     }

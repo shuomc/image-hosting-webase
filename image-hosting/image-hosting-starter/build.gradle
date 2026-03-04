@@ -20,6 +20,7 @@ dependencies {
     implementation project(':image-hosting-framework:image-hosting-framework-datasource')
     implementation project(':image-hosting-images')
     implementation project(':image-hosting-system')
+    implementation project(':image-hosting-nft')
 }
 
 test {

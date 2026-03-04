@@ -4,84 +4,90 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import moe.imtop1.imagehosting.framework.base.BaseEntity;
 import moe.imtop1.imagehosting.framework.handler.EncryptTypeHandler;
 
+import java.time.LocalDateTime;
 
 /**
  * 用户表
- * @author anoixa
+ * @author shuomc
  */
+@Data // 自动生成 Getter, Setter, toString, equals, hashCode
+@NoArgsConstructor // 无参构造器
+@AllArgsConstructor // 全参构造器
+@EqualsAndHashCode(callSuper = true) // 让 equals/hashCode 包含父类 BaseEntity 的字段
 @TableName(value = "user_info", autoResultMap = true)
 public class UserInfo extends BaseEntity {
 
     @TableId(type = IdType.ASSIGN_ID)
     private String userId;
+
     private String userName;
+
     private String password;
+
     @TableField(typeHandler = EncryptTypeHandler.class)
     private String userEmail;
+
     private String userRole;
 
-    public UserInfo() {
-    }
+    /**
+     * 区块链钱包地址
+     */
+    private String blockchainAddress;
 
-    public UserInfo(String userId, String userName, String password, String userEmail, String userRole) {
-        this.userId = userId;
-        this.userName = userName;
-        this.password = password;
-        this.userEmail = userEmail;
-        this.userRole = userRole;
-    }
+    /**
+     * 区块链注册状态: 1-正常, 0-注销
+     */
+    private Integer blockchainStatus;
 
-    public String getUserId() {
-        return userId;
-    }
+    /**
+     * 用户昵称
+     */
+    private String nickname;
 
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
+    /**
+     * 头像链接
+     */
+    private String avatarUrl;
 
-    public String getUserName() {
-        return userName;
-    }
+    /**
+     * 个人简介
+     */
+    private String bio;
 
-    public void setUserName(String userName) {
-        this.userName = userName;
-    }
+    /**
+     * 个人网站
+     */
+    private String websiteUrl;
 
-    public String getPassword() {
-        return password;
-    }
+    /**
+     * 手机号
+     */
+    private String phoneNumber;
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
+    /**
+     * 账号状态: 1-正常, 0-禁用
+     */
+    private Integer status;
 
-    public String getUserEmail() {
-        return userEmail;
-    }
+    /**
+     * 存储空间上限 (Byte)
+     */
+    private Long storageLimit;
 
-    public void setUserEmail(String userEmail) {
-        this.userEmail = userEmail;
-    }
+    /**
+     * 已使用存储空间 (Byte)
+     */
+    private Long storageUsed;
 
-    public String getUserRole() {
-        return userRole;
-    }
-
-    public void setUserRole(String userRole) {
-        this.userRole = userRole;
-    }
-
-    @Override
-    public String toString() {
-        return "UserInfo{" +
-                "userId='" + userId + '\'' +
-                ", userName='" + userName + '\'' +
-                ", password='" + password + '\'' +
-                ", userEmail='" + userEmail + '\'' +
-                ", userRole='" + userRole + '\'' +
-                '}';
-    }
+    /**
+     * 最后登录时间
+     */
+    private LocalDateTime lastLoginTime;
 }

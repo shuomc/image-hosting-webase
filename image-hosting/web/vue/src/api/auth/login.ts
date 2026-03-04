@@ -94,6 +94,38 @@ export async function login(loginData: {
 }
 
 /**
+ * @description 管理员登录接口
+ * @param {Object} loginData - 登录数据
+ * @returns {Promise<LoginSuccessResponseData>}
+ */
+export async function adminLogin(loginData: {
+  userName: string;
+  password: string;
+  captcha: string;
+  codeKey: string;
+}): Promise<LoginSuccessResponseData> {
+  const loginUrl = `${API_BASE_URL}/auth/admin/login`;
+
+  if (!loginData.userName || !loginData.password || !loginData.captcha) {
+    const errorMsg = '请填写完整表单';
+    ElMessage.error(errorMsg);
+    return Promise.reject(new Error(errorMsg));
+  }
+
+  try {
+    const responseData = await service.post(loginUrl, loginData);
+    if (responseData.code === 200) {
+      return responseData as LoginSuccessResponseData;
+    } else {
+      return Promise.reject(new Error(responseData.msg || '登录失败'));
+    }
+  } catch (error: any) {
+    console.error('管理员登录失败:', error);
+    return Promise.reject(error);
+  }
+}
+
+/**
  * @description 获取当前用户信息
  * @returns {Promise<UserInfo>} 用户信息 (从 response.data.data 中提取)
  */

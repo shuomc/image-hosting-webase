@@ -4,7 +4,7 @@
  Source Server         : localhost
  Source Server Type    : PostgreSQL
  Source Server Version : 160004 (160004)
- Source Host           : localhost:5432
+ Source Host           : localhost:15432
  Source Catalog        : image
  Source Schema         : public
 
@@ -15,304 +15,510 @@
  Date: 02/10/2024 23:10:46
 */
 
+/*
+ Target Database: image_hosting
+ Description: 核心图片资源库，负责存储图片的物理属性、元数据、统计信息及MinIO路径。
+*/
 
--- ----------------------------
--- Table structure for config
--- ----------------------------
+DROP DATABASE IF EXISTS "image_hosting";
+CREATE DATABASE "image_hosting";
+
+-- --------------------------------------------------------
+-- 1. 配置表 (Config)
+-- --------------------------------------------------------
 DROP TABLE IF EXISTS "public"."config";
 CREATE TABLE "public"."config" (
-                                   "config_id" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-                                   "user_id" varchar(100) COLLATE "pg_catalog"."default",
-                                   "config_key" varchar(50) COLLATE "pg_catalog"."default" NOT NULL,
-                                   "config_value" varchar(255) COLLATE "pg_catalog"."default",
+                                   "config_id" varchar(100) NOT NULL,
+                                   "user_id" varchar(100),
+                                   "config_key" varchar(50) NOT NULL,
+                                   "config_value" varchar(255),
                                    "is_delete" bool NOT NULL DEFAULT false,
-                                   "create_time" timestamp(6),
-                                   "update_time" timestamp(6)
-)
-;
-COMMENT ON COLUMN "public"."config"."config_id" IS '配置ID';
-COMMENT ON COLUMN "public"."config"."user_id" IS '用户ID';
-COMMENT ON COLUMN "public"."config"."config_key" IS '键名';
-COMMENT ON COLUMN "public"."config"."config_value" IS '键值';
-COMMENT ON COLUMN "public"."config"."is_delete" IS '是否删除';
+                                   "create_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
+                                   "update_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
+                                   CONSTRAINT "config_pkey" PRIMARY KEY ("config_id")
+);
+
+-- 注释
+COMMENT ON TABLE "public"."config" IS '系统和用户配置表，用于存储开关或参数';
+COMMENT ON COLUMN "public"."config"."config_id" IS '配置ID (主键)';
+COMMENT ON COLUMN "public"."config"."user_id" IS '用户ID (NULL表示全局配置)';
+COMMENT ON COLUMN "public"."config"."config_key" IS '配置键名 (e.g., ORIGINAL_IMAGE_PROTECTION)';
+COMMENT ON COLUMN "public"."config"."config_value" IS '配置值';
+COMMENT ON COLUMN "public"."config"."is_delete" IS '是否删除 (软删除)';
 COMMENT ON COLUMN "public"."config"."create_time" IS '创建时间';
 COMMENT ON COLUMN "public"."config"."update_time" IS '更新时间';
 
--- ----------------------------
--- Records of config
--- ----------------------------
-INSERT INTO "public"."config" VALUES ('1', NULL, 'ORIGINAL_IMAGE_PROTECTION', '1', 'f', '2024-10-01 18:35:59', '2024-10-01 18:36:01');
-INSERT INTO "public"."config" VALUES ('2', NULL, 'ORIGINAL_WEBP_CONVERSION', '1', 'f', '2024-10-01 18:36:04', '2024-10-01 18:36:06');
+-- 索引
+CREATE UNIQUE INDEX "config_key_index" ON "public"."config"("config_key", "user_id");
 
--- ----------------------------
--- Table structure for image_data
--- ----------------------------
+INSERT INTO "public"."config" VALUES ('1', NULL, 'ORIGINAL_IMAGE_PROTECTION', '1', 'f', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+INSERT INTO "public"."config" VALUES ('2', NULL, 'ORIGINAL_WEBP_CONVERSION', '1', 'f', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+
+-- --------------------------------------------------------
+-- 2. 图片数据表 (Image Data) - 核心增强
+-- --------------------------------------------------------
 DROP TABLE IF EXISTS "public"."image_data";
 CREATE TABLE "public"."image_data" (
-                                       "image_id" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-                                       "content_type" varchar(10) COLLATE "pg_catalog"."default" NOT NULL,
-                                       "minio_url" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
-                                       "minio_key" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
-                                       "user_id" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-                                       "file_name" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-                                       "size" int4 NOT NULL,
+                                       "image_id" varchar(100) NOT NULL,
+                                       "user_id" varchar(100) NOT NULL,        -- 上传者ID
+                                       "nft_id" varchar(255),
+                                       "token_id" varchar(255),
+                                       "file_name" varchar(100) NOT NULL,      -- 原始文件名
+                                       "size" int8 NOT NULL,                   -- 文件大小 (Bytes)
+                                       "content_type" varchar(50) NOT NULL,    -- MIME类型 (image/jpeg)
+                                       "file_hash" varchar(64) NOT NULL,       -- SHA256哈希值
+
+-- [存储路径区分]
+                                       "origin_minio_key" varchar(255) NOT NULL,   -- 原图MinIO中的存储对象Key (由 minio_key 重命名)
+                                       "origin_minio_url" varchar(255),            -- 原图内部路径 (私有桶，需授权访问)
+
+                                       "watermark_minio_key" varchar(255),         -- 水印图/预览图MinIO Key (新增)
+                                       "watermark_minio_url" varchar(255),         -- 水印图/预览图路径 (公共桶，公开访问)
+
+                                       "thumbnail_minio_key" varchar(255),         -- 缩略图MinIO Key (新增)
+                                       "thumbnail_minio_url" varchar(255),         -- 缩略图公共访问URL (新增)
+
+    -- [基本信息]
+                                       "description" text,                         -- 图片描述
+                                       "is_public" bool NOT NULL DEFAULT false,     -- 是否公开展示
+                                       "audit_status" int2 DEFAULT 0,              -- 审核状态: 0-待审, 1-通过, 2-拒绝
+                                       "audit_msg" varchar(255),                   -- 审核备注/拒绝原因
+
+    -- [EXIF 元数据 - 摄影参数]
+                                       "camera_make" varchar(50),                  -- 相机厂商 (Canon)
+                                       "camera_model" varchar(50),                 -- 相机型号 (EOS R5)
+                                       "lens_model" varchar(100),                  -- 镜头型号
+                                       "focal_length" varchar(20),                 -- 焦距
+                                       "aperture" varchar(20),                     -- 光圈 (f/2.8)
+                                       "shutter_speed" varchar(20),                -- 快门 (1/200s)
+                                       "iso" int4,                                 -- ISO 感光度
+                                       "shoot_time" timestamp(6),                  -- 实际拍摄时间 (从Exif读取)
+                                       "width" int8,                               -- 宽 (像素)
+                                       "height" int8,                              -- 高 (像素)
+
+
+    -- [地理位置]
+                                       "location_name" varchar(100),               -- 地点名称
+                                       "latitude" decimal(10, 7),                  -- 纬度
+                                       "longitude" decimal(10, 7),                 -- 经度
+
+    -- [统计与分类]
+                                       "view_count" int8 DEFAULT 0,                -- 浏览量
+                                       "download_count" int8 DEFAULT 0,            -- 下载量
+                                       "like_count" int8 DEFAULT 0,                -- 点赞/收藏数
+                                       "category" varchar(50),                     -- 分类 (风景, 人像)
+                                       "dominant_color" varchar(7),                -- 主色调 (e.g. #3366CC)
+
+    -- [系统字段]
                                        "create_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
-                                       "update_time" timestamp(6) ,
-                                       "description" text COLLATE "pg_catalog"."default",
-                                       "is_public" bool NOT NULL DEFAULT true,
-                                       "is_delete" bool NOT NULL DEFAULT false,
-                                       "width" int4,
-                                       "height" int4
+                                       "update_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
+                                       "is_delete" bool NOT NULL DEFAULT false,    -- 软删除标记
+
+                                       CONSTRAINT "image_data_pkey" PRIMARY KEY ("image_id")
 );
 
-COMMENT ON COLUMN "public"."image_data"."image_id" IS '主键';
-COMMENT ON COLUMN "public"."image_data"."content_type" IS '图片类型';
-COMMENT ON COLUMN "public"."image_data"."minio_url" IS 'MinIO生成的Url';
-COMMENT ON COLUMN "public"."image_data"."minio_key" IS 'MinIO存储Key';
-COMMENT ON COLUMN "public"."image_data"."user_id" IS '上传用户ID';
-COMMENT ON COLUMN "public"."image_data"."file_name" IS '文件名';
-COMMENT ON COLUMN "public"."image_data"."size" IS '文件大小';
-COMMENT ON COLUMN "public"."image_data"."create_time" IS '创建时间';
-COMMENT ON COLUMN "public"."image_data"."update_time" IS '更新时间';
-COMMENT ON COLUMN "public"."image_data"."description" IS '介绍';
-COMMENT ON COLUMN "public"."image_data"."is_public" IS '是否公开';
-COMMENT ON COLUMN "public"."image_data"."is_delete" IS '是否删除';
-COMMENT ON COLUMN "public"."image_data"."width" IS '宽';
-COMMENT ON COLUMN "public"."image_data"."height" IS '高';
+-- 注释
+COMMENT ON TABLE "public"."image_data" IS '图片核心数据表，存储文件信息、元数据和统计';
+COMMENT ON COLUMN "public"."image_data"."image_id" IS '图片唯一ID (主键)';
+COMMENT ON COLUMN "public"."image_data"."user_id" IS '上传者用户ID';
+COMMENT ON COLUMN "public"."image_data"."file_name" IS '原始文件名';
+COMMENT ON COLUMN "public"."image_data"."size" IS '文件大小 (Bytes)';
+COMMENT ON COLUMN "public"."image_data"."content_type" IS 'MIME类型 (e.g., image/jpeg)';
+COMMENT ON COLUMN "public"."image_data"."file_hash" IS 'SHA256哈希值';
+COMMENT ON COLUMN "public"."image_data"."nft_id" IS '区块链系统生成id';
+COMMENT ON COLUMN "public"."image_data"."token_id" IS '区块链智能合约生成, NFT核心身份标识';
+-- MinIO Key/URL 注释更新
+COMMENT ON COLUMN "public"."image_data"."origin_minio_key" IS '原图的MinIO存储对象Key (高清)';
+COMMENT ON COLUMN "public"."image_data"."origin_minio_url" IS '高清原图的MinIO内部路径，需授权访问';
+COMMENT ON COLUMN "public"."image_data"."watermark_minio_key" IS '带水印预览图的MinIO存储对象Key';
+COMMENT ON COLUMN "public"."image_data"."watermark_minio_url" IS '带水印预览图的公共访问URL';
+COMMENT ON COLUMN "public"."image_data"."thumbnail_minio_key" IS '缩略图的MinIO存储对象Key';
+COMMENT ON COLUMN "public"."image_data"."thumbnail_minio_url" IS '缩略图的公共访问URL';
+COMMENT ON COLUMN "public"."image_data"."description" IS '图片描述';
+COMMENT ON COLUMN "public"."image_data"."is_public" IS '是否公开展示';
+COMMENT ON COLUMN "public"."image_data"."audit_status" IS '审核状态 (0-待审, 1-通过, 2-拒绝)';
+COMMENT ON COLUMN "public"."image_data"."audit_msg" IS '审核备注/拒绝原因';
+COMMENT ON COLUMN "public"."image_data"."camera_make" IS '相机厂商 (e.g., Canon, Sony)';
+COMMENT ON COLUMN "public"."image_data"."camera_model" IS '相机型号';
+COMMENT ON COLUMN "public"."image_data"."lens_model" IS '镜头型号';
+COMMENT ON COLUMN "public"."image_data"."focal_length" IS '焦距 (e.g., 50mm)';
+COMMENT ON COLUMN "public"."image_data"."aperture" IS '光圈值 (e.g., f/2.8)';
+COMMENT ON COLUMN "public"."image_data"."shutter_speed" IS '快门速度 (e.g., 1/200s)';
+COMMENT ON COLUMN "public"."image_data"."iso" IS 'ISO 感光度';
+COMMENT ON COLUMN "public"."image_data"."shoot_time" IS '实际拍摄时间 (从Exif读取)';
+COMMENT ON COLUMN "public"."image_data"."width" IS '宽 (像素)';
+COMMENT ON COLUMN "public"."image_data"."height" IS '高 (像素)';
+COMMENT ON COLUMN "public"."image_data"."location_name" IS '地理位置名称';
+COMMENT ON COLUMN "public"."image_data"."latitude" IS '纬度';
+COMMENT ON COLUMN "public"."image_data"."longitude" IS '经度';
+COMMENT ON COLUMN "public"."image_data"."view_count" IS '图片浏览量';
+COMMENT ON COLUMN "public"."image_data"."download_count" IS '高清原图下载次数';
+COMMENT ON COLUMN "public"."image_data"."like_count" IS '点赞/收藏数';
+COMMENT ON COLUMN "public"."image_data"."category" IS '图片分类 (e.g., 风景, 人像)';
+COMMENT ON COLUMN "public"."image_data"."dominant_color" IS '主色调 (HEX值，用于前端占位)';
+COMMENT ON COLUMN "public"."image_data"."create_time" IS '记录创建时间 (上传时间)';
+COMMENT ON COLUMN "public"."image_data"."update_time" IS '记录更新时间';
+COMMENT ON COLUMN "public"."image_data"."is_delete" IS '是否删除 (软删除)';
 
+-- 索引优化
+CREATE INDEX "image_data_user_id_index" ON "public"."image_data"("user_id");
+CREATE INDEX "image_data_is_public_index" ON "public"."image_data"("is_public");
+CREATE INDEX "image_data_create_time_index" ON "public"."image_data"("create_time" DESC);
+CREATE INDEX "image_data_category_index" ON "public"."image_data"("category");
+CREATE INDEX "image_data_view_count_index" ON "public"."image_data"("view_count" DESC);
+CREATE INDEX "image_data_shoot_time_index" ON "public"."image_data"("shoot_time" DESC);
+CREATE INDEX "image_data_is_delete_index" ON "public"."image_data"("is_delete");
 
--- ----------------------------
--- Records of image_data
--- ----------------------------
+CREATE UNIQUE INDEX "image_data_origin_minio_key_uindex" ON "public"."image_data"("origin_minio_key");
+CREATE INDEX "image_data_origin_minio_url_index" ON "public"."image_data"("origin_minio_url");
 
--- ----------------------------
--- Table structure for strategies
--- ----------------------------
+CREATE UNIQUE INDEX "image_data_watermark_minio_key_uindex" ON "public"."image_data"("watermark_minio_key");
+CREATE INDEX "image_data_watermark_minio_url_index" ON "public"."image_data"("watermark_minio_url");
+
+CREATE UNIQUE INDEX "image_data_thumbnail_minio_key_uindex" ON "public"."image_data"("thumbnail_minio_key");
+CREATE INDEX "image_data_thumbnail_minio_url_index" ON "public"."image_data"("thumbnail_minio_url");
+
+CREATE UNIQUE INDEX "image_data_file_hash_uindex" ON "public"."image_data"("file_hash");
+CREATE UNIQUE INDEX "image_data_nft_id_uindex" ON "public"."image_data"("nft_id");
+CREATE UNIQUE INDEX "image_data_token_id_uindex" ON "public"."image_data"("token_id");
+
+-- --------------------------------------------------------
+-- 3. 存储策略表 (Strategies)
+-- --------------------------------------------------------
 DROP TABLE IF EXISTS "public"."strategies";
 CREATE TABLE "public"."strategies" (
-                                       "id" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
-                                       "user_id" varchar(255) COLLATE "pg_catalog"."default",
-                                       "config" json NOT NULL,
-                                       "create_time" timestamp(6),
-                                       "update_time" timestamp(6),
-                                       "is_delete" bool,
-                                       "type" varchar(255) COLLATE "pg_catalog"."default" NOT NULL
-)
-;
+                                       "id" varchar(255) NOT NULL,
+                                       "user_id" varchar(255),
+                                       "type" varchar(255) NOT NULL, -- 策略类型 (e.g., WATERMARK, CONVERSION)
+                                       "config" json NOT NULL,       -- 策略配置JSON (e.g., 水印位置, 转换质量)
+                                       "create_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
+                                       "update_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
+                                       "is_delete" bool DEFAULT false,
+                                       CONSTRAINT "strategies_pkey" PRIMARY KEY ("id")
+);
+
+-- 注释
+COMMENT ON TABLE "public"."strategies" IS '图片处理策略表 (水印, 压缩, 格式转换等)';
+COMMENT ON COLUMN "public"."strategies"."id" IS '策略ID (主键)';
+COMMENT ON COLUMN "public"."strategies"."user_id" IS '策略所属用户ID (NULL为系统默认策略)';
+COMMENT ON COLUMN "public"."strategies"."type" IS '策略类型 (e.g., WATERMARK, COMPRESSION)';
+COMMENT ON COLUMN "public"."strategies"."config" IS 'JSON格式的策略详细配置';
 COMMENT ON COLUMN "public"."strategies"."create_time" IS '创建时间';
 COMMENT ON COLUMN "public"."strategies"."update_time" IS '更新时间';
+COMMENT ON COLUMN "public"."strategies"."is_delete" IS '是否删除 (软删除)';
 
--- ----------------------------
--- Records of strategies
--- ----------------------------
-INSERT INTO "public"."strategies" VALUES ('1', NULL, '{"path": "D:\\photo"}', '2024-10-02 20:51:05', '2024-10-02 20:51:07', 'f', '1');
+-- 索引
+CREATE INDEX "strategies_user_id_index" ON "public"."strategies"("user_id");
+CREATE INDEX "strategies_type_index" ON "public"."strategies"("type");
 
--- ----------------------------
--- Table structure for user_info
--- ----------------------------
+
+-- --------------------------------------------------------
+-- 4. 用户基础表 (User Info for Image Hosting) - Enhanced
+-- --------------------------------------------------------
 DROP TABLE IF EXISTS "public"."user_info";
 CREATE TABLE "public"."user_info" (
-                                      "user_id" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-                                      "user_name" varchar(50) COLLATE "pg_catalog"."default" NOT NULL,
-                                      "password" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
-                                      "user_email" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-                                      "create_time" timestamp(6),
-                                      "update_time" timestamp(6),
-                                      "user_role" varchar(20) COLLATE "pg_catalog"."default",
-                                      "is_delete" bool NOT NULL DEFAULT false
-)
-;
-COMMENT ON COLUMN "public"."user_info"."user_id" IS '主键';
-COMMENT ON COLUMN "public"."user_info"."user_name" IS '用户名';
-COMMENT ON COLUMN "public"."user_info"."password" IS '密码';
-COMMENT ON COLUMN "public"."user_info"."user_email" IS '用户邮箱';
-COMMENT ON COLUMN "public"."user_info"."create_time" IS '创建时间';
-COMMENT ON COLUMN "public"."user_info"."update_time" IS '更新时间';
-COMMENT ON COLUMN "public"."user_info"."user_role" IS '用户角色';
-COMMENT ON COLUMN "public"."user_info"."is_delete" IS '是否删除';
+    -- 核心身份认证
+                                      "user_id" varchar(100) NOT NULL,
+                                      "user_name" varchar(50) NOT NULL UNIQUE,  -- 登录账号 (唯一，英文+数字)
+                                      "password" varchar(255) NOT NULL,         -- 密码哈希
+                                      "user_email" varchar(100) NOT NULL UNIQUE,-- 绑定邮箱
+                                      "phone_number" varchar(20),               -- 绑定手机 (可选)
 
-ALTER TABLE "public"."user_info" ADD COLUMN "blockchain_address" VARCHAR(255) NULL;
-COMMENT ON COLUMN "public"."user_info"."blockchain_address" IS '区块链地址';
+    -- 个人资料展示 (Profile)
+                                      "nickname" varchar(50),                   -- 显示昵称 (支持中文，可重复)
+                                      "avatar_url" varchar(500),                -- 头像链接 (MinIO URL)
+                                      "bio" varchar(500),                       -- 个人简介/签名
+                                      "website_url" varchar(255),               -- 个人网站/作品集链接
 
--- ----------------------------
--- Records of user_info
--- ----------------------------
-INSERT INTO "public"."user_info" VALUES ('1', '1', '$2a$10$Vzy6bRdmGtkRpVNoOF7frOtTBBsjnX.GbaEMDOslT0lD/TdHW3Qba', '1', '2024-09-01 01:30:45', '2024-09-01 01:30:47', '1', 't');
-INSERT INTO "public"."user_info" VALUES ('1832776654893150209', 'anoixa', '$2a$10$2cBKV1on5szQTcA8/tb57uyRW9bS47KfYrfRFEjL1FxuR./m6IpGy', 'Kw0vxgwu+bn3Ue5I6aWy5w5p82TVZSflrr7DH1TSOCo=', '2024-09-08 21:43:00.52863', NULL, 'admin', 'f');
+    -- 业务限制与统计 (Business Logic)
+                                      "user_role" varchar(20) DEFAULT 'user',   -- 角色: admin, user, vip
+                                      "status" int2 DEFAULT 1,                  -- 状态: 1-正常, 0-禁用/封禁, 2-未激活
+--                                       "storage_limit" int8 DEFAULT 1073741824,  -- 存储配额 (单位: 字节, 默认1GB)
+--                                       "storage_used" int8 DEFAULT 0,            -- 已用存储 (单位: 字节)
 
--- ----------------------------
--- Indexes structure for table config
--- ----------------------------
-CREATE INDEX "config_is_delete_index" ON "public"."config" USING btree (
-                                                                        "is_delete" "pg_catalog"."bool_ops" ASC NULLS LAST
-    );
-CREATE INDEX "config_key_index" ON "public"."config" USING btree (
-                                                                  "config_key" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
-    );
+    -- Web3 关联
+                                      "blockchain_address" varchar(255) UNIQUE, -- 关联的钱包地址
+                                      "blockchain_status" int2 DEFAULT 0,       -- 区块链注册状态: 1-Active, 0-Deregistered
 
--- ----------------------------
--- Primary Key structure for table config
--- ----------------------------
-ALTER TABLE "public"."config" ADD CONSTRAINT "config_pkey" PRIMARY KEY ("config_id");
+    -- 系统审计
+                                      "last_login_time" timestamp(6),           -- 最后登录时间
+                                      "create_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
+                                      "update_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
+                                      "is_delete" bool NOT NULL DEFAULT false,
 
--- ----------------------------
--- Indexes structure for table image_data
--- ----------------------------
-CREATE INDEX "image_data_user_id_index" ON "public"."image_data" USING btree (
-                                                                              "user_id" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
-    );
--- Index on minio_key (for efficient retrieval by storage key)
-CREATE INDEX "image_data_minio_key_index" ON "public"."image_data" USING btree (
-                                                                                "minio_key" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
-    );
-
--- Index on is_public (for filtering public/private images)
-CREATE INDEX "image_data_is_public_index" ON "public"."image_data" USING btree (
-                                                                                "is_public" ASC NULLS LAST
-    );
-
--- Composite index on user_id and is_public (for common filtering)
-CREATE INDEX "image_data_user_id_is_public_index" ON "public"."image_data" USING btree (
-                                                                                        "user_id" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST,
-                                                                                        "is_public" ASC NULLS LAST
-    );
--- Index on is_delete (for efficient filtering of deleted/non-deleted images)
-CREATE INDEX "image_data_is_delete_index" ON "public"."image_data" USING btree (
-                                                                                "is_delete" ASC NULLS LAST
-    );
-
--- Composite index on user_id and is_delete (for common filtering)
-CREATE INDEX "image_data_user_id_is_delete_index" ON "public"."image_data" USING btree (
-                                                                                        "user_id" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST,
-                                                                                        "is_delete" ASC NULLS LAST
-    );
-
--- Composite index on is_public and is_delete (for common filtering)
-CREATE INDEX "image_data_public_is_delete_index" ON "public"."image_data" USING btree (
-                                                                                       "is_public" ASC NULLS LAST,
-                                                                                       "is_delete" ASC NULLS LAST
-    );
--- ----------------------------
--- Primary Key structure for table image_data
--- ----------------------------
-ALTER TABLE "public"."image_data" ADD CONSTRAINT "image_data_pkey" PRIMARY KEY ("image_id");
-
--- ----------------------------
--- Indexes structure for table strategies
--- ----------------------------
-CREATE INDEX "strategies_is_delete_index" ON "public"."strategies" USING btree (
-                                                                                "is_delete" "pg_catalog"."bool_ops" ASC NULLS LAST
-    );
-
--- ----------------------------
--- Primary Key structure for table strategies
--- ----------------------------
-ALTER TABLE "public"."strategies" ADD CONSTRAINT "strategies_pkey" PRIMARY KEY ("id");
-
--- ----------------------------
--- Indexes structure for table user_info
--- ----------------------------
-CREATE INDEX "is_delete_index" ON "public"."user_info" USING btree (
-                                                                    "is_delete" "pg_catalog"."bool_ops" ASC NULLS LAST
-    );
-
--- ----------------------------
--- Uniques structure for table user_info
--- ----------------------------
-ALTER TABLE "public"."user_info" ADD CONSTRAINT "user_info_user_name_key" UNIQUE ("user_name");
-ALTER TABLE "public"."user_info" ADD CONSTRAINT "user_info_user_email_key" UNIQUE ("user_email");
-
--- ----------------------------
--- Primary Key structure for table user_info
--- ----------------------------
-ALTER TABLE "public"."user_info" ADD CONSTRAINT "user_info_pkey" PRIMARY KEY ("user_id");
-
--- ----------------------------
--- Table structure for nft_info
--- ----------------------------
-DROP TABLE IF EXISTS "public"."nft_info";
-CREATE TABLE "public"."nft_info" (
-    "nft_id" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-    "image_id" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-    "owner_id" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-    "token_id" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-    "contract_address" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-    "price" decimal(20,8),
-    "is_for_sale" bool NOT NULL DEFAULT false,
-    "create_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
-    "update_time" timestamp(6),
-    "is_delete" bool NOT NULL DEFAULT false,
-    CONSTRAINT "nft_info_pkey" PRIMARY KEY ("nft_id"),
-    CONSTRAINT "nft_info_image_id_fkey" FOREIGN KEY ("image_id") REFERENCES "public"."image_data" ("image_id"),
-    CONSTRAINT "nft_info_owner_id_fkey" FOREIGN KEY ("owner_id") REFERENCES "public"."user_info" ("user_id")
-);
-
-COMMENT ON COLUMN "public"."nft_info"."nft_id" IS 'NFT ID';
-COMMENT ON COLUMN "public"."nft_info"."image_id" IS '关联的图片ID';
-COMMENT ON COLUMN "public"."nft_info"."owner_id" IS '所有者ID';
-COMMENT ON COLUMN "public"."nft_info"."token_id" IS '区块链上的Token ID';
-COMMENT ON COLUMN "public"."nft_info"."contract_address" IS '智能合约地址';
-COMMENT ON COLUMN "public"."nft_info"."price" IS '售价';
-COMMENT ON COLUMN "public"."nft_info"."is_for_sale" IS '是否在售';
-COMMENT ON COLUMN "public"."nft_info"."create_time" IS '创建时间';
-COMMENT ON COLUMN "public"."nft_info"."update_time" IS '更新时间';
-COMMENT ON COLUMN "public"."nft_info"."is_delete" IS '是否删除';
-
--- ----------------------------
--- Table structure for nft_transaction
--- ----------------------------
-DROP TABLE IF EXISTS "public"."nft_transaction";
-CREATE TABLE "public"."nft_transaction" (
-    "transaction_id" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-    "nft_id" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-    "from_user_id" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-    "to_user_id" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-    "price" decimal(20,8) NOT NULL,
-    "transaction_hash" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-    "create_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
-    "update_time" timestamp(6),
-    "is_delete" bool NOT NULL DEFAULT false,
-    CONSTRAINT "nft_transaction_pkey" PRIMARY KEY ("transaction_id"),
-    CONSTRAINT "nft_transaction_nft_id_fkey" FOREIGN KEY ("nft_id") REFERENCES "public"."nft_info" ("nft_id"),
-    CONSTRAINT "nft_transaction_from_user_id_fkey" FOREIGN KEY ("from_user_id") REFERENCES "public"."user_info" ("user_id"),
-    CONSTRAINT "nft_transaction_to_user_id_fkey" FOREIGN KEY ("to_user_id") REFERENCES "public"."user_info" ("user_id")
-);
-
-COMMENT ON COLUMN "public"."nft_transaction"."transaction_id" IS '交易ID';
-COMMENT ON COLUMN "public"."nft_transaction"."nft_id" IS 'NFT ID';
-COMMENT ON COLUMN "public"."nft_transaction"."from_user_id" IS '卖方ID';
-COMMENT ON COLUMN "public"."nft_transaction"."to_user_id" IS '买方ID';
-COMMENT ON COLUMN "public"."nft_transaction"."price" IS '交易价格';
-COMMENT ON COLUMN "public"."nft_transaction"."transaction_hash" IS '区块链交易哈希';
-COMMENT ON COLUMN "public"."nft_transaction"."create_time" IS '创建时间';
-COMMENT ON COLUMN "public"."nft_transaction"."update_time" IS '更新时间';
-COMMENT ON COLUMN "public"."nft_transaction"."is_delete" IS '是否删除';
-
--- ----------------------------
--- Indexes for nft_info
--- ----------------------------
-CREATE INDEX "nft_info_owner_id_index" ON "public"."nft_info" USING btree (
-    "owner_id" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
-);
-CREATE INDEX "nft_info_is_for_sale_index" ON "public"."nft_info" USING btree (
-    "is_for_sale" ASC NULLS LAST
-);
-CREATE INDEX "nft_info_is_delete_index" ON "public"."nft_info" USING btree (
-    "is_delete" ASC NULLS LAST
+                                      CONSTRAINT "user_info_pkey" PRIMARY KEY ("user_id")
 );
 
 -- ----------------------------
--- Indexes for nft_transaction
+-- 注释 (Comments)
 -- ----------------------------
-CREATE INDEX "nft_transaction_nft_id_index" ON "public"."nft_transaction" USING btree (
-    "nft_id" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
+COMMENT ON TABLE "public"."user_info" IS '图床系统的用户基础信息表';
+
+COMMENT ON COLUMN "public"."user_info"."user_id" IS '用户唯一ID (UUID)';
+COMMENT ON COLUMN "public"."user_info"."user_name" IS '登录用户名';
+COMMENT ON COLUMN "public"."user_info"."nickname" IS '前台展示昵称';
+COMMENT ON COLUMN "public"."user_info"."avatar_url" IS '用户头像URL';
+COMMENT ON COLUMN "public"."user_info"."bio" IS '个人简介';
+COMMENT ON COLUMN "public"."user_info"."storage_limit" IS '存储空间上限(Byte)';
+COMMENT ON COLUMN "public"."user_info"."storage_used" IS '已使用存储空间(Byte)';
+COMMENT ON COLUMN "public"."user_info"."status" IS '账号状态: 1-Active, 0-Banned';
+COMMENT ON COLUMN "public"."user_info"."blockchain_address" IS 'Web3钱包地址';
+
+-- ----------------------------
+-- 索引 (Indexes)
+-- ----------------------------
+CREATE UNIQUE INDEX "user_info_blockchain_address_idx" ON "public"."user_info"("blockchain_address");
+CREATE INDEX "user_info_email_idx" ON "public"."user_info"("user_email");
+CREATE INDEX "user_info_status_idx" ON "public"."user_info"("status");
+CREATE INDEX "user_info_isdelete_idx" ON "public"."user_info"("is_delete");
+CREATE INDEX "idx_user_info_is_delete" ON "public"."user_info"("is_delete");
+CREATE INDEX "idx_user_info_user_role" ON "public"."user_info" ("user_role");
+
+-- --------------------------------------------------------
+-- 5. 角色表 (Roles)
+-- --------------------------------------------------------
+DROP TABLE IF EXISTS "public"."roles";
+CREATE TABLE "public"."roles" (
+                                  "roles_id" SERIAL,
+                                  "roles_name" varchar(50) NOT NULL,
+                                  "description" varchar(255),
+                                  "is_delete" bool NOT NULL DEFAULT false,
+                                  "create_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
+                                  "update_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
+                                  CONSTRAINT "roles_pkey" PRIMARY KEY ("roles_id")
 );
-CREATE INDEX "nft_transaction_from_user_id_index" ON "public"."nft_transaction" USING btree (
-    "from_user_id" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
+
+-- 注释
+COMMENT ON TABLE "public"."roles" IS '系统角色表';
+COMMENT ON COLUMN "public"."roles"."roles_id" IS '角色ID (主键)';
+COMMENT ON COLUMN "public"."roles"."roles_name" IS '角色标识';
+COMMENT ON COLUMN "public"."roles"."description" IS '描述';
+COMMENT ON COLUMN "public"."roles"."is_delete" IS '是否删除 (软删除)';
+COMMENT ON COLUMN "public"."roles"."create_time" IS '创建时间';
+COMMENT ON COLUMN "public"."roles"."update_time" IS '更新时间';
+
+-- 索引
+CREATE INDEX "idx_roles_is_delete" ON "public"."roles"("is_delete");
+CREATE UNIQUE INDEX "idx_roles_name" ON "public"."roles"("roles_name");
+
+-- ------------------------------------------------
+-- 5. 用户统计表 (User Stats)
+-- ------------------------------------------------
+DROP TABLE IF EXISTS "public"."user_stats";
+CREATE TABLE "public"."user_stats" (
+                                       "user_id" varchar(100) NOT NULL,
+                                       "total_uploads" int4 DEFAULT 0,            -- 总上传图片数
+                                       "total_views" int8 DEFAULT 0,              -- 图片总浏览量
+                                       "total_downloads" int8 DEFAULT 0,          -- 图片总点击下载量 (新增)
+                                       "total_likes" int8 DEFAULT 0,              -- 图片总获赞数
+                                       "storage_limit" int8 DEFAULT 1073741824,   -- 存储配额 (字节, 默认1GB)
+                                       "storage_used" int8 DEFAULT 0,             -- 已用存储 (字节)
+                                       "update_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
+                                       CONSTRAINT "user_stats_pkey" PRIMARY KEY ("user_id")
 );
-CREATE INDEX "nft_transaction_to_user_id_index" ON "public"."nft_transaction" USING btree (
-    "to_user_id" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
+
+-- 注释
+COMMENT ON TABLE "public"."user_stats" IS '图床侧用户数据统计和成就表';
+COMMENT ON COLUMN "public"."user_stats"."user_id" IS '用户唯一ID (主键)';
+COMMENT ON COLUMN "public"."user_stats"."total_uploads" IS '累计上传图片数量';
+COMMENT ON COLUMN "public"."user_stats"."total_views" IS '所有图片的累计浏览量';
+COMMENT ON COLUMN "public"."user_stats"."total_downloads" IS '所有图片的累计下载量';
+COMMENT ON COLUMN "public"."user_stats"."total_likes" IS '所有图片的累计点赞数';
+COMMENT ON COLUMN "public"."user_stats"."storage_limit" IS '存储空间配额 (Bytes)';
+COMMENT ON COLUMN "public"."user_stats"."storage_used" IS '已使用的存储空间 (Bytes)';
+COMMENT ON COLUMN "public"."user_stats"."update_time" IS '统计数据更新时间';
+
+-- 索引 (用于排行或高性能审计)
+CREATE INDEX "user_stats_total_views_index" ON "public"."user_stats"("total_views" DESC);
+CREATE INDEX "user_stats_total_uploads_index" ON "public"."user_stats"("total_uploads" DESC);
+CREATE INDEX "user_stats_total_likes_index" ON "public"."user_stats"("total_likes" DESC);
+
+
+-- --------------------------------------------------------
+-- 6. 收藏表
+-- --------------------------------------------------------
+
+DROP TABLE IF EXISTS "public"."favorites";
+CREATE TABLE "public"."favorites" (
+                                      "favorite_id" varchar(100) NOT NULL,
+                                      "user_id" varchar(100) NOT NULL,
+                                      "image_id" varchar(100) NOT NULL,
+                                      "create_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
+                                      "update_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
+                                      "is_delete" bool NOT NULL DEFAULT false,
+                                      CONSTRAINT "favorites_pkey" PRIMARY KEY ("favorite_id")
 );
-CREATE INDEX "nft_transaction_is_delete_index" ON "public"."nft_transaction" USING btree (
-    "is_delete" ASC NULLS LAST
+
+-- 注释
+COMMENT ON TABLE "public"."favorites" IS '用户收藏表';
+COMMENT ON COLUMN "public"."favorites"."favorite_id" IS '收藏ID (主键)';
+COMMENT ON COLUMN "public"."favorites"."user_id" IS '用户ID';
+COMMENT ON COLUMN "public"."favorites"."image_id" IS '图片ID';
+COMMENT ON COLUMN "public"."favorites"."create_time" IS '收藏时间';
+COMMENT ON COLUMN "public"."favorites"."update_time" IS '更新时间';
+COMMENT ON COLUMN "public"."favorites"."is_delete" IS '是否删除';
+
+-- 索引
+CREATE UNIQUE INDEX "favorites_user_image_unique" ON "public"."favorites"("user_id", "image_id");
+CREATE INDEX "favorites_user_id_index" ON "public"."favorites"("user_id");
+CREATE INDEX "favorites_create_time_index" ON "public"."favorites"("create_time" DESC);
+CREATE INDEX favorites_is_delete_index ON public.favorites(is_delete);
+
+
+-- --------------------------------------------------------
+-- Notices Table
+-- --------------------------------------------------------
+DROP TABLE IF EXISTS "public"."notices";
+CREATE TABLE "public"."notices" (
+                                    "notice_id" varchar(100) NOT NULL,
+                                    "title" varchar(255) NOT NULL,
+                                    "content" text NOT NULL,
+                                    "publisher_id" varchar(100) NOT NULL,
+                                    "create_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
+                                    "update_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
+                                    "is_delete" boolean DEFAULT false,
+                                    CONSTRAINT "notices_pkey" PRIMARY KEY ("notice_id")
 );
+
+COMMENT ON TABLE "public"."notices" IS 'System notices and announcements';
+COMMENT ON COLUMN "public"."notices"."notice_id" IS 'Notice ID (Primary Key)';
+COMMENT ON COLUMN "public"."notices"."title" IS 'Notice Title';
+COMMENT ON COLUMN "public"."notices"."content" IS 'Notice Content';
+COMMENT ON COLUMN "public"."notices"."publisher_id" IS 'ID of the user who published the notice';
+COMMENT ON COLUMN "public"."notices"."create_time" IS 'Creation time';
+COMMENT ON COLUMN "public"."notices"."update_time" IS 'Update time';
+COMMENT ON COLUMN "public"."notices"."is_delete" IS 'Soft delete flag';
+
+-- Indexes
+CREATE INDEX "notices_create_time_index" ON "public"."notices"("create_time" DESC);
+CREATE INDEX "notices_is_delete_index" ON "public"."notices"("is_delete");
+
+
+-- --------------------------------------------------------
+-- Comments Table
+-- --------------------------------------------------------
+DROP TABLE IF EXISTS "public"."comments";
+CREATE TABLE "public"."comments" (
+                                     "comment_id" varchar(100) NOT NULL,
+                                     "image_id" varchar(100) NOT NULL,
+                                     "user_id" varchar(100) NOT NULL,
+                                     "user_name" varchar(100) NOT NULL,
+                                     "content" text NOT NULL,
+                                     "create_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
+                                     "update_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
+                                     "is_delete" boolean DEFAULT false,
+                                     CONSTRAINT "comments_pkey" PRIMARY KEY ("comment_id")
+);
+
+COMMENT ON TABLE "public"."comments" IS 'Image comments table';
+COMMENT ON COLUMN "public"."comments"."comment_id" IS 'Comment ID (Primary Key)';
+COMMENT ON COLUMN "public"."comments"."image_id" IS 'Image ID';
+COMMENT ON COLUMN "public"."comments"."user_id" IS 'User ID';
+COMMENT ON COLUMN "public"."comments"."user_name" IS 'User Name';
+COMMENT ON COLUMN "public"."comments"."content" IS 'Comment Content';
+COMMENT ON COLUMN "public"."comments"."create_time" IS 'Creation time';
+COMMENT ON COLUMN "public"."comments"."update_time" IS 'Update time';
+COMMENT ON COLUMN "public"."comments"."is_delete" IS 'Soft delete flag';
+
+-- Indexes
+CREATE INDEX "comments_image_id_index" ON "public"."comments"("image_id");
+CREATE INDEX "comments_user_id_index" ON "public"."comments"("user_id");
+CREATE INDEX "comments_create_time_index" ON "public"."comments"("create_time" DESC);
+CREATE INDEX "comments_is_delete_index" ON "public"."comments"("is_delete");
+
+-- --------------------------------------------------------
+-- Downloads Table
+-- --------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS downloads (
+                                         download_id VARCHAR(64) PRIMARY KEY,
+                                         user_id VARCHAR(64),
+                                         image_id VARCHAR(64) NOT NULL,
+                                         create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                         update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                         is_deleted INT DEFAULT 0
+);
+
+COMMENT ON TABLE downloads IS '图片下载记录表';
+COMMENT ON COLUMN downloads.download_id IS '下载ID';
+COMMENT ON COLUMN downloads.user_id IS '用户ID';
+COMMENT ON COLUMN downloads.image_id IS '图片ID';
+
+-- --------------------------------------------------------
+-- 6. 触发器机制 (Triggers for automatic update_time)
+-- --------------------------------------------------------
+
+-- 触发器函数：自动设置 update_time 字段为当前时间
+CREATE EXTENSION IF NOT EXISTS plpgsql;
+
+CREATE OR REPLACE FUNCTION update_modified_column()
+    RETURNS TRIGGER AS $$
+BEGIN
+    NEW.update_time = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 应用于 config 表
+DROP TRIGGER IF EXISTS trg_config_update_time ON "public"."config";
+CREATE TRIGGER trg_config_update_time
+    BEFORE UPDATE ON "public"."config"
+    FOR EACH ROW
+EXECUTE FUNCTION update_modified_column();
+
+-- 应用于 image_data 表
+DROP TRIGGER IF EXISTS trg_image_data_update_time ON "public"."image_data";
+CREATE TRIGGER trg_image_data_update_time
+    BEFORE UPDATE ON "public"."image_data"
+    FOR EACH ROW
+EXECUTE FUNCTION update_modified_column();
+
+-- 应用于 strategies 表
+DROP TRIGGER IF EXISTS trg_strategies_update_time ON "public"."strategies";
+CREATE TRIGGER trg_strategies_update_time
+    BEFORE UPDATE ON "public"."strategies"
+    FOR EACH ROW
+EXECUTE FUNCTION update_modified_column();
+
+-- 应用于 user_info 表
+DROP TRIGGER IF EXISTS trg_user_info_update_time ON "public"."user_info";
+CREATE TRIGGER trg_user_info_update_time
+    BEFORE UPDATE ON "public"."user_info"
+    FOR EACH ROW
+EXECUTE FUNCTION update_modified_column();
+
+-- 应用于 user_stats 表
+DROP TRIGGER IF EXISTS trg_user_stats_update_time ON "public"."user_stats";
+CREATE TRIGGER trg_user_stats_update_time
+    BEFORE UPDATE ON "public"."user_stats"
+    FOR EACH ROW
+EXECUTE FUNCTION update_modified_column();
+
+-- 应用于 favorites 表
+DROP TRIGGER IF EXISTS trg_favorites_update_time ON "public"."favorites";
+CREATE TRIGGER trg_favorites_update_time
+    BEFORE UPDATE ON "public"."favorites"
+    FOR EACH ROW
+EXECUTE FUNCTION update_modified_column();
+
+-- 应用于 notices 表
+DROP TRIGGER IF EXISTS trg_notices_update_time ON "public"."notices";
+CREATE TRIGGER trg_notices_update_time
+    BEFORE UPDATE ON "public"."notices"
+    FOR EACH ROW
+EXECUTE FUNCTION update_modified_column();
+
+-- 应用于 comments 表
+DROP TRIGGER IF EXISTS trg_comments_update_time ON "public"."comments";
+CREATE TRIGGER trg_comments_update_time
+    BEFORE UPDATE ON "public"."comments"
+    FOR EACH ROW
+EXECUTE FUNCTION update_modified_column();
+
+-- 应用于 roles 表
+DROP TRIGGER IF EXISTS trg_roles_update_time ON "public"."roles";
+CREATE TRIGGER trg_roles_update_time
+    BEFORE UPDATE ON "public"."roles"
+    FOR EACH ROW
+EXECUTE FUNCTION update_modified_column();
