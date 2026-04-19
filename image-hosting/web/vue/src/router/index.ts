@@ -56,6 +56,11 @@ const router = createRouter({
           component: () => import('@/views/bgadmin/AdminNoties.vue')
         },
         {
+          path: 'comments',
+          name: 'AdminComments',
+          component: () => import('@/views/bgadmin/AdminComment.vue')
+        },
+        {
           path: 'nft-transactions',
           name: 'AdminNFTTransactions',
           component: () => import('@/views/nft/NFTTransactions.vue')

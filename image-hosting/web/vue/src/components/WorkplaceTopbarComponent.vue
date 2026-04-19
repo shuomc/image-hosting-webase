@@ -29,7 +29,7 @@
             <span class="text-sm font-semibold text-slate-700 dark:text-slate-200 leading-tight">
               {{ userStore.userInfo?.userName || 'User' }}
             </span>
-            <span class="text-[10px] text-slate-400 uppercase tracking-wider">User</span>
+            <!-- <span class="text-[10px] text-slate-400 uppercase tracking-wider">User</span> -->
           </div>
           
           <div class="h-9 w-9 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 text-white flex items-center justify-center text-sm font-bold shadow-md shadow-indigo-500/20 ring-2 ring-white dark:ring-slate-800 transition-transform group-hover:scale-105">
