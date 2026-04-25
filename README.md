@@ -1,3 +1,5 @@
+<div align="center">
+
 # 基于区块链的原创图片保护与分享网站的设计与实现
 
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen.svg)](https://spring.io/projects/spring-boot)
@@ -14,6 +16,8 @@
 [![Blockchain](https://img.shields.io/badge/Blockchain-FISCO%20BCOS-blue.svg)](https://fisco-bcos-documentation.readthedocs.io/)
 
 这是一个基于 Spring Boot 3 和 Vue 3 的全栈图像托管解决方案，集成了 FISCO BCOS 区块链技术实现 NFT 铸造与权属证明。
+
+</div>
 
 ## ✨ 核心特性
 
