@@ -1,527 +1,128 @@
+# 基于区块链的原创图片保护与分享网站的设计与实现
 
-一个基于java的前后端分离图床实现
-## 技术选型:
-* 后端：Spring Boot, MyBatis-Plus, Sa-Token
-* 数据库：PostgreSQL, Redis
-* 前端：Vue3, ElmentPlus, Tailwind, Echarts
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen.svg)](https://spring.io/projects/spring-boot)
+[![Vue](https://img.shields.io/badge/Vue-3.x-42b883.svg)](https://vuejs.org/)
+[![Blockchain](https://img.shields.io/badge/Blockchain-FISCO%20BCOS-blue.svg)](https://fisco-bcos-documentation.readthedocs.io/)
 
+这是一个基于 Spring Boot 3 和 Vue 3 的全栈图像托管解决方案，集成了 FISCO BCOS 区块链技术实现 NFT 铸造与权属证明。
+
+## ✨ 核心特性
+
+- **🖼️ 图像管理**：支持高性能图片上传、多级分类、标签化管理及搜索。
+- **🔗 区块链/NFT 铸造**：集成 FISCO BCOS 联盟链，支持将图片元数据上链，生成唯一的 NFT 凭证。
+- **👤 权限与安全**：基于 **Sa-Token** 实现权限框架，支持多角色（管理员、普通用户）访问控制。
+- **📊 社交互动**：提供点赞、收藏、评论及下载统计等丰富的社交功能。
+- **🛠️ 管理后台**：完善的后台分析报表，实时监控系统状态、用户活动及区块链交易。
+- **📦 分布式存储**：集成 **MinIO** 对象存储，支持海量图片数据存储与访问加速。
+
+## 🛠️ 技术栈
+
+### 后端 (主服务)
+- **框架**: Java 14&17, Spring Boot 3.x
+- **ORM**: MyBatis-Plus
+- **安全**: Sa-Token
+- **架构**: Gradle 多模块微内核架构
+
+### 区块链中间层
+- **框架**: Maven, Spring Boot
+- **底层链**: FISCO BCOS
+- **智能合约**: Solidity (WeBase 集成)
+
+### 前端
+- **框架**: Vue 3 (Composition API)
+- **构建**: Vite
+- **UI**: Element Plus + Tailwind CSS
+- **状态管理**: Pinia
+
+### 基础设施
+- **数据库**: PostgreSQL
+- **缓存**: Redis
+- **对象存储**: MinIO
+- **部署**: Docker & Docker Compose
+
+## 📂 项目结构
+
+```text
+.
+├── image-hosting/               # 主后端工程 (Gradle)
+│   ├── image-hosting-starter    # 启动模块及配置汇聚
+│   ├── image-hosting-framework  # 核心框架 (安全、Redis、数据源)
+│   ├── image-hosting-images     # 图片与社交业务逻辑
+│   ├── image-hosting-nft        # NFT 区块链集成逻辑
+│   ├── image-hosting-system     # 用户身份与系统管理
+│   └── web/vue/                 # Vue 3 前端工程
+├── mavendemo0315/               # 区块链中间层 (Maven)
+│   └── src/main/solidity        # 智能合约源代码
+├── postgres-init/               # 数据库初始化 SQL 脚本
+├── shell/                       # 运维脚本 (快速启停区块链服务)
+└── docker-compose.yml           # Docker容器编排
 ```
-image-hosting-webase
-├─ docker-compose.yml
-├─ image-hosting
-│  ├─ gradle
-│  │  └─ wrapper
-│  │     ├─ gradle-wrapper.jar
-│  │     └─ gradle-wrapper.properties
-│  ├─ gradlew
-│  ├─ gradlew.bat
-│  ├─ image-hosting-common
-│  │  └─ src
-│  │     └─ main
-│  │        ├─ java
-│  │        │  └─ moe
-│  │        │     └─ imtop1
-│  │        │        └─ imagehosting
-│  │        │           └─ common
-│  │        │              ├─ constant
-│  │        │              │  ├─ Constant.java
-│  │        │              │  └─ ErrorMsg.java
-│  │        │              ├─ dto
-│  │        │              │  └─ AjaxResult.java
-│  │        │              ├─ enums
-│  │        │              │  ├─ BooleanEnum.java
-│  │        │              │  ├─ ResultCodeEnum.java
-│  │        │              │  └─ StrategiesEnum.java
-│  │        │              └─ utils
-│  │        │                 ├─ FileUtil.java
-│  │        │                 ├─ HtmlUtil.java
-│  │        │                 ├─ JsonUtil.java
-│  │        │                 ├─ StringUtil.java
-│  │        │                 └─ TraceUtil.java
-│  │        └─ resources
-│  │           └─ templates
-│  │              └─ email
-│  │                 └─ auth
-│  │                    └─ registration
-│  │                       └─ captcha.ftl
-│  ├─ image-hosting-framework
-│  │  ├─ image-hosting-framework-core
-│  │  │  └─ src
-│  │  │     └─ main
-│  │  │        ├─ java
-│  │  │        │  └─ moe
-│  │  │        │     └─ imtop1
-│  │  │        │        └─ imagehosting
-│  │  │        │           └─ framework
-│  │  │        │              ├─ config
-│  │  │        │              │  └─ AsyncConfig.java
-│  │  │        │              ├─ exception
-│  │  │        │              │  ├─ CustomException.java
-│  │  │        │              │  ├─ GlobalExceptionHandler.java
-│  │  │        │              │  ├─ ServiceException.java
-│  │  │        │              │  └─ SystemException.java
-│  │  │        │              └─ log
-│  │  │        │                 └─ ModifyLogAspect.java
-│  │  │        └─ resources
-│  │  │           └─ META-INF
-│  │  │              └─ spring
-│  │  │                 └─ org.springframework.boot.autoconfigure.AutoConfiguration.imports
-│  │  ├─ image-hosting-framework-datasource
-│  │  │  └─ src
-│  │  │     └─ main
-│  │  │        ├─ java
-│  │  │        │  └─ moe
-│  │  │        │     └─ imtop1
-│  │  │        │        └─ imagehosting
-│  │  │        │           └─ framework
-│  │  │        │              ├─ base
-│  │  │        │              │  └─ BaseEntity.java
-│  │  │        │              ├─ config
-│  │  │        │              │  └─ MyBatisPlusConfig.java
-│  │  │        │              └─ handler
-│  │  │        │                 ├─ AutoFillDateHandler.java
-│  │  │        │                 ├─ EncryptTypeHandler.java
-│  │  │        │                 └─ JsonMapTypeHandler.java
-│  │  │        └─ resources
-│  │  │           └─ META-INF
-│  │  │              └─ spring
-│  │  │                 └─ org.springframework.boot.autoconfigure.AutoConfiguration.imports
-│  │  ├─ image-hosting-framework-redis
-│  │  │  └─ src
-│  │  │     └─ main
-│  │  │        ├─ java
-│  │  │        │  └─ moe
-│  │  │        │     └─ imtop1
-│  │  │        │        └─ imagehosting
-│  │  │        │           └─ framework
-│  │  │        │              ├─ config
-│  │  │        │              │  └─ RedisConfig.java
-│  │  │        │              └─ utils
-│  │  │        │                 └─ RedisCache.java
-│  │  │        └─ resources
-│  │  │           └─ META-INF
-│  │  │              └─ spring
-│  │  │                 └─ org.springframework.boot.autoconfigure.AutoConfiguration.imports
-│  │  └─ image-hosting-framework-security
-│  │     └─ src
-│  │        └─ main
-│  │           ├─ java
-│  │           │  └─ moe
-│  │           │     └─ imtop1
-│  │           │        └─ imagehosting
-│  │           │           └─ framework
-│  │           │              ├─ AESKeyGenerator.java
-│  │           │              ├─ config
-│  │           │              │  └─ SaTokenConfig.java
-│  │           │              ├─ domain
-│  │           │              │  └─ LoginUser.java
-│  │           │              ├─ KeyIVLengthChecker.java
-│  │           │              └─ utils
-│  │           │                 ├─ EncryptUtil.java
-│  │           │                 └─ SecurityUtil.java
-│  │           └─ resources
-│  │              └─ META-INF
-│  │                 └─ spring
-│  │                    └─ org.springframework.boot.autoconfigure.AutoConfiguration.imports
-│  ├─ image-hosting-images
-│  │  └─ src
-│  │     └─ main
-│  │        ├─ java
-│  │        │  └─ moe
-│  │        │     └─ imtop1
-│  │        │        └─ imagehosting
-│  │        │           └─ images
-│  │        │              ├─ config
-│  │        │              │  └─ MinioConfig.java
-│  │        │              ├─ controller
-│  │        │              │  └─ ImageController.java
-│  │        │              ├─ domain
-│  │        │              │  ├─ dto
-│  │        │              │  │  ├─ BatchUploadResult.java
-│  │        │              │  │  └─ ImageStreamData.java
-│  │        │              │  ├─ ImageData.java
-│  │        │              │  ├─ Strategies.java
-│  │        │              │  └─ vo
-│  │        │              │     └─ ImageUrlData.java
-│  │        │              ├─ mapper
-│  │        │              │  ├─ ImageDataMapper.java
-│  │        │              │  ├─ ImageMapper.java
-│  │        │              │  └─ StrategiesMapper.java
-│  │        │              └─ service
-│  │        │                 ├─ ImageCacheService.java
-│  │        │                 ├─ ImageService.java
-│  │        │                 ├─ IMinioService.java
-│  │        │                 └─ impl
-│  │        │                    ├─ ImageCacheServiceImpl.java
-│  │        │                    ├─ ImageServiceImpl.java
-│  │        │                    └─ IMinioServiceImpl.java
-│  │        └─ resources
-│  │           └─ mapper
-│  │              ├─ ImageDataMapper.xml
-│  │              └─ StrategiesMapper.xml
-│  ├─ image-hosting-starter
-│  │  └─ src
-│  │     ├─ main
-│  │     │  ├─ java
-│  │     │  │  └─ moe
-│  │     │  │     └─ imtop1
-│  │     │  │        └─ imagehosting
-│  │     │  │           └─ starter
-│  │     │  │              └─ Application.java
-│  │     │  └─ resources
-│  │     │     ├─ application-dev.yml
-│  │     │     ├─ application-shuomc.yml
-│  │     │     ├─ application.yml
-│  │     │     └─ logback-spring.xml
-│  │     └─ test
-│  │        └─ java
-│  │           └─ moe
-│  │              └─ imtop1
-│  │                 └─ imagehosting
-│  │                    └─ starter
-│  │                       └─ AppTest.java
-│  ├─ image-hosting-system
-│  │  └─ src
-│  │     ├─ main
-│  │     │  ├─ java
-│  │     │  │  └─ moe
-│  │     │  │     └─ imtop1
-│  │     │  │        └─ imagehosting
-│  │     │  │           └─ system
-│  │     │  │              ├─ config
-│  │     │  │              │  ├─ EmailTestConfig.java
-│  │     │  │              │  └─ RestTemplateConfig.java
-│  │     │  │              ├─ controller
-│  │     │  │              │  ├─ EmailController.java
-│  │     │  │              │  ├─ LoginController.java
-│  │     │  │              │  ├─ ModifyController.java
-│  │     │  │              │  ├─ NFTController.java
-│  │     │  │              │  ├─ RegisterController.java
-│  │     │  │              │  └─ UserController.java
-│  │     │  │              ├─ domain
-│  │     │  │              │  ├─ Config.java
-│  │     │  │              │  ├─ dto
-│  │     │  │              │  │  ├─ EmailCaptchaDTO.java
-│  │     │  │              │  │  ├─ LoginDTO.java
-│  │     │  │              │  │  └─ RegisterDTO.java
-│  │     │  │              │  ├─ Permissions.java
-│  │     │  │              │  ├─ RolePermissionRel.java
-│  │     │  │              │  ├─ Roles.java
-│  │     │  │              │  ├─ UserInfo.java
-│  │     │  │              │  └─ vo
-│  │     │  │              │     ├─ EmailCaptchaVO.java
-│  │     │  │              │     ├─ LoginVO.java
-│  │     │  │              │     └─ ValidateCodeVo.java
-│  │     │  │              ├─ entity
-│  │     │  │              │  ├─ ArtworkAsset.java
-│  │     │  │              │  ├─ NFTInfo.java
-│  │     │  │              │  └─ NFTTransaction.java
-│  │     │  │              ├─ mapper
-│  │     │  │              │  ├─ ArtworkAssetMapper.java
-│  │     │  │              │  ├─ GlobalSettingsMapper.java
-│  │     │  │              │  └─ UserInfoMapper.java
-│  │     │  │              └─ service
-│  │     │  │                 ├─ IEmailService.java
-│  │     │  │                 ├─ ILoginService.java
-│  │     │  │                 ├─ impl
-│  │     │  │                 │  ├─ EmailServiceImpl.java
-│  │     │  │                 │  ├─ LoginServiceImpl.java
-│  │     │  │                 │  ├─ NFTServiceImpl.java
-│  │     │  │                 │  ├─ RegisterServiceImpl.java
-│  │     │  │                 │  ├─ UserInfoServiceImpl.java
-│  │     │  │                 │  └─ ValidateCodeServiceImpl.java
-│  │     │  │                 ├─ IRegisterService.java
-│  │     │  │                 ├─ IUserInfoService.java
-│  │     │  │                 ├─ IValidateCodeService.java
-│  │     │  │                 └─ NFTService.java
-│  │     │  └─ resources
-│  │     │     ├─ application.yml
-│  │     │     └─ mapper
-│  │     │        ├─ GlobalSettingsMapper.xml
-│  │     │        └─ UserInfoMapper.xml
-│  │     └─ test
-│  │        └─ java
-│  │           └─ EmailServiceImplTest.java
-│  ├─ logs
-│  │  └─ image-hosting
-│  │     ├─ 2025-02
-│  │     │  ├─ debug.2025-02-25.0.log.gz
-│  │     │  ├─ debug.2025-02-28.0.log.gz
-│  │     │  └─ error.2025-02-25.0.log.gz
-│  │     ├─ 2025-03
-│  │     │  ├─ debug.2025-03-01.0.log.gz
-│  │     │  ├─ debug.2025-03-02.0.log.gz
-│  │     │  ├─ debug.2025-03-11.0.log.gz
-│  │     │  └─ error.2025-03-22.0.log.gz
-│  │     ├─ 2025-04
-│  │     │  ├─ debug.2025-04-30.0.log.gz
-│  │     │  └─ error.2025-04-30.0.log.gz
-│  │     ├─ 2025-05
-│  │     │  ├─ debug.2025-05-21.0.log.gz
-│  │     │  ├─ debug.2025-05-23.0.log.gz
-│  │     │  ├─ debug.2025-05-26.0.log.gz
-│  │     │  └─ debug.2025-05-28.0.log.gz
-│  │     ├─ debug.log
-│  │     └─ error.log
-│  ├─ README.md
-│  ├─ sql
-│  │  └─ create.sql
-│  └─ web
-│     └─ vue
-│        ├─ .editorconfig
-│        ├─ dockerfile
-│        ├─ env.d.ts
-│        ├─ eslint.config.ts
-│        ├─ index.html
-│        ├─ package-lock.json
-│        ├─ package.json
-│        ├─ postcss.config.js
-│        ├─ public
-│        │  └─ favicon.ico
-│        ├─ README.md
-│        ├─ src
-│        │  ├─ api
-│        │  │  ├─ auth
-│        │  │  │  ├─ login.ts
-│        │  │  │  ├─ password.ts
-│        │  │  │  ├─ register.ts
-│        │  │  │  └─ validate.ts
-│        │  │  ├─ images
-│        │  │  │  └─ index.ts
-│        │  │  ├─ nft
-│        │  │  │  └─ index.ts
-│        │  │  └─ nft.ts
-│        │  ├─ App.vue
-│        │  ├─ assets
-│        │  │  ├─ base.css
-│        │  │  ├─ logo.png
-│        │  │  ├─ logo.svg
-│        │  │  └─ main.css
-│        │  ├─ components
-│        │  │  ├─ FindPasswordComponent.vue
-│        │  │  ├─ icons
-│        │  │  │  ├─ IconCommunity.vue
-│        │  │  │  ├─ IconDocumentation.vue
-│        │  │  │  ├─ IconEcosystem.vue
-│        │  │  │  ├─ IconSupport.vue
-│        │  │  │  └─ IconTooling.vue
-│        │  │  ├─ LoginComponent.vue
-│        │  │  ├─ RegisterLeftComponent.vue
-│        │  │  ├─ RegisterRightComponent.vue
-│        │  │  ├─ UploadFilesComponent.vue
-│        │  │  ├─ WorkplaceLeftbarComponent.vue
-│        │  │  └─ WorkplaceTopbarComponent.vue
-│        │  ├─ config
-│        │  │  └─ index.ts
-│        │  ├─ config.ts
-│        │  ├─ main.ts
-│        │  ├─ router
-│        │  │  └─ index.ts
-│        │  ├─ stores
-│        │  │  ├─ counter.ts
-│        │  │  └─ user.ts
-│        │  ├─ utils
-│        │  │  └─ request.ts
-│        │  └─ views
-│        │     ├─ auth
-│        │     │  ├─ FindPasswordView.vue
-│        │     │  └─ LoginView.vue
-│        │     ├─ HomeView.vue
-│        │     ├─ nft
-│        │     │  ├─ components
-│        │     │  │  ├─ NFTDetail.vue
-│        │     │  │  └─ NFTMint.vue
-│        │     │  ├─ market
-│        │     │  │  └─ index.vue
-│        │     │  ├─ mint
-│        │     │  │  └─ index.vue
-│        │     │  ├─ my-nfts
-│        │     │  │  └─ index.vue
-│        │     │  ├─ MyNFTView.vue
-│        │     │  ├─ NFTBalance.vue
-│        │     │  ├─ NFTDetail.vue
-│        │     │  ├─ NFTListView.vue
-│        │     │  └─ NFTTransactions.vue
-│        │     ├─ NotFoundView.vue
-│        │     ├─ register
-│        │     │  └─ RegisterView.vue
-│        │     ├─ userui
-│        │     │  ├─ components
-│        │     │  │  └─ FooterComponent.vue
-│        │     │  └─ Home.vue
-│        │     └─ workplace
-│        │        ├─ AboutView.vue
-│        │        ├─ AccountSettingsView.vue
-│        │        ├─ ImagesDetailView.vue
-│        │        ├─ MyFilesView.vue
-│        │        ├─ MyImagesView.vue
-│        │        ├─ RecommendedView.vue
-│        │        ├─ SettingsView.vue
-│        │        ├─ UploadFileView.vue
-│        │        ├─ UploadImageView.vue
-│        │        └─ WorkplaceView.vue
-│        ├─ tailwind.config.js
-│        ├─ tsconfig.app.json
-│        ├─ tsconfig.json
-│        ├─ tsconfig.node.json
-│        └─ vite.config.ts
-├─ LICENSE
-├─ mavendemo0315
-│  ├─ dockerfile
-│  ├─ logs
-│  │  └─ image-chain.log
-│  ├─ pom.xml
-│  ├─ src
-│  │  ├─ main
-│  │  │  ├─ java
-│  │  │  │  └─ com
-│  │  │  │     └─ sjy
-│  │  │  │        └─ imagechain
-│  │  │  │           ├─ aspect
-│  │  │  │           │  └─ LogAspect.java
-│  │  │  │           ├─ common
-│  │  │  │           │  ├─ BaseEntity.java
-│  │  │  │           │  ├─ dto
-│  │  │  │           │  │  └─ AjaxResult.java
-│  │  │  │           │  └─ enums
-│  │  │  │           │     └─ ResultCodeEnum.java
-│  │  │  │           ├─ config
-│  │  │  │           │  ├─ BCOSConfig.java
-│  │  │  │           │  ├─ RestTemplateConfig.java
-│  │  │  │           │  └─ SecurityConfig.java
-│  │  │  │           ├─ controller
-│  │  │  │           │  ├─ NFTController.java
-│  │  │  │           │  └─ UserController.java
-│  │  │  │           ├─ domain
-│  │  │  │           │  ├─ AppRole.java
-│  │  │  │           │  ├─ AppUser.java
-│  │  │  │           │  ├─ ArtworkAsset.java
-│  │  │  │           │  ├─ config
-│  │  │  │           │  │  └─ DatabaseObjectHandler.java
-│  │  │  │           │  ├─ dto
-│  │  │  │           │  │  ├─ UserRegistrationRequest.java
-│  │  │  │           │  │  └─ UserRegistrationResponse.java
-│  │  │  │           │  ├─ NFTInfo.java
-│  │  │  │           │  └─ NFTTransaction.java
-│  │  │  │           ├─ ImageChainStarter.java
-│  │  │  │           ├─ mapper
-│  │  │  │           │  ├─ AppRoleMapper.java
-│  │  │  │           │  ├─ AppUserMapper.java
-│  │  │  │           │  ├─ ArtworkAssetMapper.java
-│  │  │  │           │  ├─ NFTInfoMapper.java
-│  │  │  │           │  └─ NFTTransactionMapper.java
-│  │  │  │           ├─ service
-│  │  │  │           │  ├─ AppUserService.java
-│  │  │  │           │  ├─ impl
-│  │  │  │           │  │  ├─ AppUserServiceImpl.java
-│  │  │  │           │  │  └─ NFTServiceImpl.java
-│  │  │  │           │  └─ NFTService.java
-│  │  │  │           └─ utils
-│  │  │  │              ├─ StringUtil.java
-│  │  │  │              └─ UserUtils.java
-│  │  │  └─ resources
-│  │  │     ├─ abi
-│  │  │     │  ├─ Grade.abi
-│  │  │     │  └─ ImageNFT.abi
-│  │  │     ├─ application.yml
-│  │  │     ├─ bin
-│  │  │     ├─ conf
-│  │  │     │  ├─ ca.crt
-│  │  │     │  ├─ sdk.crt
-│  │  │     │  └─ sdk.key
-│  │  │     ├─ config-example.toml
-│  │  │     ├─ mapper
-│  │  │     │  └─ NFTTransactionMapper.xml
-│  │  │     └─ static
-│  │  │        ├─ index.html
-│  │  │        └─ js
-│  │  │           ├─ api
-│  │  │           │  └─ auth
-│  │  │           └─ stores
-│  │  ├─ solidity
-│  │  │  └─ ImageNFT.sol
-│  │  ├─ sql
-│  │  │  └─ create.sql
-│  │  └─ test
-│  │     └─ java
-│  │        └─ learn
-│  │           └─ mavendemo0315
-│  │              ├─ Mavendemo0315ApplicationTests.java
-│  │              └─ webase.java
-│  └─ target
-│     ├─ classes
-│     │  ├─ abi
-│     │  │  ├─ Grade.abi
-│     │  │  └─ ImageNFT.abi
-│     │  ├─ application.yml
-│     │  ├─ com
-│     │  │  └─ sjy
-│     │  │     └─ imagechain
-│     │  │        ├─ aspect
-│     │  │        │  └─ LogAspect.class
-│     │  │        ├─ common
-│     │  │        │  ├─ BaseEntity.class
-│     │  │        │  ├─ dto
-│     │  │        │  │  └─ AjaxResult.class
-│     │  │        │  └─ enums
-│     │  │        │     └─ ResultCodeEnum.class
-│     │  │        ├─ config
-│     │  │        │  ├─ BCOSConfig.class
-│     │  │        │  ├─ RestTemplateConfig.class
-│     │  │        │  ├─ SecurityConfig$1.class
-│     │  │        │  └─ SecurityConfig.class
-│     │  │        ├─ controller
-│     │  │        │  ├─ NFTController.class
-│     │  │        │  └─ UserController.class
-│     │  │        ├─ domain
-│     │  │        │  ├─ AppRole.class
-│     │  │        │  ├─ AppUser.class
-│     │  │        │  ├─ ArtworkAsset.class
-│     │  │        │  ├─ config
-│     │  │        │  │  └─ DatabaseObjectHandler.class
-│     │  │        │  ├─ dto
-│     │  │        │  │  ├─ UserRegistrationRequest.class
-│     │  │        │  │  └─ UserRegistrationResponse.class
-│     │  │        │  ├─ NFTInfo.class
-│     │  │        │  └─ NFTTransaction.class
-│     │  │        ├─ ImageChainStarter.class
-│     │  │        ├─ mapper
-│     │  │        │  ├─ AppRoleMapper.class
-│     │  │        │  ├─ AppUserMapper.class
-│     │  │        │  ├─ ArtworkAssetMapper.class
-│     │  │        │  ├─ NFTInfoMapper.class
-│     │  │        │  └─ NFTTransactionMapper.class
-│     │  │        ├─ service
-│     │  │        │  ├─ AppUserService.class
-│     │  │        │  ├─ impl
-│     │  │        │  │  ├─ AppUserServiceImpl.class
-│     │  │        │  │  └─ NFTServiceImpl.class
-│     │  │        │  └─ NFTService.class
-│     │  │        └─ utils
-│     │  │           ├─ StringUtil.class
-│     │  │           └─ UserUtils.class
-│     │  ├─ conf
-│     │  │  ├─ ca.crt
-│     │  │  ├─ sdk.crt
-│     │  │  └─ sdk.key
-│     │  ├─ config-example.toml
-│     │  ├─ mapper
-│     │  │  └─ NFTTransactionMapper.xml
-│     │  └─ static
-│     │     └─ index.html
-│     ├─ generated-sources
-│     │  └─ annotations
-│     ├─ generated-test-sources
-│     │  └─ test-annotations
-│     └─ test-classes
-│        └─ learn
-│           └─ mavendemo0315
-│              ├─ Mavendemo0315ApplicationTests.class
-│              └─ webase.class
-├─ nginx
-│  ├─ conf.d
-│  │  └─ default.conf
-│  └─ nginx.conf
-└─ README.md
 
-```
+## 🚀 快速开始
+
+### 前置要求
+- Docker & Docker Compose
+- JDK 14 & 17+
+- Node.js 18+
+- Ubuntu 22.04
+
+### ⛓️ 区块链环境准备
+1.  **部署 WeBase & FISCO BCOS** (Ubuntu 22.04):
+    *   参考 [WeBase 官方文档](https://webase-doc.readthedocs.io/en/latest/docs/WeBASE/install.html) 进行基础环境部署。
+    *   **快捷脚本**: 部署完成后，可使用 `shell/restart_webase.sh` 和 `shell/stop_webase.sh` 快速启停服务。
+    *   *注意：使用脚本前请根据实际安装路径修改脚本内部变量。*
+
+2.  **部署智能合约**:
+    *   **WeBase 后台**: 导航至 `合约管理` -> `合约 IDE` -> `新建合约`。
+    *   **源代码**: 将 `mavendemo0315/src/solidity/ImageNFTv2.sol` 的内容粘贴至 IDE。
+    *   **编译与发布**: 完成编译并部署，获取返回的合约地址。
+
+3.  **后端集成配置**:
+    *   **合约参数**: 修改 `mavendemo0315/src/main/java/com/sjy/imagechain/service/impl/NftServiceImpl.java` 中的相关常量：
+        ```java
+        private static final String CONTRACT_ADDRESS = "您的合约地址";
+        private static final String CONTRACT_NAME = "您的合约名称";
+        ```
+    *   **ABI & Bin**: 将生成的 `abi` 和 `bytecodeBin` 文件分别放置于：
+        *   `src/main/resources/abi/`
+        *   `src/main/resources/bin/ecc/`
+    *   **网络连接**: 修改 `mavendemo0315/src/main/resources/config-example.toml`，将 `peers` 列表中的 IP 替换为 Ubuntu 服务器的实际地址。
+
+### ☁️ MinIO 对象存储配置
+访问地址: [http://localhost:19090](http://localhost:19090)
+
+1.  **桶 (Buckets) 初始化**:
+    *   `image-origin`: 权限设置为 `private`。
+    *   `image-thumbnail`: 权限设置为 `public`。
+    *   `image-watermark`: 权限设置为 `public`。
+
+2.  **手动管理**: 可通过 **Object Browser** 直接进行图片的上传与维护。
+
+### 🐳 Docker 一键部署
+1.  **进入目录**:
+    ```bash
+    cd image-hosting-webase
+    ```
+2.  **启动基础服务**:
+    ```bash
+    docker-compose up -d postgres redis minio
+    ```
+3.  **启动应用服务**:
+    ```bash
+    docker-compose up -d
+    ```
+
+### 💻 本地开发调试
+*   **主后端**: 运行 `image-hosting-starter` 模块的 `ImageHostingApplication` (Port: `8080`)。
+*   **区块链服务**: 在 Ubuntu 环境中运行 `restart_webase.sh`，随后启动 `mavendemo0315` 下 `com.sjy.imagechain` 包中的启动类 (Port: `8081`)。
+*   **前端工程**:
+    ```bash
+    cd image-hosting/web/vue
+    npm install
+    npm run dev
+    ```
+
+## 📊 数据库与存储
+- **数据库**: 启动服务时会自动执行 `postgres-init/` 下的 SQL 脚本完成初始化。
+- **MinIO 管理台**: `http://localhost:19090` (账号/密码: `minioadmin`/`minioadmin`)。
+- **Redis 控制台**: 默认端口 `6379`。
