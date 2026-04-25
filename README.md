@@ -1,6 +1,15 @@
 # 基于区块链的原创图片保护与分享网站的设计与实现
 
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen.svg)](https://spring.io/projects/spring-boot)
+[![MyBatis-Plus](https://img.shields.io/badge/MyBatis--Plus-3.5.x-blue.svg)](https://baomidou.com/)
+[![Sa-Token](https://img.shields.io/badge/Sa--Token-1.37.x-yellow.svg)](https://sa-token.cc/)
+[![Redis](https://img.shields.io/badge/Redis-Latest-red.svg)](https://redis.io/)
+[![MinIO](https://img.shields.io/badge/MinIO-Latest-orange.svg)](https://min.io/)
+[![Gradle](https://img.shields.io/badge/Gradle-7.x/8.x-lightgray.svg)](https://gradle.org/)
+[![Maven](https://img.shields.io/badge/Maven-3.x-C71A36.svg)](https://maven.apache.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Latest-316192.svg)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-Latest-2496ED.svg)](https://www.docker.com/)
+[![Ubuntu](https://img.shields.io/badge/Ubuntu-22.04-E95420.svg)](https://ubuntu.com/)
 [![Vue](https://img.shields.io/badge/Vue-3.x-42b883.svg)](https://vuejs.org/)
 [![Blockchain](https://img.shields.io/badge/Blockchain-FISCO%20BCOS-blue.svg)](https://fisco-bcos-documentation.readthedocs.io/)
 
@@ -114,8 +123,8 @@
 
 ### 💻 本地开发调试
 *   **主后端**: 运行 `image-hosting-starter` 模块的 `ImageHostingApplication` (Port: `8080`)。
-*   **区块链服务**: 在 Ubuntu 环境中运行 `restart_webase.sh`，随后启动 `mavendemo0315` 下 `com.sjy.imagechain` 包中的启动类 (Port: `8081`)。
-*   **前端工程**:
+*   **区块链后端及服务**: 在 Ubuntu 环境中运行 `restart_webase.sh`，随后启动 `mavendemo0315` 下 `com.sjy.imagechain` 包中的启动类 (Port: `8081`)。
+*   **前端**:
     ```bash
     cd image-hosting/web/vue
     npm install
