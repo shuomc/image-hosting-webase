@@ -70,6 +70,7 @@ import {
   Cog6ToothIcon, 
   CubeTransparentIcon,
   BellIcon,
+  ChatBubbleLeftRightIcon,
   BanknotesIcon
 } from '@heroicons/vue/24/outline';
 
@@ -84,6 +85,7 @@ const menuItems = [
   { name: '仪表盘', path: '/admin/dashboard', icon: HomeIcon },
   { name: '用户管理', path: '/admin/users', icon: UsersIcon },
   { name: '图片管理', path: '/admin/images', icon: PhotoIcon },
+  { name: '评论管理', path: '/admin/comments', icon: ChatBubbleLeftRightIcon },
   { name: '公告管理', path: '/admin/notices', icon: BellIcon },
   { name: 'NFT交易', path: '/admin/nft-transactions', icon: BanknotesIcon },
   { name: '系统设置', path: '/admin/settings', icon: Cog6ToothIcon },
