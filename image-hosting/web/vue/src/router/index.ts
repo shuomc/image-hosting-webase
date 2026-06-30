@@ -61,6 +61,12 @@ const router = createRouter({
           component: () => import('@/views/bgadmin/AdminComment.vue')
         },
         {
+          path: 'downloads',
+          name: 'AdminDownloads',
+          component: () => import('@/views/bgadmin/AdminDownload.vue'),
+          meta: { title: '下载管理' }
+        },
+        {
           path: 'nft-transactions',
           name: 'AdminNFTTransactions',
           component: () => import('@/views/nft/NFTTransactions.vue')
