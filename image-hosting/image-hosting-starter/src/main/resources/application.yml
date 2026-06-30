@@ -16,7 +16,7 @@ spring:
     host: # Your POP3/SMTP HOST (e.g., smtp.163.com)
     port: # Your POP3/SMTP PORT (e.g., 465)
     username: # Your POP3/SMTP USERNAME
-    password: # Your POP3/SMTP PASSWORD/AUTHORIZATION CODE
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
@@ -49,12 +49,12 @@ sa-token:
   is-read-header: true
   is-read-param: true
   is-log: true
-  jwt-secret-key: your_jwt_secret_key_here_must_be_complex
+  jwt-secret-key: ${JWT_SECRET_KEY:change_me_in_production}
 
 minio:
   endpoint: http://localhost:19000  # Your MinIO server endpoint
-  accessKey: your_minio_access_key  # Please change it in production
-  secretKey: your_minio_secret_key  # Please change it in production
+  accessKey: ${MINIO_ACCESSKEY:}
+  secretKey: ${MINIO_SECRETKEY:}
   watermarkBucket: image-watermark
   originBucket: image-origin
   thumbnailBucket: image-thumbnail

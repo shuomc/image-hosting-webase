@@ -31,3 +31,13 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# 日志文件
+logs/
+*.log
+
+# 区块链证书和密钥文件
+*.key
+*.pem
+*.p12
+*.jks

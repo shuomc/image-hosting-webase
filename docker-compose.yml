@@ -9,13 +9,13 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/image_hosting
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-postgres}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
       - SPRING_REDIS_HOST=redis
       - SPRING_REDIS_PORT=6379
       - MINIO_ENDPOINT=http://minio:9000
-      - MINIO_ACCESSKEY=minioadmin
-      - MINIO_SECRETKEY=minioadmin
+      - MINIO_ACCESSKEY=${MINIO_ROOT_USER}
+      - MINIO_SECRETKEY=${MINIO_ROOT_PASSWORD}
       - MINIO_BUCKETNAME=images
       - MINIO_PUBLICURL=http://localhost/minio
     depends_on:
@@ -36,8 +36,8 @@ services:
       - SPRING_PROFILES_ACTIVE=prod
       # 添加数据库连接配置（使用单独的数据库实例或模式）
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/maven_demo
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=yourpassword
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-postgres}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
     depends_on:
       - postgres
     networks:
@@ -61,7 +61,7 @@ services:
     container_name: postgres
     restart: always
     environment:
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       # 创建两个数据库
       - POSTGRES_MULTIPLE_DATABASES=image_hosting,maven_demo
     volumes:
@@ -88,8 +88,8 @@ services:
     container_name: minio
     restart: always
     environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
     volumes:
       - minio-data:/data
     ports:

@@ -36,6 +36,20 @@ out/
 ### VS Code ###
 .vscode/
 
-# 忽略本地配置文件
-E:\image-hosting\image-hosting-starter\src\main\resources\application-dev-local.yml
-E:\image-hosting\image-hosting-starter\src\main\resources\application-shuomc.yml
+# 日志文件
+logs/
+*.log
+
+# 区块链证书和密钥文件
+*.key
+*.pem
+*.p12
+*.jks
+
+# 本地敏感配置文件
+application-dev-local.yml
+application-shuomc.yml
+application-local.yml
+
+# 环境变量文件
+.env
