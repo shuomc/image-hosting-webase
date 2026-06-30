@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://101.132.141.214:15432/image
-    username: postgres
-    password: admin
+    url: jdbc:postgresql://your-database-host:5432/image_hosting
+    username: your-database-username
+    password: your-database-password
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -18,10 +18,10 @@ spring:
           time-between-eviction-runs: 10s
       database: 3
   mail:
-    host: smtp.qq.com
-    port: 587
-    username: vsjun8@qq.com
-    password: wonwyytuummihhdg
+    host: # Your POP3/SMTP HOST
+    port: # Your POP3/SMTP PORT
+    username: # Your POP3/SMTP USERNAME
+    password: # Your POP3/SMTP PASSWORD/AUTHORZATION CODE
     properties:
       mail:
         smtp:

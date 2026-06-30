@@ -7,17 +7,16 @@ spring:
   application:
     name: image-hosting
   profiles:
-#    active: dev
-    active: shuomc
+    active: dev
   servlet:
     multipart:
       max-file-size: 50MB
       max-request-size: 100MB
   mail:
-    host: smtp.qq.com
-    port: 587
-    username: vsjun8@qq.com
-    password: wonwyytuummihhdg
+    host: # Your POP3/SMTP HOST (e.g., smtp.163.com)
+    port: # Your POP3/SMTP PORT (e.g., 465)
+    username: # Your POP3/SMTP USERNAME
+    password: # Your POP3/SMTP PASSWORD/AUTHORIZATION CODE
     properties:
       mail:
         smtp:
@@ -25,10 +24,9 @@ spring:
           starttls:
             enable: true
   freemarker:
-    template-loader-path:  classpath:/templates/
+    template-loader-path: classpath:/templates/
     suffix: .ftl
     charset: UTF-8
-
 
 mybatis-plus:
   configuration:
@@ -42,7 +40,6 @@ mybatis-plus:
       logic-delete-value: true
       logic-not-delete-value: false
 
-
 sa-token:
   token-name: Authorization
   timeout: 2592000
@@ -52,17 +49,17 @@ sa-token:
   is-read-header: true
   is-read-param: true
   is-log: true
-  jwt-secret-key: 3fc0449993ee6dc5e66ccd9658d3c33a
+  jwt-secret-key: your_jwt_secret_key_here_must_be_complex
 
 minio:
   endpoint: http://localhost:19000  # Your MinIO server endpoint
-  accessKey: minioadmin      # Your MinIO access key
-  secretKey: minioadmin      # Your MinIO secret key
+  accessKey: your_minio_access_key  # Please change it in production
+  secretKey: your_minio_secret_key  # Please change it in production
   watermarkBucket: image-watermark
   originBucket: image-origin
   thumbnailBucket: image-thumbnail
-  external-url: http://localhost:19000 # 外部访问连接，用于拼接返回前端，取决于minio服务部署地址
+  external-url: http://localhost:19000 
 
-# 区块链系统配置
+# 区块链系统配置（FISCO BCOS / NFT等节点适配）
 blockchain:
-  api-url: http://localhost:8081 
+  api-url: http://localhost:8081
