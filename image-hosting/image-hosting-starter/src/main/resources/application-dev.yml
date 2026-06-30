@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://your-database-host:5432/image_hosting
-    username: your-database-username
-    password: your-database-password
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/image_hosting}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -21,7 +21,7 @@ spring:
     host: # Your POP3/SMTP HOST
     port: # Your POP3/SMTP PORT
     username: # Your POP3/SMTP USERNAME
-    password: # Your POP3/SMTP PASSWORD/AUTHORZATION CODE
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
